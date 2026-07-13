@@ -159,6 +159,6 @@ describe("debt pages", () => {
     ).toBe(9_250_000n);
     expect(
       screen.getByLabelText("الرصيد المتبقي"),
-    ).toHaveTextContent("1,000.000");
+    ).toHaveTextContent("1,000");
   });
 });

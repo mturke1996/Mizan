@@ -29,7 +29,7 @@ describe("WalletsPage", () => {
     expect(
       screen.getByRole("heading", { name: "المحافظ" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("24,850.000")).toBeInTheDocument();
+    expect(screen.getByText("24,850")).toBeInTheDocument();
     expect(screen.getByText("المحفظة النقدية")).toBeInTheDocument();
     expect(screen.getByText("محفظة الاستثمارات")).toBeInTheDocument();
     expect(
@@ -55,6 +55,6 @@ describe("WalletsPage", () => {
     expect(
       screen.getByRole("link", { name: "إنشاء محفظة" }),
     ).toHaveAttribute("href", "/wallets/new");
-    expect(screen.queryByText("24,850.000")).not.toBeInTheDocument();
+    expect(screen.queryByText("24,850")).not.toBeInTheDocument();
   });
 });

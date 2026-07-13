@@ -108,7 +108,7 @@ export function formatMinorAmount(
   const majorAmount = Number(amountMinor) / 10 ** scale;
 
   return new Intl.NumberFormat(options.locale ?? "ar-LY", {
-    minimumFractionDigits: fractionDigits,
+    minimumFractionDigits: 0,
     maximumFractionDigits: fractionDigits,
     useGrouping: true,
   }).format(majorAmount);

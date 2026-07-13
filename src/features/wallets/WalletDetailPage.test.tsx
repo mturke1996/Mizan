@@ -32,7 +32,7 @@ describe("WalletDetailPage", () => {
     expect(
       screen.getByRole("heading", { name: "المحفظة النقدية" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("2,450.000")).toBeInTheDocument();
+    expect(screen.getByText("2,450")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "تحويل من هذه المحفظة" }),
     ).toHaveAttribute("href", "/transfer?from=cash");

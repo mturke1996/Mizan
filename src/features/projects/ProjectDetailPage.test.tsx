@@ -233,7 +233,7 @@ describe("ProjectDetailPage", () => {
     ).toHaveAttribute("aria-valuenow", "90");
     expect(within(hero).getByText("ممتاز")).toBeInTheDocument();
     expect(within(hero).getByText("الربح بعد العمال")).toBeInTheDocument();
-    expect(within(hero).getByText("6.000")).toHaveAttribute("dir", "ltr");
+    expect(within(hero).getByText("6")).toHaveAttribute("dir", "ltr");
     expect(within(hero).getByText("هامش الربح")).toBeInTheDocument();
     expect(within(hero).getByText("66.66%")).toBeInTheDocument();
     expect(within(hero).getByText("استرداد رأس المال")).toBeInTheDocument();

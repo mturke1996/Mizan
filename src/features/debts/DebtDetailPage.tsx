@@ -538,7 +538,7 @@ export function DebtDetailPage() {
                 placeholder={
                   selectedEntryType === "adjustment"
                     ? "استخدم - للتخفيض"
-                    : "0.000"
+                    : "0"
                 }
                 readOnly={selectedEntryType === "write_off"}
                 {...register("amount")}

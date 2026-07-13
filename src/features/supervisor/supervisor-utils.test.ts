@@ -8,8 +8,8 @@ import {
 
 describe("supervisor-utils", () => {
   it("formats minor amounts using each currency precision", () => {
-    expect(formatMinorCurrency(1_250_000, "LYD")).toBe("1,250.000");
-    expect(formatMinorCurrency(125_000, "USD")).toBe("1,250.00");
+    expect(formatMinorCurrency(1_250_000, "LYD")).toBe("1,250");
+    expect(formatMinorCurrency(125_000, "USD")).toBe("1,250");
   });
 
   it("maps subscription labels", () => {

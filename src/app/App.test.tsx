@@ -32,7 +32,7 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "ملخصك المالي" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("24,850.000").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("24,850").length).toBeGreaterThan(0);
   });
 
   it("shows five labeled primary navigation destinations", () => {

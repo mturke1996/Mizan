@@ -44,7 +44,7 @@ describe("TransactionDetailPage", () => {
     expect(
       screen.getByRole("heading", { name: "دفعة من متجر الصقور" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("+1,250.000")).toBeInTheDocument();
+    expect(screen.getByText("+1,250")).toBeInTheDocument();
     expect(screen.getByText("الحساب المصرفي")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "تعديل المعاملة" }),

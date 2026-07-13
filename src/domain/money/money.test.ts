@@ -47,14 +47,22 @@ describe("toSafeMinorNumber", () => {
 });
 
 describe("formatMinorAmount", () => {
-  it("formats LYD using the requested visible fraction digits", () => {
+  it("hides trailing zeros while keeping meaningful decimals", () => {
     expect(
       formatMinorAmount(24_850_000n, {
         currency: "LYD",
         locale: "en-US",
         fractionDigits: 2,
       }),
-    ).toBe("24,850.00");
+    ).toBe("24,850");
+
+    expect(
+      formatMinorAmount(1_250_500n, {
+        currency: "LYD",
+        locale: "en-US",
+        fractionDigits: 3,
+      }),
+    ).toBe("1,250.5");
   });
 
   it("preserves negative values", () => {
@@ -64,6 +72,6 @@ describe("formatMinorAmount", () => {
         locale: "en-US",
         fractionDigits: 2,
       }),
-    ).toBe("-1,250.00");
+    ).toBe("-1,250");
   });
 });

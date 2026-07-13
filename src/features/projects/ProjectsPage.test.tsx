@@ -34,7 +34,7 @@ describe("ProjectsPage", () => {
     expect(screen.getByText("مشروع القهوة")).toBeInTheDocument();
     expect(screen.getByText("تربية طيور وعصافير")).toBeInTheDocument();
     expect(screen.getByText("مطعم ومقهى")).toBeInTheDocument();
-    expect(screen.getByText("6,380.000")).toBeInTheDocument();
+    expect(screen.getByText("6,380")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "إضافة مشروع" }),
     ).toHaveAttribute("href", "/projects/new");
