@@ -130,7 +130,7 @@ export async function fetchUserWorkspace(
   const { data, error } = await supabase
     .from("workspace_members")
     .select(
-      "role, workspace_id, workspaces!inner(id, name, default_currency_code, status)",
+      "role, workspace_id, workspaces!workspace_members_workspace_id_fkey!inner(id, name, default_currency_code, status)",
     )
     .eq("user_id", userId)
     .eq("status", "active")
