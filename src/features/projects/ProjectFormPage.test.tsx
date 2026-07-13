@@ -407,19 +407,25 @@ describe("ProjectFormPage", () => {
     }
   });
 
-  it("directs general projects when there are no suggested categories", async () => {
+  it("suggests practical project categories for general projects", async () => {
     const user = userEvent.setup();
     renderWizard();
     await reachModules(user, "general");
 
     expect(
-      screen.getByRole("heading", {
+      screen.queryByRole("heading", {
         name: "لا توجد تصنيفات مقترحة",
       }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/أضف تصنيفات الدخل والمصروف من صفحة المعاملات/),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+
+    for (const category of PROJECT_BLUEPRINTS.general.suggestedCategories) {
+      const kind = category.kind === "income" ? "دخل" : "مصروف";
+      expect(
+        screen.getByRole("checkbox", {
+          name: `تصنيف ${kind}: ${category.name}`,
+        }),
+      ).toBeChecked();
+    }
   });
 
   it("validates required details and only validates enabled financial fields", async () => {

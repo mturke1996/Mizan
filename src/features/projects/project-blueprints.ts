@@ -278,7 +278,17 @@ export const PROJECT_BLUEPRINTS: Readonly<
       inventory: false,
       livestock: false,
     },
-    suggestedCategories: [],
+    suggestedCategories: [
+      { name: "إيجار ومرافق", kind: "expense" },
+      { name: "رواتب وأجور", kind: "expense" },
+      { name: "تسويق وإعلانات", kind: "expense" },
+      { name: "صيانة وتشغيل", kind: "expense" },
+      { name: "مستلزمات وأدوات", kind: "expense" },
+      { name: "نقل ومواصلات", kind: "expense" },
+      { name: "مبيعات", kind: "income" },
+      { name: "خدمات مشاريع", kind: "income" },
+      { name: "دفعات عقود", kind: "income" },
+    ],
     setupSteps: [SETUP_STEPS.firstTransaction],
   }),
 });

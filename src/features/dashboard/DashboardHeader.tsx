@@ -1,4 +1,4 @@
-import { Bell, Menu } from "lucide-react";
+import { Bell, ChartNoAxesCombined, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/use-auth";
@@ -65,18 +65,31 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
       </div>
 
       <div className="flex items-center gap-1.5">
-        <Link
-          to="/notifications"
-          aria-label="الإشعارات"
-          className="pressable relative flex size-11 items-center justify-center rounded-full text-muted hover:bg-surface-subtle hover:text-ink"
-        >
-          <Bell aria-hidden="true" size={22} strokeWidth={1.7} />
-          {unreadCount > 0 ? (
-            <span className="absolute top-1.5 right-1.5 flex size-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-danger-on">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
-          ) : null}
-        </Link>
+        <div className="flex items-center gap-0.5 rounded-full border border-line/80 bg-canvas/80 p-1">
+          <Link
+            to="/analytics"
+            aria-label="التحليلات"
+            className="pressable flex size-10 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+          >
+            <ChartNoAxesCombined
+              aria-hidden="true"
+              size={20}
+              strokeWidth={1.7}
+            />
+          </Link>
+          <Link
+            to="/notifications"
+            aria-label="الإشعارات"
+            className="pressable relative flex size-10 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+          >
+            <Bell aria-hidden="true" size={20} strokeWidth={1.7} />
+            {unreadCount > 0 ? (
+              <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-danger text-[9px] font-bold text-danger-on">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            ) : null}
+          </Link>
+        </div>
         <Link
           to="/settings"
           aria-label="القائمة والإعدادات"

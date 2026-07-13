@@ -7,7 +7,7 @@ import {
   CircleGauge,
   Flame,
   Lightbulb,
-  PiggyBank,
+  HandCoins,
   Scale,
   Timer,
   Trophy,
@@ -263,7 +263,7 @@ export function AnalyticsPage() {
           }
         />
         <MetricTile
-          icon={<PiggyBank className="size-5" aria-hidden="true" />}
+          icon={<HandCoins className="size-5" aria-hidden="true" />}
           label="معدل الادخار"
           value={`${analytics.savingsRate.toFixed(1)}%`}
           helper={

@@ -2,8 +2,8 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   CircleGauge,
+  HandCoins,
   Landmark,
-  PiggyBank,
   Target,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -293,7 +293,7 @@ export function DashboardPage() {
                 })}
                 suffix={currency}
                 helper={`معدل الادخار ${overview.savingsRate.toFixed(1)}%`}
-                icon={PiggyBank}
+                icon={HandCoins}
                 tone={overview.netMinor >= 0n ? "success" : "warning"}
               />
               <div className="lg:hidden">
