@@ -1,0 +1,202 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+@theme inline {
+  --font-sans: "IBM Plex Sans Arabic", "Noto Sans Arabic", Tahoma, sans-serif;
+
+  --color-canvas: var(--mizan-canvas);
+  --color-surface: var(--mizan-surface);
+  --color-surface-raised: var(--mizan-surface-raised);
+  --color-surface-subtle: var(--mizan-surface-subtle);
+  --color-surface-strong: var(--mizan-surface-strong);
+  --color-ink: var(--mizan-text);
+  --color-muted: var(--mizan-text-muted);
+  --color-soft: var(--mizan-text-soft);
+  --color-line: var(--mizan-border);
+  --color-line-strong: var(--mizan-border-strong);
+  --color-control-border: var(--mizan-control-border);
+  --color-primary: var(--mizan-primary);
+  --color-primary-hover: var(--mizan-primary-hover);
+  --color-primary-soft: var(--mizan-primary-soft);
+  --color-primary-ink: var(--mizan-primary-ink);
+  --color-primary-on: var(--mizan-primary-on);
+  --color-auth-panel: var(--mizan-auth-panel);
+  --color-success: var(--mizan-success);
+  --color-success-soft: var(--mizan-success-soft);
+  --color-success-on: var(--mizan-success-on);
+  --color-warning: var(--mizan-warning);
+  --color-warning-soft: var(--mizan-warning-soft);
+  --color-warning-on: var(--mizan-warning-on);
+  --color-danger: var(--mizan-danger);
+  --color-danger-soft: var(--mizan-danger-soft);
+  --color-danger-on: var(--mizan-danger-on);
+  --color-info: var(--mizan-info);
+  --color-info-soft: var(--mizan-info-soft);
+  --color-info-on: var(--mizan-info-on);
+
+  --radius-xs: var(--mizan-radius-xs);
+  --radius-sm: var(--mizan-radius-sm);
+  --radius-md: var(--mizan-radius-md);
+  --radius-lg: var(--mizan-radius-lg);
+  --radius-xl: var(--mizan-radius-xl);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    min-height: 100%;
+    background: var(--mizan-canvas);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    background: var(--mizan-canvas);
+    color: var(--mizan-text);
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    overscroll-behavior-y: none;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    color: inherit;
+    font: inherit;
+  }
+
+  button,
+  [role="button"],
+  a {
+    touch-action: manipulation;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  img,
+  svg {
+    display: block;
+  }
+
+  progress {
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    background: var(--mizan-surface-strong);
+    appearance: none;
+  }
+
+  progress::-webkit-progress-bar {
+    background: var(--mizan-surface-strong);
+  }
+
+  progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: var(--mizan-primary);
+  }
+
+  progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: var(--mizan-primary);
+  }
+
+  ::selection {
+    background: var(--mizan-primary-soft);
+    color: var(--mizan-primary-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--mizan-primary);
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  .numeric {
+    direction: ltr;
+    font-variant-numeric: tabular-nums lining-nums;
+    unicode-bidi: isolate;
+  }
+
+  .safe-top {
+    padding-top: max(16px, var(--safe-top));
+  }
+
+  .safe-bottom {
+    padding-bottom: max(12px, var(--safe-bottom));
+  }
+
+  .app-scroll-padding {
+    padding-bottom: calc(96px + var(--safe-bottom));
+  }
+
+  .subtle-scrollbar {
+    scrollbar-color: var(--mizan-border-strong) transparent;
+    scrollbar-width: thin;
+  }
+
+  .pressable {
+    transition:
+      transform var(--motion-fast) var(--ease-standard),
+      background-color var(--motion-base) var(--ease-standard),
+      color var(--motion-base) var(--ease-standard),
+      box-shadow var(--motion-base) var(--ease-standard);
+  }
+
+  .pressable:active {
+    transform: scale(0.98);
+  }
+
+  .page-enter {
+    animation: page-enter var(--motion-base) var(--ease-standard);
+  }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (min-width: 64rem) {
+  .app-scroll-padding {
+    padding-bottom: 2.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

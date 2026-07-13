@@ -1,0 +1,98 @@
+:root {
+  color-scheme: light;
+
+  --mizan-canvas: #f7f8fc;
+  --mizan-surface: #ffffff;
+  --mizan-surface-raised: #ffffff;
+  --mizan-surface-subtle: #eff1f8;
+  --mizan-surface-strong: #e5e8f3;
+  --mizan-text: #171827;
+  --mizan-text-muted: #64677b;
+  --mizan-text-soft: #9699aa;
+  --mizan-border: rgb(25 28 54 / 8%);
+  --mizan-border-strong: rgb(25 28 54 / 14%);
+  --mizan-control-border: #7b7f93;
+
+  --mizan-primary: #4b52c7;
+  --mizan-primary-hover: #3f46b6;
+  --mizan-primary-soft: #eeefff;
+  --mizan-primary-ink: #31388f;
+  --mizan-primary-on: #ffffff;
+  --mizan-auth-panel: #282e7a;
+
+  --mizan-success: #0b7659;
+  --mizan-success-soft: #eaf8f3;
+  --mizan-success-on: #ffffff;
+  --mizan-warning: #9b5d00;
+  --mizan-warning-soft: #fff6df;
+  --mizan-warning-on: #2b1900;
+  --mizan-danger: #c54250;
+  --mizan-danger-soft: #fff0f1;
+  --mizan-danger-on: #ffffff;
+  --mizan-info: #287ab2;
+  --mizan-info-soft: #ecf6fc;
+  --mizan-info-on: #ffffff;
+
+  --shadow-card: 0 1px 2px rgb(27 30 60 / 3%),
+    0 12px 36px rgb(27 30 60 / 5%);
+  --shadow-float: 0 14px 40px rgb(27 30 60 / 14%);
+  --shadow-nav: 0 -8px 32px rgb(27 30 60 / 6%);
+
+  --mizan-radius-xs: 8px;
+  --mizan-radius-sm: 12px;
+  --mizan-radius-md: 16px;
+  --mizan-radius-lg: 20px;
+  --mizan-radius-xl: 24px;
+  --mizan-radius-round: 999px;
+
+  --motion-fast: 150ms;
+  --motion-base: 220ms;
+  --motion-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --mizan-canvas: #10111a;
+  --mizan-surface: #181a26;
+  --mizan-surface-raised: #202230;
+  --mizan-surface-subtle: #242635;
+  --mizan-surface-strong: #2e3142;
+  --mizan-text: #f5f6fb;
+  --mizan-text-muted: #b1b4c4;
+  --mizan-text-soft: #888c9f;
+  --mizan-border: rgb(244 246 255 / 8%);
+  --mizan-border-strong: rgb(244 246 255 / 14%);
+  --mizan-control-border: #7c8197;
+
+  --mizan-primary: #8f95ff;
+  --mizan-primary-hover: #a1a6ff;
+  --mizan-primary-soft: #292c50;
+  --mizan-primary-ink: #c4c7ff;
+  --mizan-primary-on: #151733;
+  --mizan-auth-panel: #20245f;
+
+  --mizan-success: #6bd0ad;
+  --mizan-success-soft: #17382f;
+  --mizan-success-on: #102a23;
+  --mizan-warning: #efc36f;
+  --mizan-warning-soft: #3a2d15;
+  --mizan-warning-on: #2b210d;
+  --mizan-danger: #ff929d;
+  --mizan-danger-soft: #402127;
+  --mizan-danger-on: #351015;
+  --mizan-info: #75bfe9;
+  --mizan-info-soft: #173247;
+  --mizan-info-on: #102b3b;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 10%),
+    0 14px 40px rgb(0 0 0 / 18%);
+  --shadow-float: 0 16px 44px rgb(0 0 0 / 35%);
+  --shadow-nav: 0 -8px 32px rgb(0 0 0 / 24%);
+}

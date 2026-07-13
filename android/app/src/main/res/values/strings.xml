@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ميزان</string>
+    <string name="title_activity_main">ميزان</string>
+    <string name="package_name">com.mizan.finance</string>
+    <string name="custom_url_scheme">com.mizan.finance</string>
+</resources>
