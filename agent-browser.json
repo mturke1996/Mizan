@@ -1,0 +1,8 @@
+{
+  "headed": false,
+  "json": true,
+  "contentBoundaries": true,
+  "maxOutput": 50000,
+  "actionPolicy": "./agent-browser.policy.json",
+  "confirmActions": "eval,download,upload,network"
+}

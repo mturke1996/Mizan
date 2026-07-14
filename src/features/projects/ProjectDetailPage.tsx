@@ -143,7 +143,8 @@ export function ProjectDetailPage() {
     () =>
       displayProject
         ? getProjectDetailTabs(displayProject.modules, {
-            hasCash: displayProject.cashMode !== undefined && displayProject.cashMode !== "off",
+            // Always expose treasury so users can enable/manage it.
+            hasCash: true,
           })
         : [],
     [displayProject],

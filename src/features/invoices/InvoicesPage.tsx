@@ -211,17 +211,17 @@ export function InvoicesPage() {
         مسودة = لم تُرسل بعد · مُرسلة = جاهزة للمشاركة مع العميل
       </p>
 
-      <div className="mb-4 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mb-4 flex gap-1.5 overflow-x-auto border-b border-line pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {FILTERS.map((item) => (
           <button
             key={item.value}
             type="button"
             onClick={() => setFilter(item.value)}
             className={[
-              "pressable shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition-colors",
+              "pressable -mb-px shrink-0 border-b-2 px-3 py-2 text-xs font-bold transition-colors",
               filter === item.value
-                ? "bg-primary text-primary-on"
-                : "bg-surface-subtle text-muted hover:text-ink",
+                ? "border-primary text-primary"
+                : "border-transparent text-muted hover:text-ink",
             ].join(" ")}
           >
             {item.label}

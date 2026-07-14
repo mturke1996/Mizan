@@ -125,10 +125,13 @@ describe("ProjectDetailPage", () => {
     });
 
     const tabs = screen.getByRole("tablist", { name: "أقسام المشروع" });
-    expect(within(tabs).getAllByRole("tab")).toHaveLength(2);
+    expect(within(tabs).getAllByRole("tab")).toHaveLength(3);
     expect(
       within(tabs).getByRole("tab", { name: "نظرة عامة" }),
     ).toHaveAttribute("aria-selected", "true");
+    expect(
+      within(tabs).getByRole("tab", { name: "الخزينة" }),
+    ).toBeInTheDocument();
     expect(
       within(tabs).getByRole("tab", { name: "المعاملات" }),
     ).toBeInTheDocument();
@@ -173,6 +176,7 @@ describe("ProjectDetailPage", () => {
       within(tabs).getAllByRole("tab").map((tab) => tab.textContent),
     ).toEqual([
       "نظرة عامة",
+      "الخزينة",
       "رأس المال",
       "العمال",
       "المخزون",

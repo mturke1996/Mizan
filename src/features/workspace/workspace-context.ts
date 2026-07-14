@@ -9,6 +9,8 @@ export interface WorkspaceContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   isDemo?: boolean;
+  /** True when membership was restored from local cache while offline. */
+  isOfflineCache?: boolean;
 }
 
 export const WorkspaceContext =

@@ -22,9 +22,11 @@ const queryClient = new QueryClient({
       staleTime: 30_000,
       refetchOnWindowFocus: false,
       gcTime: SEVEN_DAYS_MS,
+      networkMode: "offlineFirst",
     },
     mutations: {
       retry: 0,
+      networkMode: "offlineFirst",
     },
   },
 });
@@ -53,12 +55,33 @@ function deserializePersistedClient(cached: string): PersistedClient {
   }) as PersistedClient;
 }
 
-const invoicePersister = createSyncStoragePersister({
+const financePersister = createSyncStoragePersister({
   storage: typeof window !== "undefined" ? window.localStorage : undefined,
-  key: "mizan-invoice-query-cache",
+  key: "mizan-finance-query-cache",
   serialize: serializePersistedClient,
   deserialize: deserializePersistedClient,
 });
+
+const PERSISTED_QUERY_ROOTS = new Set([
+  "invoices",
+  "invoice-detail",
+  "wallets",
+  "transactions",
+  "projects",
+  "categories",
+  "debts",
+  "debt-workspace-summary",
+  "debt-detail",
+  "debt-entries",
+  "debt-parties",
+  "clients",
+  "income-sources",
+  "income-entries",
+  "analytics",
+  "finance",
+  "project-cash-balance",
+  "project-cash-entries",
+]);
 
 export function AppProviders({
   children,
@@ -99,12 +122,15 @@ export function AppProviders({
     <PersistQueryClientProvider
       client={queryClient}
       persistOptions={{
-        persister: invoicePersister,
+        persister: financePersister,
         maxAge: SEVEN_DAYS_MS,
+        // Bump when persisted query set / shape changes.
+        buster: "finance-cache-v2",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
+            if (query.state.status !== "success") return false;
             const root = query.queryKey[0];
-            return root === "invoices" || root === "invoice-detail";
+            return typeof root === "string" && PERSISTED_QUERY_ROOTS.has(root);
           },
         },
       }}

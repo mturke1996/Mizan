@@ -6,6 +6,10 @@ import {
   type PropsWithChildren,
 } from "react";
 import { useAuth } from "@/features/auth/use-auth";
+import {
+  cacheOfflineMembership,
+  readOfflineMembership,
+} from "@/lib/offline-bootstrap";
 import { fetchUserWorkspace } from "./workspace-api";
 import type { WorkspaceMembership } from "./workspace-types";
 import {
@@ -26,23 +30,50 @@ export function WorkspaceProvider({
   );
   const [isLoading, setIsLoading] = useState(!value);
   const [error, setError] = useState<string | null>(null);
+  const [offlineCached, setOfflineCached] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!userId) {
       setMembership(null);
       setError(null);
       setIsLoading(false);
+      setOfflineCached(false);
       return;
     }
 
     setIsLoading(true);
     try {
       const next = await fetchUserWorkspace(userId);
-      setMembership(next);
-      setError(next ? null : "لم يتم العثور على مساحة عمل");
+      if (next) {
+        cacheOfflineMembership(userId, next);
+        setMembership(next);
+        setError(null);
+        setOfflineCached(false);
+      } else {
+        const cached = readOfflineMembership(userId);
+        if (cached) {
+          setMembership(cached);
+          setError(null);
+          setOfflineCached(true);
+        } else {
+          setMembership(null);
+          setError("لم يتم العثور على مساحة عمل");
+          setOfflineCached(false);
+        }
+      }
     } catch (err) {
-      setMembership(null);
-      setError(err instanceof Error ? err.message : "تعذر تحميل مساحة العمل");
+      const cached = readOfflineMembership(userId);
+      if (cached) {
+        setMembership(cached);
+        setError(null);
+        setOfflineCached(true);
+      } else {
+        setMembership(null);
+        setError(
+          err instanceof Error ? err.message : "تعذر تحميل مساحة العمل",
+        );
+        setOfflineCached(false);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -51,9 +82,30 @@ export function WorkspaceProvider({
   useEffect(() => {
     if (value) return;
     if (authLoading) return;
-    const timeoutId = window.setTimeout(() => void refresh(), 0);
+    // Defer cache hydrate + refresh so we don't sync-setState inside the effect body.
+    const timeoutId = window.setTimeout(() => {
+      if (userId) {
+        const cached = readOfflineMembership(userId);
+        if (cached) {
+          setMembership(cached);
+          setOfflineCached(true);
+          setIsLoading(false);
+        }
+      }
+      void refresh();
+    }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, [authLoading, refresh, value]);
+  }, [authLoading, refresh, userId, value]);
+
+  // Re-sync when the browser comes back online.
+  useEffect(() => {
+    if (value || !userId) return;
+    const onOnline = () => {
+      void refresh();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [refresh, userId, value]);
 
   const liveValue = useMemo<WorkspaceContextValue>(
     () => ({
@@ -64,8 +116,9 @@ export function WorkspaceProvider({
       error,
       refresh,
       isDemo: false,
+      isOfflineCache: offlineCached,
     }),
-    [membership, authLoading, isLoading, error, refresh],
+    [membership, authLoading, isLoading, error, refresh, offlineCached],
   );
 
   return (
@@ -74,4 +127,3 @@ export function WorkspaceProvider({
     </WorkspaceContext.Provider>
   );
 }
-

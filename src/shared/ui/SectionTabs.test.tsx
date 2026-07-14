@@ -53,7 +53,7 @@ describe("SectionTabs", () => {
     );
     expect(overview).toHaveAttribute("aria-selected", "true");
     expect(overview).toHaveAttribute("tabindex", "0");
-    expect(overview).toHaveClass("bg-surface", "focus-visible:outline-primary");
+    expect(overview).toHaveClass("border-primary", "focus-visible:outline-primary");
     expect(
       within(overview).getByTestId("overview-icon").parentElement,
     ).toHaveAttribute("aria-hidden", "true");

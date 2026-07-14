@@ -6,6 +6,12 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
+import {
+  cacheOfflineProfile,
+  clearOfflineBootstrap,
+  isBrowserOffline,
+  readOfflineProfile,
+} from "@/lib/offline-bootstrap";
 import { getSupabaseClient } from "@/lib/supabase";
 import {
   AuthContext,
@@ -29,6 +35,21 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
+async function loadProfileWithOfflineFallback(
+  userId: string,
+): Promise<Profile | null> {
+  try {
+    const profile = await loadProfile(userId);
+    if (profile) cacheOfflineProfile(profile);
+    return profile;
+  } catch (error) {
+    const cached = readOfflineProfile(userId);
+    if (cached) return cached;
+    if (isBrowserOffline()) return null;
+    throw error;
+  }
+}
+
 export function AuthProvider({
   children,
   value,
@@ -45,7 +66,7 @@ export function AuthProvider({
 
     setIsLoading(true);
     try {
-      setProfile(await loadProfile(session.user.id));
+      setProfile(await loadProfileWithOfflineFallback(session.user.id));
     } finally {
       setIsLoading(false);
     }
@@ -66,9 +87,11 @@ export function AuthProvider({
         setSession(data.session);
         if (data.session?.user.id) {
           try {
-            setProfile(await loadProfile(data.session.user.id));
+            setProfile(
+              await loadProfileWithOfflineFallback(data.session.user.id),
+            );
           } catch {
-            setProfile(null);
+            setProfile(readOfflineProfile(data.session.user.id));
           }
         }
       })
@@ -93,12 +116,14 @@ export function AuthProvider({
       }
 
       setIsLoading(true);
-      void loadProfile(nextSession.user.id)
+      void loadProfileWithOfflineFallback(nextSession.user.id)
         .then((nextProfile) => {
           if (isActive) setProfile(nextProfile);
         })
         .catch(() => {
-          if (isActive) setProfile(null);
+          if (isActive) {
+            setProfile(readOfflineProfile(nextSession.user.id));
+          }
         })
         .finally(() => {
           if (isActive) setIsLoading(false);
@@ -165,8 +190,16 @@ export function AuthProvider({
 
   const signOut = useCallback(async () => {
     const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } finally {
+      // Always drop local bootstrap + finance cache so the next account
+      // cannot inherit another user's offline snapshot.
+      clearOfflineBootstrap();
+      setSession(null);
+      setProfile(null);
+    }
   }, []);
 
   const liveValue = useMemo<AuthContextValue>(

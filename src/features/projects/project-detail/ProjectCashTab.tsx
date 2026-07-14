@@ -93,18 +93,20 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
     }
   };
 
-  if (project.cashMode === "off") {
+  if (project.cashMode === "off" || !project.cashMode) {
     return (
       <section className="rounded-[18px] border border-line bg-surface p-5 text-center">
         <p className="text-sm font-semibold text-ink">خزينة المشروع معطّلة</p>
-        <p className="mt-1 text-xs text-muted">فعّل وضعًا أدناه لبدء التسجيل</p>
+        <p className="mt-1 text-xs text-muted">
+          فعّل «خزينة فقط» أو «مختلط» لتسجيل دخل ومصروف داخل المشروع
+        </p>
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {CASH_MODE_OPTIONS.filter((o) => o.value !== "off").map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setCashMode.mutate(opt.value)}
-              className="rounded-xl bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary"
+              className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink hover:border-primary hover:text-primary"
             >
               {opt.label}
             </button>

@@ -392,9 +392,7 @@ export function mapProjectSummary(input: {
     inventoryItemCount: parseCount(
       input.inventory_item_count ?? input.item_count,
     ),
-    ...(input.cash_mode
-      ? { cashMode: input.cash_mode as ProjectCashMode }
-      : {}),
+    cashMode: (input.cash_mode as ProjectCashMode | null) ?? "hybrid",
     ...(input.linked_wallet_id !== undefined
       ? { linkedWalletId: input.linked_wallet_id }
       : {}),

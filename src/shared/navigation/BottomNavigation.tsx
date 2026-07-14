@@ -53,21 +53,36 @@ export function BottomNavigation() {
 
           return (
             <li key={item.label}>
-              <NavLink
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) => {
+              <NavLink to={item.to} end={item.end}>
+                {({ isActive }) => {
                   const active = isItemActive(pathname, item, isActive);
-                  return [
-                    "pressable mx-auto flex min-h-14 w-full max-w-20 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium",
-                    active
-                      ? "bg-primary-soft text-primary-ink"
-                      : "text-muted hover:bg-surface-subtle hover:text-ink",
-                  ].join(" ");
+                  return (
+                    <span
+                      className={[
+                        "pressable mx-auto flex min-h-14 w-full max-w-20 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium",
+                        active
+                          ? "text-primary"
+                          : "text-muted hover:bg-surface-subtle hover:text-ink",
+                      ].join(" ")}
+                    >
+                      <Icon
+                        aria-hidden="true"
+                        size={21}
+                        strokeWidth={active ? 2.2 : 1.8}
+                      />
+                      <span className={active ? "font-bold" : undefined}>
+                        {item.label}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={[
+                          "mt-0.5 h-0.5 w-5 rounded-full",
+                          active ? "bg-primary" : "bg-transparent",
+                        ].join(" ")}
+                      />
+                    </span>
+                  );
                 }}
-              >
-                <Icon aria-hidden="true" size={21} strokeWidth={1.8} />
-                <span>{item.label}</span>
               </NavLink>
             </li>
           );

@@ -10,50 +10,51 @@ export function MoneySectionTabs({
 }: {
   active: "income" | "debts" | "invoices";
 }) {
+  const tabs = [
+    {
+      id: "income" as const,
+      to: "/income",
+      label: "دخلي",
+      Icon: BriefcaseBusiness,
+    },
+    {
+      id: "debts" as const,
+      to: "/debts",
+      label: "الديون",
+      Icon: Scale,
+    },
+    {
+      id: "invoices" as const,
+      to: "/invoices",
+      label: "فواتير",
+      Icon: FileText,
+    },
+  ];
+
   return (
     <nav
       aria-label="أقسام أموالي"
       className="mb-5 grid grid-cols-3 gap-1 rounded-2xl border border-line/80 bg-surface-subtle/80 p-1"
     >
-      <NavLink
-        to="/income"
-        aria-current={active === "income" ? "page" : undefined}
-        className={[
-          "pressable flex min-h-11 items-center justify-center gap-1.5 rounded-xl text-[11px] font-bold transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] sm:gap-2 sm:text-xs",
-          active === "income"
-            ? "bg-surface text-primary shadow-[0_6px_18px_rgb(27_30_60/6%)]"
-            : "text-muted hover:text-ink",
-        ].join(" ")}
-      >
-        <BriefcaseBusiness aria-hidden="true" size={15} strokeWidth={1.8} />
-        دخلي
-      </NavLink>
-      <NavLink
-        to="/debts"
-        aria-current={active === "debts" ? "page" : undefined}
-        className={[
-          "pressable flex min-h-11 items-center justify-center gap-1.5 rounded-xl text-[11px] font-bold transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] sm:gap-2 sm:text-xs",
-          active === "debts"
-            ? "bg-surface text-primary shadow-[0_6px_18px_rgb(27_30_60/6%)]"
-            : "text-muted hover:text-ink",
-        ].join(" ")}
-      >
-        <Scale aria-hidden="true" size={15} strokeWidth={1.8} />
-        الديون
-      </NavLink>
-      <NavLink
-        to="/invoices"
-        aria-current={active === "invoices" ? "page" : undefined}
-        className={[
-          "pressable flex min-h-11 items-center justify-center gap-1.5 rounded-xl text-[11px] font-bold transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] sm:gap-2 sm:text-xs",
-          active === "invoices"
-            ? "bg-surface text-primary shadow-[0_6px_18px_rgb(27_30_60/6%)]"
-            : "text-muted hover:text-ink",
-        ].join(" ")}
-      >
-        <FileText aria-hidden="true" size={15} strokeWidth={1.8} />
-        فواتير
-      </NavLink>
+      {tabs.map(({ id, to, label, Icon }) => {
+        const isActive = active === id;
+        return (
+          <NavLink
+            key={id}
+            to={to}
+            aria-current={isActive ? "page" : undefined}
+            className={[
+              "pressable flex min-h-11 items-center justify-center gap-1.5 rounded-xl text-[11px] font-bold transition-[background-color,color,transform] duration-200 ease-[cubic-bezier(0.2,0.8,0.2,1)] sm:gap-2 sm:text-xs",
+              isActive
+                ? "bg-surface text-primary shadow-[0_6px_18px_rgb(27_30_60/6%)]"
+                : "text-muted hover:text-ink",
+            ].join(" ")}
+          >
+            <Icon aria-hidden="true" size={15} strokeWidth={isActive ? 2.1 : 1.8} />
+            {label}
+          </NavLink>
+        );
+      })}
     </nav>
   );
 }

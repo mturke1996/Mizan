@@ -8,4 +8,5 @@ export const demoWorkspaceValue: WorkspaceContextValue = {
   error: null,
   refresh: async () => undefined,
   isDemo: true,
+  isOfflineCache: false,
 };

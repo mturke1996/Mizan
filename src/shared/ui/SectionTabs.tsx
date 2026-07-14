@@ -93,7 +93,7 @@ export function SectionTabs<TId extends string>({
       aria-label={ariaLabel}
       aria-orientation="horizontal"
       className={clsx(
-        "subtle-scrollbar flex max-w-full items-center gap-1 overflow-x-auto overscroll-x-contain rounded-sm bg-surface-subtle p-1",
+        "subtle-scrollbar flex max-w-full items-center gap-0 overflow-x-auto overscroll-x-contain border-b border-line",
         className,
       )}
       dir={dir}
@@ -109,10 +109,10 @@ export function SectionTabs<TId extends string>({
             aria-disabled={item.disabled || undefined}
             aria-selected={isActive}
             className={clsx(
-              "flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xs px-3 text-sm whitespace-nowrap transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none",
+              "-mb-px flex min-h-11 shrink-0 items-center justify-center gap-2 border-b-2 px-3 text-sm whitespace-nowrap transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary motion-reduce:transition-none",
               isActive
-                ? "bg-surface font-bold text-primary-ink"
-                : "font-medium text-muted hover:bg-surface/70 hover:text-ink",
+                ? "border-primary font-bold text-primary"
+                : "border-transparent font-medium text-muted hover:text-ink",
               "disabled:cursor-not-allowed disabled:opacity-50",
             )}
             disabled={item.disabled}

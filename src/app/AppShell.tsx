@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { BottomNavigation } from "@/shared/navigation/BottomNavigation";
 import { DesktopSidebar } from "@/shared/navigation/DesktopSidebar";
+import { OfflineStatusBanner } from "@/shared/pwa/OfflineStatusBanner";
 
 export function AppShell() {
   const location = useLocation();
@@ -33,6 +34,7 @@ export function AppShell() {
       </a>
       <DesktopSidebar />
       <div dir="rtl" className="min-w-0 bg-surface lg:bg-canvas">
+        <OfflineStatusBanner />
         <main
           ref={mainRef}
           id="main-content"
