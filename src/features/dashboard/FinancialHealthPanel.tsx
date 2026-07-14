@@ -35,7 +35,7 @@ export function FinancialHealthPanel({
   return (
     <section
       aria-labelledby="financial-health-title"
-      className="rounded-[14px] border border-line bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5"
+      className="rounded-[18px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:p-5"
     >
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -46,14 +46,14 @@ export function FinancialHealthPanel({
             قراءة من {analytics.dataPoints} حركة فعلية
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-[8px] bg-success-soft px-2 py-1 text-[10px] font-bold text-success">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-1 text-[10px] font-bold text-success">
           <span className="size-1.5 rounded-full bg-success" />
           {confidenceLabels[analytics.confidence]}
         </span>
       </div>
 
-      <div className="mt-5 flex items-center gap-5">
-        <div className="relative grid size-28 shrink-0 place-items-center">
+      <div className="mt-4 flex items-center gap-4 sm:mt-5 sm:gap-5">
+        <div className="relative grid size-24 shrink-0 place-items-center sm:size-28">
           <svg
             viewBox="0 0 96 96"
             className="absolute inset-0 size-full -rotate-90"

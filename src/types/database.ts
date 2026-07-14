@@ -88,6 +88,12 @@ export type Database = {
           name: string;
           default_currency_code: string;
           status: Database["public"]["Enums"]["workspace_status"];
+          legal_name: string | null;
+          phone: string | null;
+          address: string | null;
+          tax_id: string | null;
+          invoice_footer: string | null;
+          logo_path: string | null;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -97,6 +103,12 @@ export type Database = {
           name: string;
           default_currency_code?: string;
           status?: Database["public"]["Enums"]["workspace_status"];
+          legal_name?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          tax_id?: string | null;
+          invoice_footer?: string | null;
+          logo_path?: string | null;
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -104,6 +116,12 @@ export type Database = {
         {
           name?: string;
           default_currency_code?: string;
+          legal_name?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          tax_id?: string | null;
+          invoice_footer?: string | null;
+          logo_path?: string | null;
         }
       >;
       workspace_members: Table<
@@ -338,6 +356,8 @@ export type Database = {
           project_type: string;
           modules: Json;
           parent_project_id: string | null;
+          cash_mode: Database["public"]["Enums"]["project_cash_mode"];
+          linked_wallet_id: string | null;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -353,6 +373,8 @@ export type Database = {
           project_type?: string;
           modules?: Json;
           parent_project_id?: string | null;
+          cash_mode?: Database["public"]["Enums"]["project_cash_mode"];
+          linked_wallet_id?: string | null;
           created_by: string;
           created_at?: string;
           updated_at?: string;
@@ -366,6 +388,8 @@ export type Database = {
           project_type?: string;
           modules?: Json;
           parent_project_id?: string | null;
+          cash_mode?: Database["public"]["Enums"]["project_cash_mode"];
+          linked_wallet_id?: string | null;
         }
       >;
       project_workers: Table<
@@ -1043,6 +1067,297 @@ export type Database = {
         },
         never
       >;
+      clients: Table<
+        {
+          id: string;
+          workspace_id: string;
+          name: string;
+          phone: string | null;
+          notes: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          phone?: string | null;
+          notes?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          name?: string;
+          phone?: string | null;
+          notes?: string | null;
+        }
+      >;
+      invoices: Table<
+        {
+          id: string;
+          workspace_id: string;
+          invoice_number: string;
+          business_client_id: string | null;
+          client_name: string;
+          client_phone: string | null;
+          status: Database["public"]["Enums"]["invoice_status"];
+          issue_on: string;
+          due_on: string | null;
+          notes: string | null;
+          tax_rate_percent: number;
+          subtotal_minor: number;
+          tax_minor: number;
+          total_minor: number;
+          paid_minor: number;
+          currency_code: string;
+          created_by: string;
+          client_id: string;
+          operation: string;
+          payload_hash: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          invoice_number: string;
+          business_client_id?: string | null;
+          client_name: string;
+          client_phone?: string | null;
+          status?: Database["public"]["Enums"]["invoice_status"];
+          issue_on?: string;
+          due_on?: string | null;
+          notes?: string | null;
+          tax_rate_percent?: number;
+          subtotal_minor?: number;
+          tax_minor?: number;
+          total_minor?: number;
+          paid_minor?: number;
+          currency_code: string;
+          created_by: string;
+          client_id: string;
+          operation?: string;
+          payload_hash: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          invoice_number?: string;
+          business_client_id?: string | null;
+          client_name?: string;
+          client_phone?: string | null;
+          status?: Database["public"]["Enums"]["invoice_status"];
+          issue_on?: string;
+          due_on?: string | null;
+          notes?: string | null;
+          tax_rate_percent?: number;
+          subtotal_minor?: number;
+          tax_minor?: number;
+          total_minor?: number;
+          paid_minor?: number;
+          updated_at?: string;
+        }
+      >;
+      invoice_items: Table<
+        {
+          id: string;
+          workspace_id: string;
+          invoice_id: string;
+          sort_order: number;
+          description: string;
+          quantity: number;
+          unit_price_minor: number;
+          line_total_minor: number;
+          created_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          invoice_id: string;
+          sort_order?: number;
+          description: string;
+          quantity: number;
+          unit_price_minor: number;
+          line_total_minor: number;
+          created_at?: string;
+        },
+        {
+          sort_order?: number;
+          description?: string;
+          quantity?: number;
+          unit_price_minor?: number;
+          line_total_minor?: number;
+        }
+      >;
+      invoice_payments: Table<
+        {
+          id: string;
+          workspace_id: string;
+          invoice_id: string;
+          amount_minor: number;
+          method: string;
+          notes: string | null;
+          wallet_id: string | null;
+          financial_event_id: string | null;
+          paid_on: string;
+          created_by: string;
+          client_id: string;
+          operation: string;
+          payload_hash: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          invoice_id: string;
+          amount_minor: number;
+          method?: string;
+          notes?: string | null;
+          wallet_id?: string | null;
+          financial_event_id?: string | null;
+          paid_on?: string;
+          created_by: string;
+          client_id: string;
+          operation?: string;
+          payload_hash: string;
+          created_at?: string;
+        },
+        {
+          amount_minor?: number;
+          method?: string;
+          notes?: string | null;
+          wallet_id?: string | null;
+          financial_event_id?: string | null;
+          paid_on?: string;
+        }
+      >;
+      project_cash_entries: Table<
+        {
+          id: string;
+          workspace_id: string;
+          project_id: string;
+          entry_type: Database["public"]["Enums"]["project_cash_entry_type"];
+          amount_minor: number;
+          currency_code: string;
+          title: string;
+          note: string | null;
+          category_id: string | null;
+          business_client_id: string | null;
+          wallet_id: string | null;
+          financial_event_id: string | null;
+          occurred_on: string;
+          created_by: string;
+          client_id: string;
+          operation: string;
+          payload_hash: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          project_id: string;
+          entry_type: Database["public"]["Enums"]["project_cash_entry_type"];
+          amount_minor: number;
+          currency_code: string;
+          title: string;
+          note?: string | null;
+          category_id?: string | null;
+          business_client_id?: string | null;
+          wallet_id?: string | null;
+          financial_event_id?: string | null;
+          occurred_on: string;
+          created_by: string;
+          client_id: string;
+          operation: string;
+          payload_hash: string;
+          created_at?: string;
+        },
+        never
+      >;
+      income_sources: Table<
+        {
+          id: string;
+          workspace_id: string;
+          name: string;
+          place_label: string | null;
+          pay_kind: Database["public"]["Enums"]["income_pay_kind"];
+          default_daily_wage_minor: number;
+          monthly_salary_minor: number;
+          currency_code: string;
+          status: string;
+          notes: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          place_label?: string | null;
+          pay_kind?: Database["public"]["Enums"]["income_pay_kind"];
+          default_daily_wage_minor?: number;
+          monthly_salary_minor?: number;
+          currency_code: string;
+          status?: string;
+          notes?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          name?: string;
+          place_label?: string | null;
+          pay_kind?: Database["public"]["Enums"]["income_pay_kind"];
+          default_daily_wage_minor?: number;
+          monthly_salary_minor?: number;
+          status?: string;
+          notes?: string | null;
+        }
+      >;
+      income_entries: Table<
+        {
+          id: string;
+          workspace_id: string;
+          source_id: string;
+          entry_type: Database["public"]["Enums"]["income_entry_type"];
+          amount_minor: number;
+          currency_code: string;
+          work_on: string | null;
+          period_key: string | null;
+          reason: string | null;
+          note: string | null;
+          wallet_id: string | null;
+          financial_event_id: string | null;
+          created_by: string;
+          client_id: string;
+          operation: string;
+          payload_hash: string;
+          created_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          source_id: string;
+          entry_type: Database["public"]["Enums"]["income_entry_type"];
+          amount_minor: number;
+          currency_code: string;
+          work_on?: string | null;
+          period_key?: string | null;
+          reason?: string | null;
+          note?: string | null;
+          wallet_id?: string | null;
+          financial_event_id?: string | null;
+          created_by: string;
+          client_id: string;
+          operation: string;
+          payload_hash: string;
+          created_at?: string;
+        },
+        never
+      >;
     };
     Views: {
       wallet_balances: View<{
@@ -1108,9 +1423,34 @@ export type Database = {
         project_type: string;
         modules: Json;
         parent_project_id: string | null;
+        cash_mode: Database["public"]["Enums"]["project_cash_mode"];
+        linked_wallet_id: string | null;
         created_by: string;
         created_at: string;
         updated_at: string;
+      }>;
+      project_cash_balances: View<{
+        workspace_id: string | null;
+        project_id: string | null;
+        cash_mode: Database["public"]["Enums"]["project_cash_mode"] | null;
+        linked_wallet_id: string | null;
+        balance_minor: number | null;
+        currency_code: string | null;
+      }>;
+      income_source_balances: View<{
+        workspace_id: string | null;
+        source_id: string | null;
+        name: string | null;
+        pay_kind: Database["public"]["Enums"]["income_pay_kind"] | null;
+        status: string | null;
+        currency_code: string | null;
+        outstanding_minor: number | null;
+        earned_daily_minor: number | null;
+        earned_salary_minor: number | null;
+        bonus_minor: number | null;
+        deduction_minor: number | null;
+        withdrawn_minor: number | null;
+        daily_count: number | null;
       }>;
       project_financial_totals: View<{
         project_id: string;
@@ -1849,8 +2189,90 @@ export type Database = {
           p_description?: string | null;
           p_category_id?: string | null;
           p_project_id?: string | null;
+          p_business_client_id?: string | null;
         };
         Returns: string;
+      };
+      upsert_client: {
+        Args: {
+          p_workspace_id: string;
+          p_name: string;
+          p_phone?: string | null;
+          p_notes?: string | null;
+          p_client_row_id?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["clients"]["Row"];
+      };
+      create_income_source: {
+        Args: {
+          p_workspace_id: string;
+          p_name: string;
+          p_pay_kind: Database["public"]["Enums"]["income_pay_kind"];
+          p_default_daily_wage_minor?: number;
+          p_monthly_salary_minor?: number;
+          p_place_label?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["income_sources"]["Row"];
+      };
+      post_income_entry: {
+        Args: {
+          p_workspace_id: string;
+          p_source_id: string;
+          p_client_id: string;
+          p_entry_type: Database["public"]["Enums"]["income_entry_type"];
+          p_amount_minor: number;
+          p_work_on?: string | null;
+          p_period_key?: string | null;
+          p_reason?: string | null;
+          p_note?: string | null;
+          p_wallet_id?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["income_entries"]["Row"];
+      };
+      post_project_cash_entry: {
+        Args: {
+          p_workspace_id: string;
+          p_project_id: string;
+          p_client_id: string;
+          p_entry_type: Database["public"]["Enums"]["project_cash_entry_type"];
+          p_amount_minor: number;
+          p_title?: string | null;
+          p_note?: string | null;
+          p_category_id?: string | null;
+          p_business_client_id?: string | null;
+          p_occurred_on?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["project_cash_entries"]["Row"];
+      };
+      transfer_project_cash_to_wallet: {
+        Args: {
+          p_workspace_id: string;
+          p_project_id: string;
+          p_client_id: string;
+          p_wallet_id: string;
+          p_amount_minor: number;
+          p_note?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["project_cash_entries"]["Row"];
+      };
+      set_project_cash_mode: {
+        Args: {
+          p_workspace_id: string;
+          p_project_id: string;
+          p_cash_mode: Database["public"]["Enums"]["project_cash_mode"];
+        };
+        Returns: Database["public"]["Tables"]["projects"]["Row"];
+      };
+      open_or_link_project_wallet: {
+        Args: {
+          p_workspace_id: string;
+          p_project_id: string;
+          p_client_id: string;
+          p_wallet_id?: string | null;
+          p_wallet_name?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["projects"]["Row"];
       };
       post_transfer: {
         Args: {
@@ -2055,6 +2477,85 @@ export type Database = {
         };
         Returns: Json;
       };
+      next_invoice_number: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: string;
+      };
+      create_invoice: {
+        Args: {
+          p_workspace_id: string;
+          p_client_id: string;
+          p_items: Json;
+          p_business_client_id?: string | null;
+          p_client_name?: string | null;
+          p_client_phone?: string | null;
+          p_issue_on?: string | null;
+          p_due_on?: string | null;
+          p_tax_rate_percent?: number;
+          p_notes?: string | null;
+          p_status?: Database["public"]["Enums"]["invoice_status"];
+        };
+        Returns: Database["public"]["Tables"]["invoices"]["Row"];
+      };
+      set_invoice_status: {
+        Args: {
+          p_workspace_id: string;
+          p_invoice_id: string;
+          p_status: Database["public"]["Enums"]["invoice_status"];
+        };
+        Returns: Database["public"]["Tables"]["invoices"]["Row"];
+      };
+      update_invoice: {
+        Args: {
+          p_workspace_id: string;
+          p_invoice_id: string;
+          p_client_id: string;
+          p_items: Json;
+          p_business_client_id?: string | null;
+          p_client_name?: string | null;
+          p_client_phone?: string | null;
+          p_issue_on?: string | null;
+          p_due_on?: string | null;
+          p_tax_rate_percent?: number | null;
+          p_notes?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["invoices"]["Row"];
+      };
+      record_invoice_payment: {
+        Args: {
+          p_workspace_id: string;
+          p_invoice_id: string;
+          p_client_id: string;
+          p_amount_minor: number;
+          p_wallet_id: string;
+          p_method?: string;
+          p_notes?: string | null;
+          p_paid_on?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["invoice_payments"]["Row"];
+      };
+      update_workspace_branding: {
+        Args: {
+          p_workspace_id: string;
+          p_name?: string | null;
+          p_legal_name?: string | null;
+          p_phone?: string | null;
+          p_address?: string | null;
+          p_tax_id?: string | null;
+          p_invoice_footer?: string | null;
+          p_logo_path?: string | null;
+          p_clear_logo?: boolean;
+        };
+        Returns: Database["public"]["Tables"]["workspaces"]["Row"];
+      };
+      refresh_overdue_invoices: {
+        Args: {
+          p_workspace_id: string;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       account_status: "active" | "suspended" | "disabled";
@@ -2063,6 +2564,13 @@ export type Database = {
       debt_direction: "receivable" | "payable";
       debt_entry_type: "open" | "payment" | "adjustment" | "write_off";
       debt_status: "open" | "partial" | "settled" | "written_off";
+      invoice_status:
+        | "draft"
+        | "sent"
+        | "paid"
+        | "partially_paid"
+        | "overdue"
+        | "cancelled";
       financial_event_type:
         | "income"
         | "expense"
@@ -2097,6 +2605,15 @@ export type Database = {
         | "adjustment";
       project_inventory_item_status: "active" | "archived";
       project_member_role: "manager" | "contributor" | "viewer";
+      project_cash_mode: "off" | "project_cash" | "project_wallet" | "hybrid";
+      project_cash_entry_type: "income" | "expense" | "transfer_out" | "transfer_in";
+      income_pay_kind: "daily" | "monthly" | "both";
+      income_entry_type:
+        | "daily_wage"
+        | "bonus"
+        | "deduction"
+        | "salary_accrual"
+        | "withdrawal";
       project_status: "active" | "archived";
       subscription_status:
         | "trialing"

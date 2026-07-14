@@ -421,55 +421,120 @@ export function DebtDetailPage() {
 
       <AppCard
         aria-label="الرصيد المتبقي"
-        className="mb-5 overflow-hidden"
+        className="mb-5 overflow-hidden rounded-[22px] border-line shadow-[0_12px_32px_rgb(27_30_60/6%)]"
         elevated
       >
-        <div className="flex items-start justify-between gap-4 p-5 sm:p-6">
-          <div>
-            <p className="text-sm text-muted">الرصيد المتبقي</p>
-            <p className="mt-3 flex flex-wrap items-baseline gap-2">
-              <strong
-                className="numeric text-[32px] leading-none font-bold tracking-tight text-ink sm:text-[38px]"
-                dir="ltr"
-              >
-                {formatMinorAmount(debt.balanceMinor, {
-                  currency: debt.currencyCode,
-                  locale: "en-US",
-                })}
-              </strong>
-              <span className="text-xs font-bold text-muted">
-                {debt.currencyCode}
-              </span>
-            </p>
-            <p className="mt-3 text-xs text-muted">
-              من أصل{" "}
-              <bdi className="numeric font-semibold text-ink">
-                {formatMinorAmount(debt.principalMinor, {
-                  currency: debt.currencyCode,
-                  locale: "en-US",
-                })}
-              </bdi>
-            </p>
+        <div
+          className={[
+            "relative overflow-hidden px-5 py-5 sm:px-6 sm:py-6",
+            debt.direction === "receivable"
+              ? "bg-[linear-gradient(145deg,rgb(16_185_129/12%),rgb(67_56_202/6%))]"
+              : "bg-[linear-gradient(145deg,rgb(245_158_11/14%),rgb(67_56_202/6%))]",
+          ].join(" ")}
+        >
+          <div className="relative flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-semibold text-muted">
+                الرصيد المتبقي
+              </p>
+              <p className="mt-2 flex flex-wrap items-baseline gap-2">
+                <strong
+                  className="numeric text-[34px] leading-none font-black tracking-tight text-ink sm:text-[40px]"
+                  dir="ltr"
+                >
+                  {formatMinorAmount(debt.balanceMinor, {
+                    currency: debt.currencyCode,
+                    locale: "en-US",
+                  })}
+                </strong>
+                <span className="text-xs font-bold text-muted">
+                  {debt.currencyCode}
+                </span>
+              </p>
+              <p className="mt-3 text-xs text-muted">
+                من أصل{" "}
+                <bdi className="numeric font-semibold text-ink">
+                  {formatMinorAmount(debt.principalMinor, {
+                    currency: debt.currencyCode,
+                    locale: "en-US",
+                  })}
+                </bdi>
+              </p>
+            </div>
+            <span
+              className={[
+                "grid size-12 shrink-0 place-items-center rounded-2xl ring-1 ring-inset",
+                debt.direction === "receivable"
+                  ? "bg-success-soft text-success ring-success/20"
+                  : "bg-warning-soft text-warning ring-warning/20",
+              ].join(" ")}
+            >
+              <Scale aria-hidden="true" size={22} strokeWidth={1.7} />
+            </span>
           </div>
-          <span className="grid size-12 shrink-0 place-items-center rounded-md bg-primary-soft text-primary">
-            <Scale aria-hidden="true" size={22} />
-          </span>
+          {debt.principalMinor > 0n && debt.status !== "written_off" ? (
+            <div className="relative mt-5">
+              <div className="mb-1.5 flex justify-between text-[10px] text-muted">
+                <span>نسبة التسديد</span>
+                <span className="numeric font-bold" dir="ltr">
+                  {Math.max(
+                    0,
+                    Math.min(
+                      100,
+                      Number(
+                        ((debt.principalMinor - debt.balanceMinor) * 100n) /
+                          debt.principalMinor,
+                      ),
+                    ),
+                  )}
+                  %
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface/70">
+                <div
+                  className={[
+                    "h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]",
+                    debt.direction === "receivable" ? "bg-success" : "bg-warning",
+                  ].join(" ")}
+                  style={{
+                    width: `${Math.max(
+                      0,
+                      Math.min(
+                        100,
+                        Number(
+                          ((debt.principalMinor - debt.balanceMinor) * 100n) /
+                            debt.principalMinor,
+                        ),
+                      ),
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
         <dl className="grid border-t border-line sm:grid-cols-3 sm:divide-x sm:divide-x-reverse sm:divide-line">
-          <div className="px-5 py-3">
-            <dt className="text-xs text-muted">الاستحقاق</dt>
+          <div className="px-5 py-3.5">
+            <dt className="text-[11px] text-muted">الاستحقاق</dt>
             <dd className="mt-1 text-sm font-semibold text-ink">
-              {debt.dueOn ? <bdi>{formatDate(debt.dueOn)}</bdi> : "غير محدد"}
+              {debt.dueOn ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarClock size={13} className="text-muted" />
+                  <bdi>{formatDate(debt.dueOn)}</bdi>
+                </span>
+              ) : (
+                "غير محدد"
+              )}
             </dd>
           </div>
-          <div className="border-t border-line px-5 py-3 sm:border-t-0">
-            <dt className="text-xs text-muted">المشروع</dt>
+          <div className="border-t border-line px-5 py-3.5 sm:border-t-0">
+            <dt className="text-[11px] text-muted">المشروع</dt>
             <dd className="mt-1 text-sm font-semibold text-ink">
               {debt.projectName ?? "دون مشروع"}
             </dd>
           </div>
-          <div className="border-t border-line px-5 py-3 sm:border-t-0">
-            <dt className="text-xs text-muted">الهاتف</dt>
+          <div className="border-t border-line px-5 py-3.5 sm:border-t-0">
+            <dt className="text-[11px] text-muted">الهاتف</dt>
             <dd className="numeric mt-1 text-sm font-semibold text-ink">
               {debt.partyPhone ?? "غير مسجل"}
             </dd>

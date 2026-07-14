@@ -2,6 +2,7 @@ import * as Switch from "@radix-ui/react-switch";
 import {
   ArrowLeft,
   Bell,
+  Building2,
   CircleHelp,
   Cloud,
   CreditCard,
@@ -21,6 +22,12 @@ import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 const settingsLinks = [
+  {
+    label: "بيانات المنشأة",
+    detail: "الاسم والشعار والبيانات الظاهرة على الفواتير",
+    to: "/settings/business",
+    icon: Building2,
+  },
   {
     label: "الإشعارات",
     detail: "مركز التنبيهات وإذن إشعارات الجهاز",

@@ -1,4 +1,4 @@
-import { Bell, ChartNoAxesCombined, Menu } from "lucide-react";
+import { Bell, ChartNoAxesCombined, Menu, Scale } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/use-auth";
@@ -39,19 +39,21 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
   const unreadCount = unreadQuery.data ?? 0;
 
   return (
-    <header className="safe-top flex items-center justify-between border-b border-line bg-surface px-4 pb-4 sm:px-6 lg:min-h-[76px] lg:px-8 lg:py-0 xl:px-10">
+    <header className="safe-top flex items-center justify-between border-b border-line/70 bg-canvas/90 px-4 pb-3 backdrop-blur-md sm:px-6 lg:min-h-[76px] lg:border-line lg:bg-surface lg:px-8 lg:py-0 lg:backdrop-blur-none xl:px-10">
       <h1 className="sr-only">ملخصك المالي</h1>
-      <div className="flex items-center gap-3 lg:hidden">
+      <div className="flex min-w-0 items-center gap-3 lg:hidden">
         <Link
           to="/settings"
           aria-label="فتح الإعدادات"
-          className="pressable flex size-12 items-center justify-center rounded-full border border-line bg-surface text-ink [box-shadow:var(--shadow-card)]"
+          className="pressable flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-primary ring-1 ring-inset ring-primary/10"
         >
-          <span className="text-lg font-bold">{getInitial(displayName)}</span>
+          <span className="text-base font-bold">{getInitial(displayName)}</span>
         </Link>
-        <div>
-          <p className="text-sm text-muted">{getArabicGreeting(now)}</p>
-          <p className="font-semibold text-ink">{displayName}</p>
+        <div className="min-w-0">
+          <p className="text-[11px] text-muted">{getArabicGreeting(now)}</p>
+          <p className="truncate text-[15px] font-bold tracking-tight text-ink">
+            {displayName}
+          </p>
         </div>
       </div>
 
@@ -66,6 +68,13 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
 
       <div className="flex items-center gap-1.5">
         <div className="flex items-center gap-0.5 rounded-full border border-line/80 bg-canvas/80 p-1">
+          <Link
+            to="/debts"
+            aria-label="الديون"
+            className="pressable flex size-10 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-warning-soft hover:text-warning"
+          >
+            <Scale aria-hidden="true" size={20} strokeWidth={1.7} />
+          </Link>
           <Link
             to="/analytics"
             aria-label="التحليلات"

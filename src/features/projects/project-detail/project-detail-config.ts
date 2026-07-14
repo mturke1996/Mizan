@@ -7,6 +7,7 @@ import type { SectionTabItem } from "@/shared/ui/SectionTabs";
 
 export type ProjectDetailTabId =
   | "overview"
+  | "cash"
   | "capital"
   | "workers"
   | "inventory"
@@ -17,6 +18,7 @@ export const PROJECT_DETAIL_TABS_ID = "project-detail-tabs";
 
 const PROJECT_DETAIL_TAB_IDS = new Set<ProjectDetailTabId>([
   "overview",
+  "cash",
   "capital",
   "workers",
   "inventory",
@@ -26,6 +28,7 @@ const PROJECT_DETAIL_TAB_IDS = new Set<ProjectDetailTabId>([
 
 const TAB_LABELS: Readonly<Record<ProjectDetailTabId, string>> = {
   overview: "نظرة عامة",
+  cash: "الخزينة",
   capital: "رأس المال",
   workers: "العمال",
   inventory: "المخزون",
@@ -77,8 +80,10 @@ export function getProjectColorPresentation(
 
 export function getProjectDetailTabs(
   modules: ProjectModules,
+  options?: { hasCash?: boolean },
 ): SectionTabItem<ProjectDetailTabId>[] {
   const ids: ProjectDetailTabId[] = ["overview"];
+  if (options?.hasCash) ids.push("cash");
   if (modules.capital) ids.push("capital");
   if (modules.workers) ids.push("workers");
   if (modules.inventory) ids.push("inventory");

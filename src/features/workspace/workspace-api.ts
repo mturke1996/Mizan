@@ -13,17 +13,26 @@ import { getUserErrorMessage } from "@/lib/user-error";
 import type { Json } from "@/types/database";
 import {
   mapCapitalEntry,
+  mapClient,
   mapDebtEntry,
   mapDebtParty,
   mapDebtSummary,
   mapDebtWorkspaceSummary,
   mapFinancialEvent,
   mapFinancialEventAttachment,
+  mapIncomeEntry,
+  mapIncomeSource,
+  mapIncomeSourceBalance,
+  mapInvoice,
+  mapInvoiceItem,
+  mapInvoicePayment,
   mapInventoryItem,
   mapInventoryLocation,
   mapInventoryMovement,
   mapLivestockBatch,
   mapLivestockEvent,
+  mapProjectCashBalance,
+  mapProjectCashEntry,
   mapProjectMember,
   mapProjectSummary,
   mapWalletBalance,
@@ -35,6 +44,7 @@ import type {
   AchievementUnlock,
   CapitalEntry,
   CapitalEntryType,
+  Client,
   DebtDirection,
   DebtEntry,
   DebtEntryType,
@@ -42,13 +52,25 @@ import type {
   DebtSummary,
   DebtWorkspaceSummary,
   FinancialEventAttachment,
+  IncomeEntry,
+  IncomeEntryType,
+  IncomeSource,
+  IncomeSourceBalance,
+  Invoice,
+  InvoicePayment,
+  InvoicePaymentMethod,
+  InvoiceStatus,
   InventoryItem,
+  WorkspaceBrand,
   InventoryLocation,
   InventoryMovement,
   InventoryMovementType,
   LivestockBatch,
   LivestockEvent,
   LivestockEventType,
+  ProjectCashBalance,
+  ProjectCashEntry,
+  ProjectCashMode,
   ProjectCategorySeed,
   ProjectModules,
   CategoryOption,
@@ -123,6 +145,45 @@ function requireClientId(clientId: string | undefined): string {
   return clientId;
 }
 
+export const EMPTY_WORKSPACE_BRAND: WorkspaceBrand = {
+  legalName: null,
+  phone: null,
+  address: null,
+  taxId: null,
+  invoiceFooter: null,
+  logoPath: null,
+  logoUrl: null,
+};
+
+export function workspaceLogoPublicUrl(logoPath: string | null): string | null {
+  if (!logoPath) return null;
+  const supabase = getSupabaseClient();
+  const { data } = supabase.storage
+    .from("workspace-logos")
+    .getPublicUrl(logoPath);
+  return data.publicUrl || null;
+}
+
+function mapWorkspaceBrand(workspace: {
+  legal_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  tax_id?: string | null;
+  invoice_footer?: string | null;
+  logo_path?: string | null;
+}): WorkspaceBrand {
+  const logoPath = workspace.logo_path ?? null;
+  return {
+    legalName: workspace.legal_name ?? null,
+    phone: workspace.phone ?? null,
+    address: workspace.address ?? null,
+    taxId: workspace.tax_id ?? null,
+    invoiceFooter: workspace.invoice_footer ?? null,
+    logoPath,
+    logoUrl: workspaceLogoPublicUrl(logoPath),
+  };
+}
+
 export async function fetchUserWorkspace(
   userId: string,
 ): Promise<WorkspaceMembership | null> {
@@ -130,7 +191,7 @@ export async function fetchUserWorkspace(
   const { data, error } = await supabase
     .from("workspace_members")
     .select(
-      "role, workspace_id, workspaces!workspace_members_workspace_id_fkey!inner(id, name, default_currency_code, status)",
+      "role, workspace_id, workspaces!workspace_members_workspace_id_fkey!inner(id, name, default_currency_code, status, legal_name, phone, address, tax_id, invoice_footer, logo_path)",
     )
     .eq("user_id", userId)
     .eq("status", "active")
@@ -145,6 +206,12 @@ export async function fetchUserWorkspace(
     name: string;
     default_currency_code: string;
     status: string;
+    legal_name?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    tax_id?: string | null;
+    invoice_footer?: string | null;
+    logo_path?: string | null;
   };
 
   return {
@@ -152,6 +219,7 @@ export async function fetchUserWorkspace(
     workspaceName: workspace.name,
     currency: workspace.default_currency_code as CurrencyCode,
     role: data.role as WorkspaceMembership["role"],
+    brand: mapWorkspaceBrand(workspace),
   };
 }
 
@@ -356,7 +424,7 @@ export async function fetchProjects(
     supabase
       .from("project_summaries")
       .select(
-        "id, name, description, status, color_token, goal_minor, project_type, modules, parent_project_id",
+        "id, name, description, status, color_token, goal_minor, project_type, modules, parent_project_id, cash_mode, linked_wallet_id",
       )
       .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false }),
@@ -432,6 +500,8 @@ export async function fetchProjects(
       net_capital_minor: capitalRow?.net_capital_minor,
       inventory_value_minor: inventoryRow?.inventory_value_minor,
       inventory_item_count: inventoryRow?.item_count,
+      cash_mode: project.cash_mode,
+      linked_wallet_id: project.linked_wallet_id,
     });
   });
 }
@@ -619,6 +689,7 @@ export async function postTransactionRpc(input: {
   description: string;
   categoryId?: string;
   projectId?: string;
+  businessClientId?: string;
   clientId: string;
 }): Promise<string> {
   const supabase = getSupabaseClient();
@@ -631,6 +702,7 @@ export async function postTransactionRpc(input: {
     p_description: input.description,
     p_category_id: input.categoryId ?? null,
     p_project_id: input.projectId ?? null,
+    p_business_client_id: input.businessClientId ?? null,
   });
   if (error) throwArabic(error, "تعذر حفظ المعاملة");
   return data as string;
@@ -1431,4 +1503,479 @@ export async function fetchWorkspaceMemberOptions(
     displayName: names.get(userId) ?? null,
     email: null,
   }));
+}
+
+// ─── Clients ──────────────────────────────────────────────────
+
+export async function fetchClients(workspaceId: string): Promise<Client[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("name");
+  if (error) throwArabic(error, "تعذر تحميل العملاء");
+  return (data ?? []).map(mapClient);
+}
+
+export async function upsertClientRpc(input: {
+  workspaceId: string;
+  name: string;
+  phone?: string;
+  clientId?: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("upsert_client", {
+    p_workspace_id: input.workspaceId,
+    p_name: input.name,
+    p_phone: input.phone ?? null,
+    p_notes: null,
+    p_client_row_id: input.clientId ?? null,
+  });
+  if (error) throwArabic(error, "تعذر حفظ العميل");
+  return data.id;
+}
+
+// ─── Project Cash ─────────────────────────────────────────────
+
+export async function fetchProjectCashBalance(
+  workspaceId: string,
+  projectId: string,
+): Promise<ProjectCashBalance | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("project_cash_balances")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+  if (error) throwArabic(error, "تعذر تحميل رصيد خزينة المشروع");
+  return data && data.project_id && data.workspace_id && data.currency_code
+    ? mapProjectCashBalance({
+        project_id: data.project_id,
+        workspace_id: data.workspace_id,
+        balance_minor: data.balance_minor ?? 0,
+        currency_code: data.currency_code,
+      })
+    : null;
+}
+
+export async function fetchProjectCashEntries(
+  workspaceId: string,
+  projectId: string,
+): Promise<ProjectCashEntry[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("project_cash_entries")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throwArabic(error, "تعذر تحميل حركات خزينة المشروع");
+  return (data ?? []).map(mapProjectCashEntry);
+}
+
+export async function postProjectCashEntryRpc(input: {
+  workspaceId: string;
+  projectId: string;
+  entryType: "income" | "expense";
+  amountMinor: number;
+  title?: string;
+  note?: string;
+  clientId: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("post_project_cash_entry", {
+    p_workspace_id: input.workspaceId,
+    p_project_id: input.projectId,
+    p_entry_type: input.entryType,
+    p_amount_minor: input.amountMinor,
+    p_title: input.title ?? null,
+    p_note: input.note ?? null,
+    p_client_id: requireClientId(input.clientId),
+  });
+  if (error) throwArabic(error, "تعذر تسجيل حركة الخزينة");
+  return data.id;
+}
+
+export async function transferProjectCashToWalletRpc(input: {
+  workspaceId: string;
+  projectId: string;
+  walletId: string;
+  amountMinor: number;
+  note?: string;
+  clientId: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("transfer_project_cash_to_wallet", {
+    p_workspace_id: input.workspaceId,
+    p_project_id: input.projectId,
+    p_wallet_id: input.walletId,
+    p_amount_minor: input.amountMinor,
+    p_client_id: requireClientId(input.clientId),
+    p_note: input.note ?? null,
+  });
+  if (error) throwArabic(error, "تعذر تحويل من الخزينة إلى المحفظة");
+  return data.id;
+}
+
+export async function setProjectCashModeRpc(input: {
+  workspaceId: string;
+  projectId: string;
+  cashMode: ProjectCashMode;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("set_project_cash_mode", {
+    p_workspace_id: input.workspaceId,
+    p_project_id: input.projectId,
+    p_cash_mode: input.cashMode,
+  });
+  if (error) throwArabic(error, "تعذر تغيير وضع الخزينة");
+}
+
+export async function openOrLinkProjectWalletRpc(input: {
+  workspaceId: string;
+  projectId: string;
+  walletId?: string;
+  clientId: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("open_or_link_project_wallet", {
+    p_workspace_id: input.workspaceId,
+    p_project_id: input.projectId,
+    p_client_id: requireClientId(input.clientId),
+    p_wallet_id: input.walletId ?? null,
+  });
+  if (error) throwArabic(error, "تعذر ربط المحفظة بالمشروع");
+  if (!data.linked_wallet_id) {
+    throw new Error("تعذر ربط المحفظة بالمشروع");
+  }
+  return data.linked_wallet_id;
+}
+
+// ─── Income Sources ───────────────────────────────────────────
+
+export async function fetchIncomeSources(
+  workspaceId: string,
+): Promise<IncomeSource[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("income_sources")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("status", "active")
+    .order("created_at", { ascending: false });
+  if (error) throwArabic(error, "تعذر تحميل مصادر الدخل");
+  return (data ?? []).map(mapIncomeSource);
+}
+
+export async function fetchIncomeSourceBalances(
+  workspaceId: string,
+): Promise<IncomeSourceBalance[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("income_source_balances")
+    .select("*")
+    .eq("workspace_id", workspaceId);
+  if (error) throwArabic(error, "تعذر تحميل أرصدة مصادر الدخل");
+  return (data ?? [])
+    .filter(
+      (row): row is typeof row & { source_id: string; workspace_id: string; currency_code: string } =>
+        Boolean(row.source_id && row.workspace_id && row.currency_code),
+    )
+    .map(mapIncomeSourceBalance);
+}
+
+export async function fetchIncomeEntries(
+  workspaceId: string,
+  sourceId: string,
+): Promise<IncomeEntry[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("income_entries")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("source_id", sourceId)
+    .order("created_at", { ascending: false })
+    .limit(200);
+  if (error) throwArabic(error, "تعذر تحميل حركات الدخل");
+  return (data ?? []).map(mapIncomeEntry);
+}
+
+export async function createIncomeSourceRpc(input: {
+  workspaceId: string;
+  name: string;
+  place?: string;
+  payKind: "daily" | "monthly" | "both";
+  dailyWageMinor?: number;
+  monthlySalaryMinor?: number;
+  currencyCode?: string;
+  clientId: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("create_income_source", {
+    p_workspace_id: input.workspaceId,
+    p_name: input.name,
+    p_pay_kind: input.payKind,
+    p_default_daily_wage_minor: input.dailyWageMinor ?? 0,
+    p_monthly_salary_minor: input.monthlySalaryMinor ?? 0,
+    p_place_label: input.place ?? null,
+    p_notes: null,
+  });
+  if (error) throwArabic(error, "تعذر إنشاء مصدر الدخل");
+  return data.id;
+}
+
+export async function postIncomeEntryRpc(input: {
+  workspaceId: string;
+  sourceId: string;
+  entryType: IncomeEntryType;
+  amountMinor: number;
+  workDate?: string;
+  walletId?: string;
+  note?: string;
+  clientId: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("post_income_entry", {
+    p_workspace_id: input.workspaceId,
+    p_source_id: input.sourceId,
+    p_client_id: requireClientId(input.clientId),
+    p_entry_type: input.entryType,
+    p_amount_minor: input.amountMinor,
+    p_work_on: input.workDate ?? new Date().toISOString().slice(0, 10),
+    p_period_key: null,
+    p_reason: input.note ?? null,
+    p_note: input.note ?? null,
+    p_wallet_id: input.walletId ?? null,
+  });
+  if (error) throwArabic(error, "تعذر تسجيل حركة الدخل");
+  return data.id;
+}
+
+// ─── Invoices ─────────────────────────────────────────────────
+
+export async function fetchInvoices(workspaceId: string): Promise<Invoice[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: false });
+  if (error) throwArabic(error, "تعذر تحميل الفواتير");
+  return (data ?? []).map(mapInvoice);
+}
+
+export async function fetchInvoiceDetail(
+  workspaceId: string,
+  invoiceId: string,
+): Promise<Invoice | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("invoices")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("id", invoiceId)
+    .maybeSingle();
+  if (error) throwArabic(error, "تعذر تحميل الفاتورة");
+  if (!data) return null;
+
+  const { data: items, error: itemsError } = await supabase
+    .from("invoice_items")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("invoice_id", invoiceId)
+    .order("sort_order");
+  if (itemsError) throwArabic(itemsError, "تعذر تحميل بنود الفاتورة");
+
+  const { data: payments, error: paymentsError } = await supabase
+    .from("invoice_payments")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    .eq("invoice_id", invoiceId)
+    .order("created_at", { ascending: false });
+  if (paymentsError) throwArabic(paymentsError, "تعذر تحميل مدفوعات الفاتورة");
+
+  return {
+    ...mapInvoice(data),
+    items: (items ?? []).map(mapInvoiceItem),
+    payments: (payments ?? []).map(mapInvoicePayment),
+  };
+}
+
+export async function createInvoiceRpc(input: {
+  workspaceId: string;
+  clientId: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPriceMinor: number;
+  }>;
+  businessClientId?: string;
+  clientName?: string;
+  clientPhone?: string;
+  issueOn?: string;
+  dueOn?: string;
+  taxRatePercent?: number;
+  notes?: string;
+  status?: InvoiceStatus;
+}): Promise<Invoice> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("create_invoice", {
+    p_workspace_id: input.workspaceId,
+    p_client_id: requireClientId(input.clientId),
+    p_items: input.items.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unit_price_minor: item.unitPriceMinor,
+    })) as Json,
+    p_business_client_id: input.businessClientId ?? null,
+    p_client_name: input.clientName ?? null,
+    p_client_phone: input.clientPhone ?? null,
+    p_issue_on: input.issueOn ?? null,
+    p_due_on: input.dueOn ?? null,
+    p_tax_rate_percent: input.taxRatePercent ?? 0,
+    p_notes: input.notes ?? null,
+    p_status: input.status ?? "draft",
+  });
+  if (error) throwArabic(error, "تعذر إنشاء الفاتورة");
+  return mapInvoice(data);
+}
+
+export async function setInvoiceStatusRpc(input: {
+  workspaceId: string;
+  invoiceId: string;
+  status: InvoiceStatus;
+}): Promise<Invoice> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("set_invoice_status", {
+    p_workspace_id: input.workspaceId,
+    p_invoice_id: input.invoiceId,
+    p_status: input.status,
+  });
+  if (error) throwArabic(error, "تعذر تحديث حالة الفاتورة");
+  return mapInvoice(data);
+}
+
+export async function updateInvoiceRpc(input: {
+  workspaceId: string;
+  invoiceId: string;
+  clientId: string;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPriceMinor: number;
+  }>;
+  businessClientId?: string | null;
+  clientName?: string;
+  clientPhone?: string | null;
+  issueOn?: string;
+  dueOn?: string | null;
+  taxRatePercent?: number;
+  notes?: string | null;
+}): Promise<Invoice> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("update_invoice", {
+    p_workspace_id: input.workspaceId,
+    p_invoice_id: input.invoiceId,
+    p_client_id: requireClientId(input.clientId),
+    p_items: input.items.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unit_price_minor: item.unitPriceMinor,
+    })) as Json,
+    p_business_client_id: input.businessClientId ?? null,
+    p_client_name: input.clientName ?? null,
+    p_client_phone: input.clientPhone ?? null,
+    p_issue_on: input.issueOn ?? null,
+    p_due_on: input.dueOn ?? null,
+    p_tax_rate_percent: input.taxRatePercent ?? null,
+    p_notes: input.notes ?? null,
+  });
+  if (error) throwArabic(error, "تعذر تحديث الفاتورة");
+  return mapInvoice(data);
+}
+
+export async function recordInvoicePaymentRpc(input: {
+  workspaceId: string;
+  invoiceId: string;
+  clientId: string;
+  amountMinor: number;
+  walletId: string;
+  method?: InvoicePaymentMethod;
+  notes?: string;
+  paidOn?: string;
+}): Promise<InvoicePayment> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("record_invoice_payment", {
+    p_workspace_id: input.workspaceId,
+    p_invoice_id: input.invoiceId,
+    p_client_id: requireClientId(input.clientId),
+    p_amount_minor: input.amountMinor,
+    p_wallet_id: input.walletId,
+    p_method: input.method ?? "cash",
+    p_notes: input.notes ?? null,
+    p_paid_on: input.paidOn ?? null,
+  });
+  if (error) throwArabic(error, "تعذر تسجيل دفعة الفاتورة");
+  return mapInvoicePayment(data);
+}
+
+export async function updateWorkspaceBrandingRpc(input: {
+  workspaceId: string;
+  name?: string;
+  legalName?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  taxId?: string | null;
+  invoiceFooter?: string | null;
+  logoPath?: string | null;
+  clearLogo?: boolean;
+}): Promise<WorkspaceBrand & { name: string }> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("update_workspace_branding", {
+    p_workspace_id: input.workspaceId,
+    p_name: input.name ?? null,
+    p_legal_name: input.legalName ?? null,
+    p_phone: input.phone ?? null,
+    p_address: input.address ?? null,
+    p_tax_id: input.taxId ?? null,
+    p_invoice_footer: input.invoiceFooter ?? null,
+    p_logo_path: input.logoPath ?? null,
+    p_clear_logo: input.clearLogo ?? false,
+  });
+  if (error) throwArabic(error, "تعذر تحديث بيانات المنشأة");
+  const brand = mapWorkspaceBrand(data);
+  return { ...brand, name: data.name as string };
+}
+
+export async function uploadWorkspaceLogo(
+  workspaceId: string,
+  file: File,
+): Promise<string> {
+  const supabase = getSupabaseClient();
+  const ext =
+    file.type === "image/png"
+      ? "png"
+      : file.type === "image/webp"
+        ? "webp"
+        : "jpg";
+  const path = `${workspaceId}/logo.${ext}`;
+  const { error } = await supabase.storage
+    .from("workspace-logos")
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throwArabic(error, "تعذر رفع شعار المنشأة");
+  return path;
+}
+
+export async function refreshOverdueInvoicesRpc(
+  workspaceId: string,
+): Promise<number> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("refresh_overdue_invoices", {
+    p_workspace_id: workspaceId,
+  });
+  if (error) throwArabic(error, "تعذر تحديث الفواتير المتأخرة");
+  return typeof data === "number" ? data : Number(data ?? 0);
 }

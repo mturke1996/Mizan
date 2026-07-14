@@ -23,32 +23,32 @@ export function ProjectSpotlight({
     : 0n;
 
   return (
-    <section aria-labelledby="project-title" className="mb-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 id="project-title" className="text-lg font-bold text-ink">
+    <section aria-labelledby="project-title" className="mb-0 lg:mb-6">
+      <div className="mb-2.5 flex items-center justify-between">
+        <h2 id="project-title" className="text-sm font-bold text-ink sm:text-base">
           أفضل مشروع
         </h2>
         <Link
           to="/projects"
-          className="pressable flex min-h-11 items-center gap-1 rounded-sm px-2 text-sm font-semibold text-primary hover:bg-primary-soft"
+          className="pressable flex min-h-9 items-center gap-1 rounded-xl px-2 text-xs font-bold text-primary hover:bg-primary-soft sm:text-sm"
         >
           المشاريع
-          <ArrowLeft aria-hidden="true" size={16} />
+          <ArrowLeft aria-hidden="true" size={15} />
         </Link>
       </div>
 
       {!best ? (
-        <AppCard className="p-4 text-sm text-muted">
+        <AppCard className="rounded-[18px] p-4 text-sm text-muted shadow-[0_8px_24px_rgb(27_30_60/4%)]">
           لا مشاريع بعد. أنشئ مشروعًا لترى أقوى أداء هنا.
         </AppCard>
       ) : (
         <Link to={`/projects/${best.id}`} className="block">
           <AppCard
             elevated
-            className="pressable flex items-center gap-4 overflow-hidden p-4 hover:border-line-strong"
+            className="pressable flex items-center gap-4 overflow-hidden rounded-[18px] p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] hover:border-line-strong"
           >
             <div
-              className={`flex size-16 shrink-0 items-center justify-center rounded-md text-2xl font-bold ${best.tone}`}
+              className={`flex size-14 shrink-0 items-center justify-center rounded-2xl text-xl font-bold sm:size-16 sm:text-2xl ${best.tone}`}
             >
               {best.mark}
             </div>

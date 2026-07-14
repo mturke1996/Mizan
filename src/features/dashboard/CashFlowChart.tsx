@@ -33,9 +33,9 @@ export function CashFlowChart({
   return (
     <section
       aria-labelledby="cash-flow-title"
-      className="bg-surface lg:rounded-[12px] lg:border lg:border-line lg:p-5 lg:shadow-[0_2px_18px_rgb(27_30_60/4%)]"
+      className="rounded-[18px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:p-5"
     >
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-4 flex items-start justify-between gap-4 sm:mb-5">
         <div>
           <h2 id="cash-flow-title" className="text-sm font-bold text-ink">
             حركة الدخل والمصروف
@@ -46,7 +46,7 @@ export function CashFlowChart({
         </div>
         <Link
           to="/analytics"
-          className="pressable inline-flex min-h-9 shrink-0 items-center gap-1 rounded-[9px] px-2.5 text-[11px] font-bold text-primary hover:bg-primary-soft"
+          className="pressable inline-flex min-h-9 shrink-0 items-center gap-1 rounded-xl bg-primary-soft px-2.5 text-[11px] font-bold text-primary"
         >
           التفاصيل
           <ArrowLeft aria-hidden="true" size={13} />
@@ -66,7 +66,7 @@ export function CashFlowChart({
 
       {hasData ? (
         <div
-          className="h-48 w-full sm:h-56 lg:h-72"
+          className="h-44 w-full sm:h-56 lg:h-72"
           role="img"
           aria-label="مخطط الدخل والمصروف الشهري"
         >
@@ -158,7 +158,7 @@ export function CashFlowChart({
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="grid h-48 place-items-center rounded-[12px] bg-canvas text-center sm:h-56 lg:h-72">
+        <div className="grid h-44 place-items-center rounded-[14px] bg-canvas text-center sm:h-56 lg:h-72">
           <div className="max-w-xs px-5">
             <p className="text-sm font-bold text-ink">المخطط ينتظر أول حركة</p>
             <p className="mt-2 text-xs leading-5 text-muted">

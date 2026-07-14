@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { computeProjectAnalytics } from "@/domain/analytics/compute-project-analytics";
 import { useAuth } from "@/features/auth/use-auth";
@@ -15,6 +15,12 @@ import { ProjectOverview } from "@/features/projects/project-detail/ProjectOverv
 import { ProjectSettingsPanel } from "@/features/projects/project-detail/ProjectSettingsPanel";
 import { ProjectTransactionsTab } from "@/features/projects/project-detail/ProjectTransactionsTab";
 import { ProjectWorkersTab } from "@/features/projects/project-detail/ProjectWorkersTab";
+
+const ProjectCashTab = lazy(() =>
+  import("@/features/projects/project-detail/ProjectCashTab").then((m) => ({
+    default: m.ProjectCashTab,
+  })),
+);
 import {
   PROJECT_DETAIL_TABS_ID,
   getProjectDetailTabs,
@@ -134,7 +140,12 @@ export function ProjectDetailPage() {
   );
   const displayProject = applyModuleOverride(project, activeModuleOverride);
   const tabs = useMemo(
-    () => (displayProject ? getProjectDetailTabs(displayProject.modules) : []),
+    () =>
+      displayProject
+        ? getProjectDetailTabs(displayProject.modules, {
+            hasCash: displayProject.cashMode !== undefined && displayProject.cashMode !== "off",
+          })
+        : [],
     [displayProject],
   );
   const requestedTab = parseProjectDetailTabId(searchParams.get("tab"));
@@ -213,6 +224,16 @@ export function ProjectDetailPage() {
 
   const activePanel = (() => {
     switch (resolvedTab) {
+      case "cash":
+        return (
+          <Suspense fallback={null}>
+            <ProjectCashTab
+              currency={currency}
+              project={displayProject}
+              wallets={wallets}
+            />
+          </Suspense>
+        );
       case "capital":
         return (
           <ProjectCapitalTab

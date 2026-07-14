@@ -78,6 +78,46 @@ const WorkspaceTeamExportPage = lazy(() =>
     default: module.WorkspaceTeamExportPage,
   })),
 );
+const IncomePage = lazy(() =>
+  import("@/features/income/IncomePage").then((module) => ({
+    default: module.IncomePage,
+  })),
+);
+const IncomeSourceFormPage = lazy(() =>
+  import("@/features/income/IncomeSourceFormPage").then((module) => ({
+    default: module.IncomeSourceFormPage,
+  })),
+);
+const IncomeSourceDetailPage = lazy(() =>
+  import("@/features/income/IncomeSourceDetailPage").then((module) => ({
+    default: module.IncomeSourceDetailPage,
+  })),
+);
+const ClientsPage = lazy(() =>
+  import("@/features/clients/ClientsPage").then((module) => ({
+    default: module.ClientsPage,
+  })),
+);
+const InvoicesPage = lazy(() =>
+  import("@/features/invoices/InvoicesPage").then((module) => ({
+    default: module.InvoicesPage,
+  })),
+);
+const InvoiceFormPage = lazy(() =>
+  import("@/features/invoices/InvoiceFormPage").then((module) => ({
+    default: module.InvoiceFormPage,
+  })),
+);
+const InvoiceDetailPage = lazy(() =>
+  import("@/features/invoices/InvoiceDetailPage").then((module) => ({
+    default: module.InvoiceDetailPage,
+  })),
+);
+const BusinessBrandingPage = lazy(() =>
+  import("@/features/settings/BusinessBrandingPage").then((module) => ({
+    default: module.BusinessBrandingPage,
+  })),
+);
 const SupervisorAuditPage = lazy(() =>
   import("@/features/supervisor/SupervisorAuditPage").then((module) => ({
     default: module.SupervisorAuditPage,
@@ -259,6 +299,70 @@ export function App() {
           <Route path="wallets/new" element={<WalletFormPage />} />
           <Route path="wallets/:walletId" element={<WalletDetailPage />} />
           <Route
+            path="income"
+            element={
+              <DeferredPage>
+                <IncomePage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="income/new"
+            element={
+              <DeferredPage>
+                <IncomeSourceFormPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="income/:sourceId"
+            element={
+              <DeferredPage>
+                <IncomeSourceDetailPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="clients"
+            element={
+              <DeferredPage>
+                <ClientsPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="invoices"
+            element={
+              <DeferredPage>
+                <InvoicesPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="invoices/new"
+            element={
+              <DeferredPage>
+                <InvoiceFormPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="invoices/:invoiceId/edit"
+            element={
+              <DeferredPage>
+                <InvoiceFormPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="invoices/:invoiceId"
+            element={
+              <DeferredPage>
+                <InvoiceDetailPage />
+              </DeferredPage>
+            }
+          />
+          <Route
             path="analytics"
             element={
               <DeferredPage>
@@ -273,6 +377,14 @@ export function App() {
             element={
               <DeferredPage>
                 <ProfileSettingsPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="settings/business"
+            element={
+              <DeferredPage>
+                <BusinessBrandingPage />
               </DeferredPage>
             }
           />

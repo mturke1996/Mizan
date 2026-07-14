@@ -21,6 +21,7 @@ import { useProjectStore } from "@/features/projects/project-store";
 import { getTransactionTemplates } from "@/features/transactions/transaction-templates";
 import {
   useCategoriesQuery,
+  useClientsQuery,
   usePostTransactionMutation,
   useReplaceTransactionMutation,
 } from "@/features/workspace/use-finance-data";
@@ -47,6 +48,7 @@ const transactionSchema = z.object({
   walletId: z.string().min(1, "اختر المحفظة"),
   projectId: z.string().optional(),
   categoryId: z.string().optional(),
+  businessClientId: z.string().optional(),
   note: z.string().trim().max(300, "الملاحظة أطول من اللازم").optional(),
 });
 
@@ -97,6 +99,7 @@ export function TransactionFormPage() {
   const postTransaction = usePostTransactionMutation();
   const replaceTransaction = useReplaceTransactionMutation();
   const categoriesQuery = useCategoriesQuery();
+  const clientsQuery = useClientsQuery();
   const existing = isEdit
     ? transactions.find((item) => item.id === transactionId)
     : undefined;
@@ -129,6 +132,7 @@ export function TransactionFormPage() {
       walletId: requestedWallet?.id ?? wallets[0]?.id ?? "",
       projectId: searchParams.get("project") ?? "",
       categoryId: searchParams.get("category") ?? "",
+      businessClientId: searchParams.get("client") ?? "",
       note: "",
     },
   });
@@ -145,6 +149,7 @@ export function TransactionFormPage() {
   const categories = (categoriesQuery.data ?? []).filter(
     (category) => category.kind === selectedKind,
   );
+  const clients = clientsQuery.data ?? [];
   const templates = useMemo(
     () =>
       getTransactionTemplates({
@@ -167,6 +172,7 @@ export function TransactionFormPage() {
       walletId: existing.walletId,
       projectId: existing.projectId ?? "",
       categoryId: existing.categoryId ?? "",
+      businessClientId: "",
       note: existing.note ?? parts.note,
     });
   }, [existing, reset]);
@@ -219,6 +225,7 @@ export function TransactionFormPage() {
       : title;
     const projectId = values.projectId || undefined;
     const categoryId = values.categoryId || undefined;
+    const businessClientId = values.businessClientId || undefined;
 
     try {
       if (isEdit) {
@@ -305,6 +312,7 @@ export function TransactionFormPage() {
           description,
           ...(projectId ? { projectId } : {}),
           ...(categoryId ? { categoryId } : {}),
+          ...(businessClientId ? { businessClientId } : {}),
         });
       } else if (isDemo) {
         addTransaction({
@@ -610,6 +618,36 @@ export function TransactionFormPage() {
               <p className="mt-2 text-xs leading-5 text-warning">
                 ربط المشاريع متاح فقط لمحافظ العملة الأساسية {currency} حتى
                 تبقى الأرباح ومستحقات العمال قابلة للمقارنة.
+              </p>
+            ) : null}
+          </div>
+
+          <div>
+            <label htmlFor="transaction-client" className="text-sm font-bold">
+              العميل
+              <span className="mr-1 font-normal text-muted">(اختياري)</span>
+            </label>
+            <select
+              id="transaction-client"
+              className={`mt-2 ${inputClassName}`}
+              {...register("businessClientId")}
+            >
+              <option value="">بدون عميل</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
+                  {client.phone ? ` • ${client.phone}` : ""}
+                </option>
+              ))}
+            </select>
+            {workspaceId && clientsQuery.isLoading ? (
+              <p className="mt-2 text-xs text-muted">جارٍ تحميل العملاء…</p>
+            ) : clients.length === 0 && workspaceId ? (
+              <p className="mt-2 text-xs text-muted">
+                لا يوجد عملاء بعد — يمكنك إضافتهم من{" "}
+                <Link to="/clients" className="font-semibold text-primary">
+                  العملاء
+                </Link>
               </p>
             ) : null}
           </div>

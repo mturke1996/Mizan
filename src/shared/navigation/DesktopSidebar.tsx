@@ -1,6 +1,8 @@
 import {
   Bell,
+  BriefcaseBusiness,
   ChartNoAxesCombined,
+  FileText,
   FolderKanban,
   House,
   Plus,
@@ -8,6 +10,7 @@ import {
   Scale,
   Settings,
   ShieldCheck,
+  Users,
   WalletCards,
   type LucideIcon,
 } from "lucide-react";
@@ -25,9 +28,12 @@ interface NavigationItem {
 const mainItems: NavigationItem[] = [
   { label: "لوحة الملخص", to: "/", icon: House, end: true },
   { label: "المعاملات", to: "/transactions", icon: ReceiptText },
-  { label: "الديون", to: "/debts", icon: Scale },
+  { label: "أموالي · دخلي", to: "/income", icon: BriefcaseBusiness },
+  { label: "أموالي · الديون", to: "/debts", icon: Scale },
+  { label: "أموالي · فواتير", to: "/invoices", icon: FileText },
   { label: "المحافظ", to: "/wallets", icon: WalletCards },
   { label: "المشاريع", to: "/projects", icon: FolderKanban },
+  { label: "العملاء", to: "/clients", icon: Users },
   { label: "التحليلات", to: "/analytics", icon: ChartNoAxesCombined },
 ];
 

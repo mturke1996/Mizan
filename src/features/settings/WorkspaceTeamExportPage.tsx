@@ -28,8 +28,10 @@ export function WorkspaceTeamExportPage() {
   const [role, setRole] = useState<"admin" | "member" | "viewer">("member");
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const canInvite =
-    membership?.role === "owner" || membership?.role === "admin";
+  const isOwner = membership?.role === "owner";
+  const canInvite = isOwner || membership?.role === "admin";
+  const inviteRole =
+    role === "admin" && !isOwner ? ("member" as const) : role;
 
   const exportAll = () => {
     downloadCsv(
@@ -72,12 +74,16 @@ export function WorkspaceTeamExportPage() {
       toast.error("أدخل البريد الإلكتروني");
       return;
     }
+    if (role === "admin" && !isOwner) {
+      toast.error("دعوة مدير المساحة متاحة للمالك فقط");
+      return;
+    }
     setBusy(true);
     try {
       const inviteRow = await createWorkspaceInviteRpc({
         workspaceId,
         email: email.trim(),
-        role,
+        role: inviteRole,
       });
       setInviteToken(inviteRow.token);
       toast.success("تم إنشاء الدعوة");
@@ -138,12 +144,19 @@ export function WorkspaceTeamExportPage() {
               onChange={(event) =>
                 setRole(event.target.value as typeof role)
               }
-              value={role}
+              value={inviteRole}
             >
               <option value="member">عضو</option>
-              <option value="admin">مدير</option>
+              {isOwner ? (
+                <option value="admin">مدير المساحة</option>
+              ) : null}
               <option value="viewer">مشاهد</option>
             </select>
+            {!isOwner ? (
+              <p className="text-xs text-muted">
+                دعوة مدير المساحة متاحة لمالك المساحة فقط.
+              </p>
+            ) : null}
             <button
               className="pressable min-h-11 rounded-sm bg-primary px-4 text-sm font-bold text-primary-on disabled:opacity-60"
               disabled={busy || !workspaceId}

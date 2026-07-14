@@ -1,5 +1,8 @@
 import type { PropsWithChildren } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import type { PersistedClient } from "@tanstack/query-persist-client-core";
 import { Toaster } from "sonner";
 import {
   AuthProvider,
@@ -10,17 +13,51 @@ import {
   type WorkspaceContextValue,
 } from "@/features/workspace/WorkspaceProvider";
 
+const SEVEN_DAYS_MS = 1000 * 60 * 60 * 24 * 7;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       staleTime: 30_000,
       refetchOnWindowFocus: false,
+      gcTime: SEVEN_DAYS_MS,
     },
     mutations: {
       retry: 0,
     },
   },
+});
+
+function serializePersistedClient(client: PersistedClient): string {
+  return JSON.stringify(client, (_key, value) => {
+    if (typeof value === "bigint") {
+      return { __type: "bigint", value: value.toString() };
+    }
+    return value;
+  });
+}
+
+function deserializePersistedClient(cached: string): PersistedClient {
+  return JSON.parse(cached, (_key, value) => {
+    if (
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as { __type?: string }).__type === "bigint" &&
+      typeof (value as { value?: unknown }).value === "string"
+    ) {
+      return BigInt((value as { value: string }).value);
+    }
+    return value;
+  }) as PersistedClient;
+}
+
+const invoicePersister = createSyncStoragePersister({
+  storage: typeof window !== "undefined" ? window.localStorage : undefined,
+  key: "mizan-invoice-query-cache",
+  serialize: serializePersistedClient,
+  deserialize: deserializePersistedClient,
 });
 
 export function AppProviders({
@@ -31,25 +68,48 @@ export function AppProviders({
   authValue?: AuthContextValue;
   workspaceValue?: WorkspaceContextValue;
 }>) {
+  // Injected test providers skip persistence to avoid async restore noise.
+  const isTestHarness = Boolean(authValue || workspaceValue);
+  const tree = (
+    <AuthProvider value={authValue}>
+      <WorkspaceProvider value={workspaceValue}>
+        {children}
+        <Toaster
+          position="top-center"
+          dir="rtl"
+          richColors
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast: "!rounded-md !border-line !bg-surface !text-ink",
+            },
+          }}
+        />
+      </WorkspaceProvider>
+    </AuthProvider>
+  );
+
+  if (isTestHarness) {
+    return (
+      <QueryClientProvider client={queryClient}>{tree}</QueryClientProvider>
+    );
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider value={authValue}>
-        <WorkspaceProvider value={workspaceValue}>
-          {children}
-          <Toaster
-            position="top-center"
-            dir="rtl"
-            richColors
-            closeButton
-            toastOptions={{
-              classNames: {
-                toast:
-                  "!rounded-md !border-line !bg-surface !text-ink",
-              },
-            }}
-          />
-        </WorkspaceProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: invoicePersister,
+        maxAge: SEVEN_DAYS_MS,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) => {
+            const root = query.queryKey[0];
+            return root === "invoices" || root === "invoice-detail";
+          },
+        },
+      }}
+    >
+      {tree}
+    </PersistQueryClientProvider>
   );
 }

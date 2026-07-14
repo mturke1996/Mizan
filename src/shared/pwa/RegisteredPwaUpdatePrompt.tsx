@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { PwaInstallPrompt } from "./PwaInstallPrompt";
 import { PwaUpdatePrompt } from "./PwaUpdatePrompt";
 
 async function unregisterDevelopmentServiceWorkers() {
@@ -16,16 +17,36 @@ async function unregisterDevelopmentServiceWorkers() {
   }
 }
 
+/** Prefetch critical money routes so the first real tap feels instant. */
+function warmCriticalRoutes() {
+  if (import.meta.env.DEV) return;
+  void Promise.allSettled([
+    import("@/features/debts/DebtsPage"),
+    import("@/features/income/IncomePage"),
+    import("@/features/invoices/InvoicesPage"),
+    import("@/features/transactions/TransactionsPage"),
+    import("@/features/wallets/WalletsPage"),
+  ]);
+}
+
 export function RegisteredPwaUpdatePrompt() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     immediate: !import.meta.env.DEV,
+    onRegisteredSW(_swUrl, registration) {
+      if (registration) {
+        warmCriticalRoutes();
+      }
+    },
   });
 
   useEffect(() => {
     void unregisterDevelopmentServiceWorkers();
+    if (!import.meta.env.DEV) {
+      warmCriticalRoutes();
+    }
   }, []);
 
   if (import.meta.env.DEV) {
@@ -33,10 +54,13 @@ export function RegisteredPwaUpdatePrompt() {
   }
 
   return (
-    <PwaUpdatePrompt
-      needRefresh={needRefresh}
-      onDismiss={() => setNeedRefresh(false)}
-      onUpdate={() => void updateServiceWorker(true)}
-    />
+    <>
+      <PwaInstallPrompt />
+      <PwaUpdatePrompt
+        needRefresh={needRefresh}
+        onDismiss={() => setNeedRefresh(false)}
+        onUpdate={() => void updateServiceWorker(true)}
+      />
+    </>
   );
 }

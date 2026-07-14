@@ -402,7 +402,7 @@ describe("ProjectDetailPage live history", () => {
     expect(mocks.recordWork.mutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
         workerId: "worker-1",
-        workDate: "2026-07-13",
+        workDate: new Date().toISOString().slice(0, 10),
         clientId: "00000000-0000-4000-8000-000000000001",
       }),
     );
@@ -429,7 +429,7 @@ describe("ProjectDetailPage live history", () => {
       workerId: "worker-1",
       entryType: "withdrawal",
       amountMinor: 2_000,
-      workDate: "2026-07-13",
+      workDate: new Date().toISOString().slice(0, 10),
       clientId: "00000000-0000-4000-8000-000000000001",
       walletId: "wallet-1",
     });

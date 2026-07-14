@@ -1,6 +1,7 @@
 import {
   PROJECT_BLUEPRINTS,
   PROJECT_MODULE_METADATA,
+  PROJECT_TYPES,
   getBlueprintCategorySeeds,
   getDefaultProjectModules,
   normalizeProjectModules,
@@ -9,15 +10,8 @@ import {
 } from "./project-blueprints";
 
 describe("PROJECT_BLUEPRINTS", () => {
-  it("defines the six supported project types", () => {
-    expect(Object.keys(PROJECT_BLUEPRINTS)).toEqual([
-      "birds",
-      "animals",
-      "goods",
-      "food",
-      "services",
-      "general",
-    ]);
+  it("defines every supported project type", () => {
+    expect(Object.keys(PROJECT_BLUEPRINTS)).toEqual([...PROJECT_TYPES]);
   });
 
   it("provides Arabic metadata and type-specific defaults", () => {
@@ -55,6 +49,20 @@ describe("PROJECT_BLUEPRINTS", () => {
       { name: "خدمات مشاريع", kind: "income" },
       { name: "دفعات عقود", kind: "income" },
     ]);
+    expect(PROJECT_BLUEPRINTS.personal.defaultModules).toEqual({
+      transactions: true,
+      goal: false,
+      workers: false,
+      capital: false,
+      inventory: false,
+      livestock: false,
+    });
+    expect(PROJECT_BLUEPRINTS.personal.suggestedCategories).toContainEqual({
+      name: "طعام وشراب",
+      kind: "expense",
+    });
+    expect(PROJECT_BLUEPRINTS.construction.name).toBe("مقاولات وبناء");
+    expect(PROJECT_BLUEPRINTS.ecommerce.name).toBe("تجارة إلكترونية");
   });
 
   it("normalizes unknown project types and module JSON safely", () => {

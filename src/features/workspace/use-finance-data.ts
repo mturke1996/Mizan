@@ -4,6 +4,11 @@ import {
   archiveInventoryItem,
   acceptWorkspaceInviteRpc,
   createDebtRpc,
+  createIncomeSourceRpc,
+  createInvoiceRpc,
+  recordInvoicePaymentRpc,
+  refreshOverdueInvoicesRpc,
+  updateInvoiceRpc,
   createInventoryLocationRpc,
   createLivestockBatchRpc,
   createProjectRpc,
@@ -11,18 +16,26 @@ import {
   createWorkerRpc,
   fetchCapitalEntries,
   fetchCategories,
+  fetchClients,
   fetchDebtDetail,
   fetchDebtEntries,
   fetchDebtParties,
   fetchDebts,
   fetchDebtWorkspaceSummary,
   fetchFinancialEventAttachments,
+  fetchIncomeEntries,
+  fetchIncomeSourceBalances,
+  fetchIncomeSources,
+  fetchInvoiceDetail,
+  fetchInvoices,
   fetchInventoryItems,
   fetchInventoryLocations,
   fetchInventoryMovements,
   fetchLivestockBatches,
   fetchLivestockEvents,
   fetchProjectAchievementUnlocks,
+  fetchProjectCashBalance,
+  fetchProjectCashEntries,
   fetchProjectMembers,
   fetchProjectTransactions,
   fetchProjects,
@@ -34,21 +47,28 @@ import {
   fetchWorkspaceGoal,
   fetchWorkspaceMemberOptions,
   adjustWalletBalanceRpc,
+  openOrLinkProjectWalletRpc,
   postCapitalEntry,
   postDebtEntryRpc,
+  postIncomeEntryRpc,
   postInventoryMovementRpc,
   postLivestockEventRpc,
+  postProjectCashEntryRpc,
   postTransactionRpc,
   postTransferRpc,
   postWageMovementRpc,
   recordDailyWorkRpc,
   replaceTransactionRpc,
   reverseFinancialEventRpc,
+  setProjectCashModeRpc,
   setProjectParentRpc,
+  setInvoiceStatusRpc,
+  transferProjectCashToWalletRpc,
   unlockProjectAchievementRpc,
   unlockWorkspaceAchievementRpc,
   updateProjectRpc,
   uploadFinancialEventAttachment,
+  upsertClientRpc,
   upsertInventoryItem,
   upsertProjectMemberRpc,
   upsertWorkspaceGoalRpc,
@@ -57,8 +77,13 @@ import type {
   CapitalEntryType,
   DebtDirection,
   DebtEntryType,
+  IncomeEntryType,
+  IncomePayKind,
+  InvoicePaymentMethod,
+  InvoiceStatus,
   InventoryMovementType,
   LivestockEventType,
+  ProjectCashMode,
   ProjectCategorySeed,
   ProjectColorToken,
   ProjectMemberRole,
@@ -121,6 +146,20 @@ export const workspaceKeys = {
     ["debt-entries", workspaceId, debtId] as const,
   debtParties: (workspaceId: string) =>
     ["debt-parties", workspaceId] as const,
+  clients: (workspaceId: string) => ["clients", workspaceId] as const,
+  projectCashBalance: (workspaceId: string, projectId: string) =>
+    ["project-cash-balance", workspaceId, projectId] as const,
+  projectCashEntries: (workspaceId: string, projectId: string) =>
+    ["project-cash-entries", workspaceId, projectId] as const,
+  incomeSources: (workspaceId: string) =>
+    ["income-sources", workspaceId] as const,
+  incomeSourceBalances: (workspaceId: string) =>
+    ["income-source-balances", workspaceId] as const,
+  incomeEntries: (workspaceId: string, sourceId: string) =>
+    ["income-entries", workspaceId, sourceId] as const,
+  invoices: (workspaceId: string) => ["invoices", workspaceId] as const,
+  invoiceDetail: (workspaceId: string, invoiceId: string) =>
+    ["invoice-detail", workspaceId, invoiceId] as const,
 };
 
 function requireLiveWorkspace(workspaceId: string | null): string {
@@ -475,6 +514,7 @@ export function usePostTransactionMutation() {
       description: string;
       categoryId?: string;
       projectId?: string;
+      businessClientId?: string;
       clientId: string;
     }) =>
       postTransactionRpc({
@@ -1299,6 +1339,523 @@ export function useUnlockProjectAchievementMutation(projectId: string) {
       if (!workspaceId) return;
       await queryClient.invalidateQueries({
         queryKey: workspaceKeys.projectAchievements(workspaceId, projectId),
+      });
+    },
+  });
+}
+
+// ─── Clients ──────────────────────────────────────────────────
+
+export function useClientsQuery() {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.clients(workspaceId ?? "none"),
+    queryFn: () =>
+      isDemo ? Promise.resolve([]) : fetchClients(requireLiveWorkspace(workspaceId)),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useUpsertClientMutation() {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; phone?: string }) =>
+      upsertClientRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        name: input.name,
+        phone: input.phone,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await queryClient.invalidateQueries({
+        queryKey: workspaceKeys.clients(workspaceId),
+      });
+    },
+  });
+}
+
+// ─── Project Cash ─────────────────────────────────────────────
+
+export function useProjectCashBalanceQuery(projectId: string | undefined) {
+  const { workspaceId } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.projectCashBalance(
+      workspaceId ?? "none",
+      projectId ?? "none",
+    ),
+    queryFn: () =>
+      fetchProjectCashBalance(
+        requireLiveWorkspace(workspaceId),
+        requireProjectId(projectId),
+      ),
+    enabled: Boolean(workspaceId && projectId),
+  });
+}
+
+export function useProjectCashEntriesQuery(projectId: string | undefined) {
+  const { workspaceId } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.projectCashEntries(
+      workspaceId ?? "none",
+      projectId ?? "none",
+    ),
+    queryFn: () =>
+      fetchProjectCashEntries(
+        requireLiveWorkspace(workspaceId),
+        requireProjectId(projectId),
+      ),
+    enabled: Boolean(workspaceId && projectId),
+  });
+}
+
+export function usePostProjectCashEntryMutation(projectId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      entryType: "income" | "expense";
+      amountMinor: number;
+      title?: string;
+      note?: string;
+    }) =>
+      postProjectCashEntryRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        projectId,
+        entryType: input.entryType,
+        amountMinor: input.amountMinor,
+        title: input.title,
+        note: input.note,
+        clientId: crypto.randomUUID(),
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projectCashBalance(workspaceId, projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projectCashEntries(workspaceId, projectId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useTransferProjectCashToWalletMutation(projectId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      walletId: string;
+      amountMinor: number;
+      note?: string;
+    }) =>
+      transferProjectCashToWalletRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        projectId,
+        walletId: input.walletId,
+        amountMinor: input.amountMinor,
+        note: input.note,
+        clientId: crypto.randomUUID(),
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projectCashBalance(workspaceId, projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projectCashEntries(workspaceId, projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.wallets(workspaceId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useSetProjectCashModeMutation(projectId: string) {
+  const { workspaceId, currency } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (cashMode: ProjectCashMode) =>
+      setProjectCashModeRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        projectId,
+        cashMode,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await queryClient.invalidateQueries({
+        queryKey: workspaceKeys.projects(workspaceId, currency),
+      });
+    },
+  });
+}
+
+export function useOpenOrLinkProjectWalletMutation(projectId: string) {
+  const { workspaceId, currency } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (walletId?: string) =>
+      openOrLinkProjectWalletRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        projectId,
+        walletId,
+        clientId: crypto.randomUUID(),
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projects(workspaceId, currency),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.wallets(workspaceId),
+        }),
+      ]);
+    },
+  });
+}
+
+// ─── Income ───────────────────────────────────────────────────
+
+export function useIncomeSourcesQuery() {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.incomeSources(workspaceId ?? "none"),
+    queryFn: () =>
+      isDemo
+        ? Promise.resolve([])
+        : fetchIncomeSources(requireLiveWorkspace(workspaceId)),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useIncomeSourceBalancesQuery() {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.incomeSourceBalances(workspaceId ?? "none"),
+    queryFn: () =>
+      isDemo
+        ? Promise.resolve([])
+        : fetchIncomeSourceBalances(requireLiveWorkspace(workspaceId)),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useIncomeEntriesQuery(sourceId: string | undefined) {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.incomeEntries(
+      workspaceId ?? "none",
+      sourceId ?? "none",
+    ),
+    queryFn: () =>
+      isDemo
+        ? Promise.resolve([])
+        : fetchIncomeEntries(requireLiveWorkspace(workspaceId), sourceId!),
+    enabled: Boolean(workspaceId && sourceId),
+  });
+}
+
+export function useCreateIncomeSourceMutation() {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      name: string;
+      place?: string;
+      payKind: IncomePayKind;
+      dailyWageMinor?: number;
+      monthlySalaryMinor?: number;
+      currencyCode?: string;
+    }) =>
+      createIncomeSourceRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        name: input.name,
+        place: input.place,
+        payKind: input.payKind,
+        dailyWageMinor: input.dailyWageMinor,
+        monthlySalaryMinor: input.monthlySalaryMinor,
+        currencyCode: input.currencyCode,
+        clientId: crypto.randomUUID(),
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await queryClient.invalidateQueries({
+        queryKey: workspaceKeys.incomeSources(workspaceId),
+      });
+    },
+  });
+}
+
+export function usePostIncomeEntryMutation(sourceId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      entryType: IncomeEntryType;
+      amountMinor: number;
+      workDate?: string;
+      walletId?: string;
+      note?: string;
+    }) =>
+      postIncomeEntryRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        sourceId,
+        entryType: input.entryType,
+        amountMinor: input.amountMinor,
+        workDate: input.workDate,
+        walletId: input.walletId,
+        note: input.note,
+        clientId: crypto.randomUUID(),
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.incomeEntries(workspaceId, sourceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.incomeSourceBalances(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.incomeSources(workspaceId),
+        }),
+      ]);
+    },
+  });
+}
+
+// ─── Invoices ─────────────────────────────────────────────────
+
+export function useInvoicesQuery() {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.invoices(workspaceId ?? "none"),
+    queryFn: async () => {
+      if (isDemo) return [];
+      const id = requireLiveWorkspace(workspaceId);
+      const { cacheInvoiceList, getCachedInvoiceList } = await import(
+        "@/lib/invoice-cache"
+      );
+      try {
+        const invoices = await fetchInvoices(id);
+        await cacheInvoiceList(id, invoices);
+        return invoices;
+      } catch (error) {
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          const cached = await getCachedInvoiceList(id);
+          if (cached) return cached;
+        }
+        throw error;
+      }
+    },
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useInvoiceDetailQuery(invoiceId: string | undefined) {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.invoiceDetail(
+      workspaceId ?? "none",
+      invoiceId ?? "none",
+    ),
+    queryFn: async () => {
+      if (isDemo) return null;
+      const id = requireLiveWorkspace(workspaceId);
+      const { cacheInvoiceDetail, getCachedInvoiceDetail } = await import(
+        "@/lib/invoice-cache"
+      );
+      try {
+        const invoice = await fetchInvoiceDetail(id, invoiceId!);
+        if (invoice) await cacheInvoiceDetail(id, invoice);
+        return invoice;
+      } catch (error) {
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          const cached = await getCachedInvoiceDetail(id, invoiceId!);
+          if (cached) return cached;
+        }
+        throw error;
+      }
+    },
+    enabled: Boolean(workspaceId && invoiceId),
+  });
+}
+
+export function useCreateInvoiceMutation() {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      items: Array<{
+        description: string;
+        quantity: number;
+        unitPriceMinor: number;
+      }>;
+      businessClientId?: string;
+      clientName?: string;
+      clientPhone?: string;
+      issueOn?: string;
+      dueOn?: string;
+      taxRatePercent?: number;
+      notes?: string;
+      status?: InvoiceStatus;
+      clientId?: string;
+    }) =>
+      createInvoiceRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        clientId: input.clientId ?? crypto.randomUUID(),
+        items: input.items,
+        businessClientId: input.businessClientId,
+        clientName: input.clientName,
+        clientPhone: input.clientPhone,
+        issueOn: input.issueOn,
+        dueOn: input.dueOn,
+        taxRatePercent: input.taxRatePercent,
+        notes: input.notes,
+        status: input.status,
+      }),
+    onSuccess: async (invoice) => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoices(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoiceDetail(workspaceId, invoice.id),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useSetInvoiceStatusMutation(invoiceId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (status: InvoiceStatus) =>
+      setInvoiceStatusRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        invoiceId,
+        status,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoices(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoiceDetail(workspaceId, invoiceId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useUpdateInvoiceMutation(invoiceId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      items: Array<{
+        description: string;
+        quantity: number;
+        unitPriceMinor: number;
+      }>;
+      businessClientId?: string | null;
+      clientName?: string;
+      clientPhone?: string | null;
+      issueOn?: string;
+      dueOn?: string | null;
+      taxRatePercent?: number;
+      notes?: string | null;
+    }) =>
+      updateInvoiceRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        invoiceId,
+        clientId: crypto.randomUUID(),
+        items: input.items,
+        businessClientId: input.businessClientId,
+        clientName: input.clientName,
+        clientPhone: input.clientPhone,
+        issueOn: input.issueOn,
+        dueOn: input.dueOn,
+        taxRatePercent: input.taxRatePercent,
+        notes: input.notes,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoices(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoiceDetail(workspaceId, invoiceId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useRecordInvoicePaymentMutation(invoiceId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      amountMinor: number;
+      walletId: string;
+      method?: InvoicePaymentMethod;
+      notes?: string;
+      paidOn?: string;
+    }) =>
+      recordInvoicePaymentRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        invoiceId,
+        clientId: crypto.randomUUID(),
+        amountMinor: input.amountMinor,
+        walletId: input.walletId,
+        method: input.method,
+        notes: input.notes,
+        paidOn: input.paidOn,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoices(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.invoiceDetail(workspaceId, invoiceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.wallets(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.transactions(workspaceId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useRefreshOverdueInvoicesOnce() {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      isDemo
+        ? Promise.resolve(0)
+        : refreshOverdueInvoicesRpc(requireLiveWorkspace(workspaceId)),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await queryClient.invalidateQueries({
+        queryKey: workspaceKeys.invoices(workspaceId),
       });
     },
   });

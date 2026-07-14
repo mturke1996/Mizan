@@ -7,7 +7,15 @@ export type ProjectType =
   | "goods"
   | "food"
   | "services"
-  | "general";
+  | "general"
+  | "construction"
+  | "rental"
+  | "farming"
+  | "delivery"
+  | "maintenance"
+  | "education"
+  | "ecommerce"
+  | "personal";
 export interface ProjectModules {
   readonly transactions: boolean;
   readonly goal: boolean;
@@ -42,11 +50,44 @@ export type ProjectColorToken =
   | "danger"
   | "info";
 
+export interface WorkspaceBrand {
+  legalName: string | null;
+  phone: string | null;
+  address: string | null;
+  taxId: string | null;
+  invoiceFooter: string | null;
+  logoPath: string | null;
+  logoUrl: string | null;
+}
+
 export interface WorkspaceMembership {
   workspaceId: string;
   workspaceName: string;
   currency: CurrencyCode;
   role: "owner" | "admin" | "member" | "viewer";
+  brand: WorkspaceBrand;
+}
+
+export type InvoicePaymentMethod =
+  | "cash"
+  | "bank_transfer"
+  | "check"
+  | "mobile_payment"
+  | "other";
+
+export interface InvoicePayment {
+  id: string;
+  workspaceId: string;
+  invoiceId: string;
+  amountMinor: bigint;
+  method: InvoicePaymentMethod;
+  notes: string | null;
+  walletId: string | null;
+  financialEventId: string | null;
+  paidOn: string;
+  createdBy: string;
+  clientId: string;
+  createdAt: string;
 }
 
 export type DebtDirection = "receivable" | "payable";
@@ -135,6 +176,9 @@ export interface ProjectSummary {
   capitalRecoveredRate: number | null;
   inventoryValueMinor: bigint;
   inventoryItemCount: number;
+  cashMode?: ProjectCashMode;
+  linkedWalletId?: string | null;
+  projectCashBalanceMinor?: bigint;
 }
 
 export type CapitalEntryType =
@@ -314,4 +358,139 @@ export interface CategoryOption {
   id: string;
   name: string;
   kind: "income" | "expense";
+}
+
+export type ProjectCashMode = "off" | "project_cash" | "project_wallet" | "hybrid";
+
+export interface Client {
+  id: string;
+  workspaceId: string;
+  name: string;
+  phone: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectCashBalance {
+  projectId: string;
+  workspaceId: string;
+  balanceMinor: bigint;
+  currencyCode: string;
+}
+
+export type ProjectCashEntryType =
+  | "income"
+  | "expense"
+  | "transfer_out"
+  | "transfer_in";
+
+export interface ProjectCashEntry {
+  id: string;
+  workspaceId: string;
+  projectId: string;
+  entryType: ProjectCashEntryType;
+  amountMinor: bigint;
+  currencyCode: string;
+  title: string | null;
+  note: string | null;
+  walletId: string | null;
+  createdBy: string;
+  clientId: string;
+  createdAt: string;
+}
+
+export type IncomePayKind = "daily" | "monthly" | "both";
+export type IncomeEntryType =
+  | "daily_wage"
+  | "bonus"
+  | "deduction"
+  | "salary_accrual"
+  | "withdrawal";
+
+export interface IncomeSource {
+  id: string;
+  workspaceId: string;
+  name: string;
+  place: string | null;
+  payKind: IncomePayKind;
+  dailyWageMinor: bigint | null;
+  monthlySalaryMinor: bigint | null;
+  currencyCode: string;
+  isActive: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncomeSourceBalance {
+  sourceId: string;
+  workspaceId: string;
+  earnedMinor: bigint;
+  withdrawnMinor: bigint;
+  deductedMinor: bigint;
+  bonusMinor: bigint;
+  balanceMinor: bigint;
+  workDays: number;
+  currencyCode: string;
+}
+
+export interface IncomeEntry {
+  id: string;
+  workspaceId: string;
+  sourceId: string;
+  entryType: IncomeEntryType;
+  amountMinor: bigint;
+  currencyCode: string;
+  workDate: string;
+  walletId: string | null;
+  note: string | null;
+  createdBy: string;
+  clientId: string;
+  createdAt: string;
+}
+
+export type InvoiceStatus =
+  | "draft"
+  | "sent"
+  | "paid"
+  | "partially_paid"
+  | "overdue"
+  | "cancelled";
+
+export interface InvoiceItem {
+  id: string;
+  workspaceId: string;
+  invoiceId: string;
+  sortOrder: number;
+  description: string;
+  quantity: number;
+  unitPriceMinor: bigint;
+  lineTotalMinor: bigint;
+  createdAt: string;
+}
+
+export interface Invoice {
+  id: string;
+  workspaceId: string;
+  invoiceNumber: string;
+  businessClientId: string | null;
+  clientName: string;
+  clientPhone: string | null;
+  status: InvoiceStatus;
+  issueOn: string;
+  dueOn: string | null;
+  notes: string | null;
+  taxRatePercent: number;
+  subtotalMinor: bigint;
+  taxMinor: bigint;
+  totalMinor: bigint;
+  paidMinor: bigint;
+  currencyCode: string;
+  createdBy: string;
+  clientId: string;
+  createdAt: string;
+  updatedAt: string;
+  items?: InvoiceItem[];
+  payments?: InvoicePayment[];
 }

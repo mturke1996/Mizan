@@ -1,14 +1,18 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
-  CircleGauge,
   HandCoins,
   Landmark,
   Target,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { computeAnalytics } from "@/domain/analytics/compute-analytics";
-import { formatMinorAmount, getCurrencyScale, parseMajorAmount, toSafeMinorNumber } from "@/domain/money/money";
+import {
+  formatMinorAmount,
+  getCurrencyScale,
+  parseMajorAmount,
+  toSafeMinorNumber,
+} from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
 import { useDebtsView } from "@/features/debts/use-debts-view";
 import {
@@ -21,7 +25,6 @@ import {
 } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { toast } from "sonner";
-import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { getUserErrorMessage } from "@/lib/user-error";
 import { BalanceOverview } from "./BalanceOverview";
@@ -29,6 +32,7 @@ import { CashFlowChart } from "./CashFlowChart";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 import { DashboardHeader } from "./DashboardHeader";
 import { DebtSummary } from "./DebtSummary";
+import { IncomeOutstandingSummary } from "./IncomeOutstandingSummary";
 import { FinancialHealthPanel } from "./FinancialHealthPanel";
 import { ProjectSpotlight } from "./ProjectSpotlight";
 import { QuickActions } from "./QuickActions";
@@ -77,11 +81,14 @@ export function DashboardPage() {
       cancelled = true;
     };
   }, [workspaceId]);
+
   const dashboardError =
     (!workspaceId ? error : null) ?? financeError ?? projectsError ?? debtsError;
-  const totalBalance = wallets
-    .filter((wallet) => wallet.currency === currency)
-    .reduce((total, wallet) => total + wallet.balanceMinor, 0n);
+  const activeWallets = wallets.filter((wallet) => wallet.currency === currency);
+  const totalBalance = activeWallets.reduce(
+    (total, wallet) => total + wallet.balanceMinor,
+    0n,
+  );
   const overview = computeAnalytics({
     transactions,
     projects,
@@ -103,32 +110,60 @@ export function DashboardPage() {
   const goalMinor = goalQuery.data?.incomeGoalMinor ?? null;
   const goalProgress =
     goalMinor && goalMinor > 0n
-      ? Math.min(
-          100,
-          Number((overview.incomeMinor * 100n) / goalMinor),
-        )
+      ? Math.min(100, Number((overview.incomeMinor * 100n) / goalMinor))
       : 0;
 
+  const saveGoal = () => {
+    const raw = window.prompt(
+      "أدخل هدف الدخل الشهري (بالوحدة الرئيسية)",
+      goalMinor
+        ? formatMinorAmount(goalMinor, {
+            currency,
+            locale: "en-US",
+          })
+        : "",
+    );
+    if (!raw) return;
+    try {
+      const minor = parseMajorAmount(raw, getCurrencyScale(currency));
+      void upsertGoal
+        .mutateAsync({
+          monthKey,
+          incomeGoalMinor: toSafeMinorNumber(minor),
+        })
+        .then(() => toast.success("تم حفظ الهدف الشهري"))
+        .catch((saveError) =>
+          toast.error(getUserErrorMessage(saveError, "تعذر حفظ الهدف")),
+        );
+    } catch (parseError) {
+      toast.error(
+        parseError instanceof Error ? parseError.message : "أدخل مبلغًا صحيحًا",
+      );
+    }
+  };
+
   return (
-    <div>
+    <div className="bg-canvas lg:bg-transparent">
       <DashboardHeader now={now} />
 
-      <div className="px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8 lg:pt-7 xl:px-10">
+      <div className="px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8 lg:pt-7 xl:px-10">
         <QuickActions variant="desktop" />
 
         {isLoading || financeLoading || projectsLoading || debtsLoading ? (
-          <div aria-busy="true" className="space-y-5" role="status">
+          <div aria-busy="true" className="space-y-4" role="status">
+            <div className="h-52 animate-pulse rounded-[22px] bg-surface-subtle lg:hidden" />
+            <div className="h-24 animate-pulse rounded-2xl bg-surface-subtle lg:hidden" />
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {[0, 1, 2, 3].map((item) => (
                 <div
                   key={item}
-                  className="h-36 animate-pulse rounded-[14px] bg-surface-subtle"
+                  className="h-28 animate-pulse rounded-[16px] bg-surface-subtle sm:h-36"
                 />
               ))}
             </div>
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
-              <div className="h-96 animate-pulse rounded-[14px] bg-surface-subtle" />
-              <div className="h-96 animate-pulse rounded-[14px] bg-surface-subtle" />
+              <div className="h-72 animate-pulse rounded-[16px] bg-surface-subtle" />
+              <div className="hidden h-72 animate-pulse rounded-[16px] bg-surface-subtle lg:block" />
             </div>
             <span className="sr-only">جاري تحميل الملخص المالي</span>
           </div>
@@ -152,21 +187,26 @@ export function DashboardPage() {
             <BalanceOverview
               balanceMinor={totalBalance}
               currency={currency}
-              walletCount={
-                wallets.filter((wallet) => wallet.currency === currency).length
-              }
+              walletCount={activeWallets.length}
               monthlyTrend={overview.monthlyTrend}
+              incomeMinor={overview.incomeMinor}
+              expenseMinor={overview.expenseMinor}
+              netMinor={overview.netMinor}
             />
 
+            <QuickActions variant="mobile" />
+
             {workspaceId ? (
-              <AppCard className="mb-5 space-y-3 p-4 sm:p-5">
+              <section className="mb-4 overflow-hidden rounded-[18px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:mb-5 sm:p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <h2 className="flex items-center gap-2 text-sm font-bold text-ink">
-                      <Target aria-hidden="true" size={16} />
+                      <span className="grid size-8 place-items-center rounded-xl bg-primary-soft text-primary">
+                        <Target aria-hidden="true" size={15} />
+                      </span>
                       هدف دخل الشهر
                     </h2>
-                    <p className="mt-1 text-xs text-muted">
+                    <p className="mt-2 text-[11px] leading-5 text-muted">
                       {goalMinor
                         ? `التقدّم نحو ${formatMinorAmount(goalMinor, {
                             currency,
@@ -176,92 +216,56 @@ export function DashboardPage() {
                     </p>
                   </div>
                   <button
-                    className="pressable min-h-10 shrink-0 rounded-sm border border-line px-3 text-xs font-bold text-ink disabled:opacity-60"
+                    className="pressable min-h-10 shrink-0 rounded-xl border border-line bg-canvas px-3 text-xs font-bold text-ink disabled:opacity-60"
                     disabled={upsertGoal.isPending}
-                    onClick={() => {
-                      const raw = window.prompt(
-                        "أدخل هدف الدخل الشهري (بالوحدة الرئيسية)",
-                        goalMinor
-                          ? formatMinorAmount(goalMinor, {
-                              currency,
-                              locale: "en-US",
-                            })
-                          : "",
-                      );
-                      if (!raw) return;
-                      try {
-                        const minor = parseMajorAmount(
-                          raw,
-                          getCurrencyScale(currency),
-                        );
-                        void upsertGoal
-                          .mutateAsync({
-                            monthKey,
-                            incomeGoalMinor: toSafeMinorNumber(minor),
-                          })
-                          .then(() => toast.success("تم حفظ الهدف الشهري"))
-                          .catch((error) =>
-                            toast.error(
-                              getUserErrorMessage(error, "تعذر حفظ الهدف"),
-                            ),
-                          );
-                      } catch (error) {
-                        toast.error(
-                          error instanceof Error
-                            ? error.message
-                            : "أدخل مبلغًا صحيحًا",
-                        );
-                      }
-                    }}
+                    onClick={saveGoal}
                     type="button"
                   >
-                    {goalMinor ? "تعديل" : "تعيين هدف"}
+                    {goalMinor ? "تعديل" : "تعيين"}
                   </button>
                 </div>
                 {goalMinor ? (
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs text-muted">
+                  <div className="mt-4">
+                    <div className="mb-2 flex items-center justify-between text-[11px] text-muted">
                       <span>
                         الدخل الحالي{" "}
-                        <bdi className="numeric" dir="ltr">
+                        <bdi className="numeric font-semibold text-ink" dir="ltr">
                           {formatMinorAmount(overview.incomeMinor, {
                             currency,
                             locale: "en-US",
                           })}
                         </bdi>
                       </span>
-                      <span className="numeric" dir="ltr">
+                      <span className="numeric font-bold text-primary" dir="ltr">
                         {goalProgress}%
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-surface-subtle">
+                    <div className="h-2.5 overflow-hidden rounded-full bg-surface-subtle">
                       <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-500"
+                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                         style={{ width: `${goalProgress}%` }}
                       />
                     </div>
                   </div>
                 ) : null}
-              </AppCard>
+              </section>
             ) : null}
 
             <section
               aria-label="المؤشرات المالية الأساسية"
-              className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4"
+              className="mb-4 hidden grid-cols-2 gap-3 lg:mb-5 lg:grid lg:grid-cols-4"
             >
-              <div className="hidden lg:block">
-                <DashboardMetricCard
-                  label="إجمالي الرصيد"
-                  value={formatMinorAmount(totalBalance, {
-                    currency,
-                    locale: "en-US",
-                  })}
-                  suffix={currency}
-                  helper={`${wallets.filter((wallet) => wallet.currency === currency).length} محافظ بالعملة الأساسية`}
-                  icon={Landmark}
-                  tone="primary"
-                />
-              </div>
+              <DashboardMetricCard
+                label="إجمالي الرصيد"
+                value={formatMinorAmount(totalBalance, {
+                  currency,
+                  locale: "en-US",
+                })}
+                suffix={currency}
+                helper={`${activeWallets.length} محافظ بالعملة الأساسية`}
+                icon={Landmark}
+                tone="primary"
+              />
               <DashboardMetricCard
                 label="دخل هذا الشهر"
                 value={formatMinorAmount(overview.incomeMinor, {
@@ -296,25 +300,9 @@ export function DashboardPage() {
                 icon={HandCoins}
                 tone={overview.netMinor >= 0n ? "success" : "warning"}
               />
-              <div className="lg:hidden">
-                <DashboardMetricCard
-                  label="الصحة المالية"
-                  value={overview.healthScore ?? "—"}
-                  suffix="/ 100"
-                  helper={overview.healthLabel}
-                  icon={CircleGauge}
-                  tone={
-                    overview.healthScore == null
-                      ? "primary"
-                      : overview.healthScore >= 65
-                        ? "success"
-                        : "warning"
-                  }
-                />
-              </div>
             </section>
 
-            <section className="mb-6 grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+            <section className="mb-5 grid gap-4 lg:mb-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] lg:gap-5">
               <CashFlowChart
                 data={overview.monthlyTrend}
                 currency={currency}
@@ -322,12 +310,13 @@ export function DashboardPage() {
               <FinancialHealthPanel analytics={overview} />
             </section>
 
-            <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+            <section className="grid items-start gap-4 pb-2 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] lg:gap-5">
               <RecentTransactions
                 transactions={transactions}
                 wallets={wallets}
               />
-              <aside>
+              <aside className="space-y-4 lg:space-y-0">
+                <IncomeOutstandingSummary currency={currency} />
                 <DebtSummary
                   currency={currency}
                   debts={debts}
@@ -338,7 +327,6 @@ export function DashboardPage() {
                 <WalletSummary wallets={wallets} />
               </aside>
             </section>
-            <QuickActions variant="mobile" />
           </>
         )}
       </div>

@@ -13,21 +13,21 @@ interface WalletSummaryProps {
 
 export function WalletSummary({ wallets }: WalletSummaryProps) {
   return (
-    <section aria-labelledby="wallets-title" className="mb-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 id="wallets-title" className="text-lg font-bold text-ink">
+    <section aria-labelledby="wallets-title" className="mb-2 lg:mb-6">
+      <div className="mb-2.5 flex items-center justify-between">
+        <h2 id="wallets-title" className="text-sm font-bold text-ink sm:text-base">
           المحافظ والحسابات
         </h2>
         <Link
           to="/wallets"
-          className="pressable flex min-h-11 items-center gap-1 rounded-sm px-2 text-sm font-semibold text-primary hover:bg-primary-soft"
+          className="pressable flex min-h-9 items-center gap-1 rounded-xl px-2 text-xs font-bold text-primary hover:bg-primary-soft sm:text-sm"
         >
           عرض الكل
-          <ArrowLeft aria-hidden="true" size={16} />
+          <ArrowLeft aria-hidden="true" size={15} />
         </Link>
       </div>
 
-      <AppCard className="divide-y divide-line overflow-hidden shadow-[var(--shadow-card)]">
+      <AppCard className="divide-y divide-line overflow-hidden rounded-[18px] shadow-[0_8px_24px_rgb(27_30_60/4%)]">
         {wallets.length === 0 ? (
           <div className="px-5 py-8 text-center">
             <p className="text-sm font-bold text-ink">لا محافظ بعد</p>

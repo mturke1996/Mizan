@@ -57,8 +57,19 @@ describe("App", () => {
       navigationQueries.getByRole("link", { name: "المحافظ" }),
     ).toBeInTheDocument();
     expect(
-      navigationQueries.getByRole("link", { name: "الديون" }),
+      navigationQueries.getByRole("link", { name: "أموالي" }),
     ).toHaveAttribute("href", "/debts");
+  });
+
+  it("renders the personal income route", async () => {
+    renderApp("/income");
+
+    expect(
+      await screen.findByRole("heading", { name: "دخلي" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "أقسام أموالي" }),
+    ).toBeInTheDocument();
   });
 
   it("renders the debt register route", () => {
@@ -67,6 +78,13 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "الديون" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "أقسام أموالي" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "فواتير" })).toHaveAttribute(
+      "href",
+      "/invoices",
+    );
   });
 
   it("moves focus to the new screen heading after navigation", async () => {

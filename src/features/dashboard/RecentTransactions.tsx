@@ -51,23 +51,23 @@ export function RecentTransactions({
   return (
     <section
       aria-labelledby="transactions-title"
-      className="pb-4 lg:overflow-hidden lg:rounded-[14px] lg:border lg:border-line lg:bg-surface lg:pb-0 lg:shadow-[var(--shadow-card)]"
+      className="overflow-hidden rounded-[18px] border border-line bg-surface pb-1 shadow-[0_8px_24px_rgb(27_30_60/4%)] lg:pb-0"
     >
-      <div className="mb-3 flex items-center justify-between lg:mb-0 lg:border-b lg:border-line lg:px-5 lg:py-4">
-        <h2 id="transactions-title" className="text-lg font-bold text-ink">
+      <div className="mb-1 flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5 lg:mb-0 lg:py-4">
+        <h2 id="transactions-title" className="text-sm font-bold text-ink sm:text-base">
           أحدث المعاملات
         </h2>
         <Link
           to="/transactions"
-          className="pressable flex min-h-11 items-center gap-1 rounded-sm px-2 text-sm font-semibold text-primary hover:bg-primary-soft"
+          className="pressable flex min-h-9 items-center gap-1 rounded-xl px-2 text-xs font-bold text-primary hover:bg-primary-soft sm:text-sm"
         >
           عرض الكل
-          <ArrowLeft aria-hidden="true" size={16} />
+          <ArrowLeft aria-hidden="true" size={15} />
         </Link>
       </div>
 
-      <div className="lg:hidden">
-        <TransactionList transactions={recent.slice(0, 3)} wallets={wallets} />
+      <div className="px-1 lg:hidden">
+        <TransactionList transactions={recent.slice(0, 4)} wallets={wallets} />
       </div>
 
       <div className="hidden overflow-x-auto lg:block">

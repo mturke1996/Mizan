@@ -32,12 +32,20 @@ export default defineConfig({
     VitePWA({
       registerType: "prompt",
       injectRegister: false,
-      includeAssets: ["icons/mizan-mark.svg"],
+      includeAssets: [
+        "icons/mizan-mark.svg",
+        "icons/mizan-192.png",
+        "icons/mizan-512.png",
+        "fonts/Tajawal-Regular.ttf",
+        "fonts/Tajawal-Bold.ttf",
+        "theme-init.js",
+      ],
       manifest: {
         id: "/",
         name: "ميزان",
         short_name: "ميزان",
-        description: "إدارة أموالك ومحافظك ومشاريعك بوضوح.",
+        description:
+          "إدارة أموالك ومحافظك ومشاريعك وديونك وفواتيرك بوضوح — يعمل دون اتصال بعد أول فتح.",
         lang: "ar",
         dir: "rtl",
         start_url: "/",
@@ -49,26 +57,79 @@ export default defineConfig({
         categories: ["finance", "business", "productivity"],
         icons: [
           {
+            src: "/icons/mizan-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/mizan-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icons/mizan-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
             src: "/icons/mizan-mark.svg",
             sizes: "any",
             type: "image/svg+xml",
             purpose: "any",
           },
-          {
-            src: "/icons/mizan-mark.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "maskable",
-          },
         ],
       },
       workbox: {
         cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: false,
         navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//],
+        globPatterns: [
+          "**/*.{js,css,html,ico,png,svg,webp,woff,woff2,ttf}",
+        ],
+        // Allow precaching the PDF vendor chunk on first install.
+        maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\//i,
             handler: "NetworkOnly",
+          },
+          {
+            urlPattern: /\/fonts\/.*\.ttf$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "mizan-pdf-fonts",
+              expiration: {
+                maxEntries: 8,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "mizan-gstatic-fonts",
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === "image",
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "mizan-images",
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
           },
         ],
       },
@@ -101,6 +162,11 @@ export default defineConfig({
               priority: 30,
             },
             {
+              name: "vendor-pdf",
+              test: /node_modules[\\/](?:@react-pdf|yoga-layout|fontkit|linebreak|png-js|brotli|pako|browserify-zlib|queue|unicode-properties)[\\/]/,
+              priority: 25,
+            },
+            {
               name: "ui-vendor",
               test: /node_modules[\\/](?:@radix-ui|lucide-react|motion|framer-motion)[\\/]/,
               priority: 20,
@@ -120,7 +186,14 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(rootDirectory, "src"),
+      buffer: "buffer",
     },
+  },
+  define: {
+    global: "globalThis",
+  },
+  optimizeDeps: {
+    include: ["@react-pdf/renderer", "buffer"],
   },
   server: {
     host: "127.0.0.1",

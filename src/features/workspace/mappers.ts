@@ -11,16 +11,27 @@ import {
 } from "@/features/projects/project-blueprints";
 import type {
   CapitalEntry,
+  Client,
   DebtEntry,
   DebtParty,
   DebtSummary,
   DebtWorkspaceSummary,
   FinancialEventAttachment,
+  IncomeEntry,
+  IncomeSource,
+  IncomeSourceBalance,
   InventoryItem,
   InventoryLocation,
   InventoryMovement,
+  Invoice,
+  InvoiceItem,
+  InvoicePayment,
+  InvoiceStatus,
   LivestockBatch,
   LivestockEvent,
+  ProjectCashBalance,
+  ProjectCashEntry,
+  ProjectCashMode,
   ProjectColorToken,
   ProjectMember,
   ProjectSummary,
@@ -294,6 +305,9 @@ export function mapProjectSummary(input: {
   inventory_value_minor?: unknown;
   inventory_item_count?: unknown;
   item_count?: unknown;
+  cash_mode?: string | null;
+  linked_wallet_id?: string | null;
+  project_cash_balance_minor?: unknown;
 }): ProjectSummary {
   const incomeMinor = parseMinorOrZero(input.income_minor, "income_minor");
   const expenseMinor = parseMinorOrZero(input.expense_minor, "expense_minor");
@@ -378,6 +392,20 @@ export function mapProjectSummary(input: {
     inventoryItemCount: parseCount(
       input.inventory_item_count ?? input.item_count,
     ),
+    ...(input.cash_mode
+      ? { cashMode: input.cash_mode as ProjectCashMode }
+      : {}),
+    ...(input.linked_wallet_id !== undefined
+      ? { linkedWalletId: input.linked_wallet_id }
+      : {}),
+    ...(input.project_cash_balance_minor != null
+      ? {
+          projectCashBalanceMinor: parseMinorOrZero(
+            input.project_cash_balance_minor,
+            "project_cash_balance_minor",
+          ),
+        }
+      : {}),
   };
 }
 
@@ -714,5 +742,310 @@ export function mapProjectMember(row: {
     createdAt: row.created_at,
     displayName: row.display_name ?? null,
     email: row.email ?? null,
+  };
+}
+
+export function mapClient(row: {
+  id: string;
+  workspace_id: string;
+  name: string;
+  phone: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}): Client {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    name: row.name,
+    phone: row.phone,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function parseQuantity(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+function parseTaxRate(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return 0;
+}
+
+export function mapInvoiceItem(row: {
+  id: string;
+  workspace_id: string;
+  invoice_id: string;
+  sort_order: number;
+  description: string;
+  quantity: unknown;
+  unit_price_minor: unknown;
+  line_total_minor: unknown;
+  created_at: string;
+}): InvoiceItem {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    invoiceId: row.invoice_id,
+    sortOrder: row.sort_order,
+    description: row.description,
+    quantity: parseQuantity(row.quantity),
+    unitPriceMinor: parseMinorOrZero(
+      row.unit_price_minor,
+      "invoice_items.unit_price_minor",
+    ),
+    lineTotalMinor: parseMinorOrZero(
+      row.line_total_minor,
+      "invoice_items.line_total_minor",
+    ),
+    createdAt: row.created_at,
+  };
+}
+
+export function mapInvoice(row: {
+  id: string;
+  workspace_id: string;
+  invoice_number: string;
+  business_client_id: string | null;
+  client_name: string;
+  client_phone: string | null;
+  status: InvoiceStatus;
+  issue_on: string;
+  due_on: string | null;
+  notes: string | null;
+  tax_rate_percent: unknown;
+  subtotal_minor: unknown;
+  tax_minor: unknown;
+  total_minor: unknown;
+  paid_minor?: unknown;
+  currency_code: string;
+  created_by: string;
+  client_id: string;
+  created_at: string;
+  updated_at: string;
+}): Invoice {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    invoiceNumber: row.invoice_number,
+    businessClientId: row.business_client_id,
+    clientName: row.client_name,
+    clientPhone: row.client_phone,
+    status: row.status,
+    issueOn: row.issue_on,
+    dueOn: row.due_on,
+    notes: row.notes,
+    taxRatePercent: parseTaxRate(row.tax_rate_percent),
+    subtotalMinor: parseMinorOrZero(row.subtotal_minor, "invoices.subtotal_minor"),
+    taxMinor: parseMinorOrZero(row.tax_minor, "invoices.tax_minor"),
+    totalMinor: parseMinorOrZero(row.total_minor, "invoices.total_minor"),
+    paidMinor: parseMinorOrZero(row.paid_minor ?? 0, "invoices.paid_minor"),
+    currencyCode: row.currency_code,
+    createdBy: row.created_by,
+    clientId: row.client_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapInvoicePayment(row: {
+  id: string;
+  workspace_id: string;
+  invoice_id: string;
+  amount_minor: unknown;
+  method: string;
+  notes: string | null;
+  wallet_id: string | null;
+  financial_event_id: string | null;
+  paid_on: string;
+  created_by: string;
+  client_id: string;
+  created_at: string;
+}): InvoicePayment {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    invoiceId: row.invoice_id,
+    amountMinor: parseMinorOrZero(row.amount_minor, "invoice_payments.amount_minor"),
+    method: row.method as InvoicePayment["method"],
+    notes: row.notes,
+    walletId: row.wallet_id,
+    financialEventId: row.financial_event_id,
+    paidOn: row.paid_on,
+    createdBy: row.created_by,
+    clientId: row.client_id,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapProjectCashBalance(row: {
+  project_id: string;
+  workspace_id: string;
+  balance_minor: unknown;
+  currency_code: string;
+}): ProjectCashBalance {
+  return {
+    projectId: row.project_id,
+    workspaceId: row.workspace_id,
+    balanceMinor: parseMinorOrZero(row.balance_minor, "project_cash_balances.balance_minor"),
+    currencyCode: row.currency_code,
+  };
+}
+
+export function mapProjectCashEntry(row: {
+  id: string;
+  workspace_id: string;
+  project_id: string;
+  entry_type: ProjectCashEntry["entryType"];
+  amount_minor: unknown;
+  currency_code: string;
+  title: string;
+  note: string | null;
+  wallet_id: string | null;
+  created_by: string;
+  client_id: string;
+  created_at: string;
+}): ProjectCashEntry {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    projectId: row.project_id,
+    entryType: row.entry_type,
+    amountMinor: parseMinorText(row.amount_minor, "project_cash_entries.amount_minor"),
+    currencyCode: row.currency_code,
+    title: row.title,
+    note: row.note,
+    walletId: row.wallet_id,
+    createdBy: row.created_by,
+    clientId: row.client_id,
+    createdAt: row.created_at,
+  };
+}
+
+export function mapIncomeSource(row: {
+  id: string;
+  workspace_id: string;
+  name: string;
+  place_label: string | null;
+  pay_kind: IncomeSource["payKind"];
+  default_daily_wage_minor: unknown;
+  monthly_salary_minor: unknown;
+  currency_code: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}): IncomeSource {
+  const daily = parseMinorOrZero(
+    row.default_daily_wage_minor,
+    "income_sources.default_daily_wage_minor",
+  );
+  const monthly = parseMinorOrZero(
+    row.monthly_salary_minor,
+    "income_sources.monthly_salary_minor",
+  );
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    name: row.name,
+    place: row.place_label,
+    payKind: row.pay_kind,
+    dailyWageMinor: daily > 0n ? daily : null,
+    monthlySalaryMinor: monthly > 0n ? monthly : null,
+    currencyCode: row.currency_code,
+    isActive: row.status === "active",
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapIncomeSourceBalance(row: {
+  source_id: string;
+  workspace_id: string;
+  earned_daily_minor?: unknown;
+  earned_salary_minor?: unknown;
+  withdrawn_minor: unknown;
+  deduction_minor?: unknown;
+  deducted_minor?: unknown;
+  bonus_minor: unknown;
+  outstanding_minor?: unknown;
+  balance_minor?: unknown;
+  daily_count?: unknown;
+  work_days?: unknown;
+  currency_code: string;
+}): IncomeSourceBalance {
+  const earnedDaily = parseMinorOrZero(
+    row.earned_daily_minor,
+    "income_source_balances.earned_daily_minor",
+  );
+  const earnedSalary = parseMinorOrZero(
+    row.earned_salary_minor,
+    "income_source_balances.earned_salary_minor",
+  );
+  return {
+    sourceId: row.source_id,
+    workspaceId: row.workspace_id,
+    earnedMinor: earnedDaily + earnedSalary,
+    withdrawnMinor: parseMinorOrZero(
+      row.withdrawn_minor,
+      "income_source_balances.withdrawn_minor",
+    ),
+    deductedMinor: parseMinorOrZero(
+      row.deduction_minor ?? row.deducted_minor,
+      "income_source_balances.deduction_minor",
+    ),
+    bonusMinor: parseMinorOrZero(
+      row.bonus_minor,
+      "income_source_balances.bonus_minor",
+    ),
+    balanceMinor: parseMinorOrZero(
+      row.outstanding_minor ?? row.balance_minor,
+      "income_source_balances.outstanding_minor",
+    ),
+    workDays: Number(row.daily_count ?? row.work_days ?? 0),
+    currencyCode: row.currency_code,
+  };
+}
+
+export function mapIncomeEntry(row: {
+  id: string;
+  workspace_id: string;
+  source_id: string;
+  entry_type: IncomeEntry["entryType"];
+  amount_minor: unknown;
+  currency_code: string;
+  work_on: string | null;
+  wallet_id: string | null;
+  note: string | null;
+  reason?: string | null;
+  created_by: string;
+  client_id: string;
+  created_at: string;
+}): IncomeEntry {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    sourceId: row.source_id,
+    entryType: row.entry_type,
+    amountMinor: parseMinorText(row.amount_minor, "income_entries.amount_minor"),
+    currencyCode: row.currency_code,
+    workDate: row.work_on ?? row.created_at.slice(0, 10),
+    walletId: row.wallet_id,
+    note: row.note ?? row.reason ?? null,
+    createdBy: row.created_by,
+    clientId: row.client_id,
+    createdAt: row.created_at,
   };
 }
