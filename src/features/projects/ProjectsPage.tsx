@@ -29,6 +29,7 @@ import { Badge } from "@/shared/ui/Badge";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { StatCard } from "@/shared/ui/StatCard";
 
 function projectNet(project: ProjectSummary): bigint {
@@ -219,6 +220,7 @@ export function ProjectsPage() {
   const { projects, isLoading, error, refresh } = useProjectsView();
   const archiveDemoProject = useProjectStore((state) => state.archiveProject);
   const archiveProject = useArchiveProjectMutation();
+  const confirm = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleteLock = useRef(false);
 
@@ -256,13 +258,13 @@ export function ProjectsPage() {
 
   const deleteProject = async (project: ProjectSummary) => {
     if (deleteLock.current || deletingId) return;
-    if (
-      !window.confirm(
-        `حذف مشروع «${project.name}»؟ سيُزال من القائمة النشطة.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: `حذف مشروع «${project.name}»؟`,
+      description: "سيُزال من القائمة النشطة.",
+      tone: "danger",
+      confirmLabel: "حذف",
+    });
+    if (!ok) return;
 
     deleteLock.current = true;
     setDeletingId(project.id);

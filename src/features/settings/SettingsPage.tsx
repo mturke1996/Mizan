@@ -8,8 +8,10 @@ import {
   CreditCard,
   LogOut,
   Moon,
+  Repeat,
   Shield,
   ShieldCheck,
+  Tags,
   WalletCards,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -27,6 +29,18 @@ const settingsLinks = [
     detail: "الاسم والشعار والبيانات الظاهرة على الفواتير",
     to: "/settings/business",
     icon: Building2,
+  },
+  {
+    label: "التصنيفات",
+    detail: "إدارة تصنيفات الدخل والمصروفات للتقارير والميزانيات",
+    to: "/settings/categories",
+    icon: Tags,
+  },
+  {
+    label: "الحركات المتكررة",
+    detail: "جدولة الحركات الدورية وترحيلها تلقائيًا عند الاستحقاق",
+    to: "/settings/recurring",
+    icon: Repeat,
   },
   {
     label: "الإشعارات",

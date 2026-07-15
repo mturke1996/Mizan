@@ -4,6 +4,34 @@ import type { ProjectSummary } from "@/features/workspace/workspace-types";
 
 export type AnalyticsConfidence = "low" | "medium" | "high";
 
+/**
+ * Sum expense totals per category id for the current calendar month in the
+ * given timezone, restricted to the workspace currency. Used by the budgets
+ * card to compare monthly spend against per-category limits. Only transactions
+ * that carry a categoryId are counted; transfers are ignored.
+ */
+export function summarizeCurrentMonthByCategory(input: {
+  transactions: FinanceTransaction[];
+  currency?: string;
+  timeZone?: string;
+  now?: Date;
+}): Map<string, bigint> {
+  const now = input.now ?? new Date();
+  const timeZone = input.timeZone ?? "Africa/Tripoli";
+  const currentKey = monthKeyForDate(now, timeZone);
+  const totals = new Map<string, bigint>();
+  for (const tx of input.transactions) {
+    if (tx.kind !== "expense") continue;
+    if (input.currency && tx.currency !== input.currency) continue;
+    if (!tx.categoryId) continue;
+    const occurred = new Date(tx.occurredAt);
+    if (Number.isNaN(occurred.getTime())) continue;
+    if (monthKeyForDate(occurred, timeZone) !== currentKey) continue;
+    totals.set(tx.categoryId, (totals.get(tx.categoryId) ?? 0n) + tx.amountMinor);
+  }
+  return totals;
+}
+
 export interface AnalyticsSnapshot {
   incomeMinor: bigint;
   expenseMinor: bigint;
@@ -37,6 +65,12 @@ export interface AnalyticsSnapshot {
     name: string;
     amountMinor: bigint;
     percent: number;
+  }>;
+  categoryBreakdown: Array<{
+    name: string;
+    incomeMinor: bigint;
+    expenseMinor: bigint;
+    netMinor: bigint;
   }>;
   topProjects: Array<{
     id: string;
@@ -298,6 +332,35 @@ export function computeAnalytics(input: {
     .slice(0, 6);
   const expenseConcentrationRate = categoryMix[0]?.percent ?? null;
 
+  // Period-wide category breakdown (income and expense per category) for the
+  // selected window. Unlike categoryMix (current-month expense only), this
+  // covers the whole selected period and both directions, so it works as a
+  // proper category report and a base for budgets.
+  const breakdownMap = new Map<string, { income: bigint; expense: bigint }>();
+  for (const tx of periodTx) {
+    if (tx.kind === "transfer") continue;
+    const name =
+      (tx.categoryId && input.categoryNames?.get(tx.categoryId)) ||
+      (tx.projectId ? projectNames.get(tx.projectId) : null) ||
+      "أخرى";
+    const entry = breakdownMap.get(name) ?? { income: 0n, expense: 0n };
+    if (tx.kind === "income") entry.income += tx.amountMinor;
+    if (tx.kind === "expense") entry.expense += tx.amountMinor;
+    breakdownMap.set(name, entry);
+  }
+  const categoryBreakdown = [...breakdownMap.entries()]
+    .map(([name, entry]) => ({
+      name,
+      incomeMinor: entry.income,
+      expenseMinor: entry.expense,
+      netMinor: entry.income - entry.expense,
+    }))
+    .sort((a, b) => {
+      const aTotal = a.incomeMinor + a.expenseMinor;
+      const bTotal = b.incomeMinor + b.expenseMinor;
+      return aTotal === bTotal ? 0 : aTotal > bTotal ? -1 : 1;
+    });
+
   const activeProjectsWithActivity = input.projects.filter(
     (project) =>
       project.status === "active" &&
@@ -533,6 +596,7 @@ export function computeAnalytics(input: {
     dataPoints,
     monthlyTrend,
     categoryMix,
+    categoryBreakdown,
     topProjects,
     achievements,
     insights: insights.slice(0, 5),

@@ -50,6 +50,63 @@ export function exportTransactionsCsv(
   );
 }
 
+const KIND_LABELS: Record<string, string> = {
+  income: "دخل",
+  expense: "مصروف",
+  transfer: "تحويل",
+};
+
+/** Rich register export with wallet, category, and signed amount columns. */
+export function exportRegisterCsv(
+  rows: ReadonlyArray<{
+    occurredAt: string;
+    kind: string;
+    title: string;
+    amountMinor: bigint;
+    currency: string;
+    walletId: string;
+    destinationWalletId?: string;
+    categoryId?: string;
+    projectId?: string;
+  }>,
+  names: {
+    wallet: (id: string) => string;
+    category: (id: string) => string;
+    project: (id: string) => string;
+  },
+): string {
+  return buildCsv(
+    [
+      "occurred_at",
+      "kind",
+      "title",
+      "wallet",
+      "category",
+      "project",
+      "amount_minor",
+      "currency",
+    ],
+    rows.map((row) => {
+      const signed =
+        row.kind === "income"
+          ? row.amountMinor
+          : row.kind === "expense"
+            ? -row.amountMinor
+            : 0n;
+      return [
+        row.occurredAt,
+        KIND_LABELS[row.kind] ?? row.kind,
+        row.title,
+        row.walletId ? names.wallet(row.walletId) : "",
+        row.categoryId ? names.category(row.categoryId) : "",
+        row.projectId ? names.project(row.projectId) : "",
+        signed.toString(),
+        row.currency,
+      ];
+    }),
+  );
+}
+
 export function exportWalletsCsv(
   rows: ReadonlyArray<{
     name: string;

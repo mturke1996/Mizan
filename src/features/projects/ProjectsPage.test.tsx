@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { demoAuthValue } from "@/features/auth/demo-auth";
 import { AppProviders } from "@/app/AppProviders";
 import { demoWorkspaceValue } from "@/features/workspace/demo-workspace";
@@ -12,7 +12,6 @@ import { ProjectsPage } from "./ProjectsPage";
 describe("ProjectsPage", () => {
   beforeEach(() => {
     projectStore.getState().replaceProjects(demoProjects);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("summarizes active projects and their profit", () => {
@@ -83,10 +82,8 @@ describe("ProjectsPage", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "حذف تجارة الصقور" }));
+    await user.click(screen.getByRole("button", { name: "حذف" }));
 
-    expect(window.confirm).toHaveBeenCalledWith(
-      "حذف مشروع «تجارة الصقور»؟ سيُزال من القائمة النشطة.",
-    );
     expect(screen.queryByText("تجارة الصقور")).not.toBeInTheDocument();
     expect(
       projectStore.getState().projects.find((p) => p.id === "falcon-store")
@@ -96,7 +93,6 @@ describe("ProjectsPage", () => {
 
   it("keeps the project when delete is cancelled", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(false);
 
     render(
       <MemoryRouter>
@@ -110,6 +106,7 @@ describe("ProjectsPage", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "حذف تجارة الصقور" }));
+    await user.click(screen.getByRole("button", { name: "إلغاء" }));
 
     expect(screen.getByText("تجارة الصقور")).toBeInTheDocument();
     expect(

@@ -13,6 +13,8 @@ import { useWorkspace } from "@/features/workspace/use-workspace";
 import { MoneySectionTabs } from "@/shared/navigation/MoneySectionTabs";
 import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { ErrorState } from "@/shared/ui/ErrorState";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 function payKindLabel(payKind: IncomeSource["payKind"]) {
   if (payKind === "daily") return "يومي";
@@ -97,7 +99,7 @@ export function IncomePage() {
   const totalOutstanding = balances.reduce((sum, b) => sum + b.balanceMinor, 0n);
   const money = { currency, locale: "en-US" as const };
 
-  if (sourcesQuery.isLoading) {
+  if (sourcesQuery.isLoading || balancesQuery.isLoading) {
     return (
       <div className="px-4 sm:px-6" dir="rtl">
         <MoneySectionTabs active="income" />
@@ -106,6 +108,23 @@ export function IncomePage() {
           role="status"
           aria-label="جاري تحميل مصادر الدخل"
           className="h-40 animate-pulse bg-surface-subtle"
+        />
+      </div>
+    );
+  }
+
+  if (sourcesQuery.isError || balancesQuery.isError) {
+    const error = sourcesQuery.error ?? balancesQuery.error;
+    return (
+      <div className="px-4 sm:px-6" dir="rtl">
+        <MoneySectionTabs active="income" />
+        <PageHeader title="دخلي" subtitle="مصادر دخلك الشخصي" />
+        <ErrorState
+          message={getUserErrorMessage(error, "تعذر تحميل مصادر الدخل")}
+          onRetry={() => {
+            void sourcesQuery.refetch();
+            void balancesQuery.refetch();
+          }}
         />
       </div>
     );

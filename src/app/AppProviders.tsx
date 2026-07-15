@@ -12,6 +12,8 @@ import {
   WorkspaceProvider,
   type WorkspaceContextValue,
 } from "@/features/workspace/WorkspaceProvider";
+import { RecurringDuePoster } from "@/features/workspace/RecurringDuePoster";
+import { ConfirmDialogProvider } from "@/shared/ui/confirm-dialog";
 
 const SEVEN_DAYS_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -94,22 +96,25 @@ export function AppProviders({
   // Injected test providers skip persistence to avoid async restore noise.
   const isTestHarness = Boolean(authValue || workspaceValue);
   const tree = (
-    <AuthProvider value={authValue}>
-      <WorkspaceProvider value={workspaceValue}>
-        {children}
-        <Toaster
-          position="top-center"
-          dir="rtl"
-          richColors
-          closeButton
-          toastOptions={{
-            classNames: {
-              toast: "!rounded-md !border-line !bg-surface !text-ink",
-            },
-          }}
-        />
-      </WorkspaceProvider>
-    </AuthProvider>
+    <ConfirmDialogProvider>
+      <AuthProvider value={authValue}>
+        <WorkspaceProvider value={workspaceValue}>
+          {children}
+          {!isTestHarness ? <RecurringDuePoster /> : null}
+          <Toaster
+            position="top-center"
+            dir="rtl"
+            richColors
+            closeButton
+            toastOptions={{
+              classNames: {
+                toast: "!rounded-md !border-line !bg-surface !text-ink",
+              },
+            }}
+          />
+        </WorkspaceProvider>
+      </AuthProvider>
+    </ConfirmDialogProvider>
   );
 
   if (isTestHarness) {

@@ -118,6 +118,16 @@ const BusinessBrandingPage = lazy(() =>
     default: module.BusinessBrandingPage,
   })),
 );
+const CategoriesSettingsPage = lazy(() =>
+  import("@/features/settings/CategoriesSettingsPage").then((module) => ({
+    default: module.CategoriesSettingsPage,
+  })),
+);
+const RecurringSettingsPage = lazy(() =>
+  import("@/features/settings/RecurringSettingsPage").then((module) => ({
+    default: module.RecurringSettingsPage,
+  })),
+);
 const SupervisorAuditPage = lazy(() =>
   import("@/features/supervisor/SupervisorAuditPage").then((module) => ({
     default: module.SupervisorAuditPage,
@@ -385,6 +395,22 @@ export function App() {
             element={
               <DeferredPage>
                 <BusinessBrandingPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="settings/categories"
+            element={
+              <DeferredPage>
+                <CategoriesSettingsPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="settings/recurring"
+            element={
+              <DeferredPage>
+                <RecurringSettingsPage />
               </DeferredPage>
             }
           />

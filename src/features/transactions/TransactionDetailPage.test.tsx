@@ -17,11 +17,6 @@ describe("TransactionDetailPage", () => {
   beforeEach(() => {
     financeStore.getState().replaceState(demoFinanceState);
     projectStore.getState().replaceProjects(demoProjects);
-    vi.spyOn(window, "confirm").mockReturnValue(true);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
   });
 
   it("shows the selected transaction details", () => {
@@ -74,8 +69,8 @@ describe("TransactionDetailPage", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "حذف المعاملة" }));
+    await user.click(screen.getByRole("button", { name: "حذف" }));
 
-    expect(window.confirm).toHaveBeenCalled();
     expect(
       financeStore.getState().transactions.find((item) => item.id === "tx-1"),
     ).toBeUndefined();

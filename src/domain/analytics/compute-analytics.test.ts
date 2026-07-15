@@ -1,4 +1,4 @@
-import { computeAnalytics } from "./compute-analytics";
+import { computeAnalytics, summarizeCurrentMonthByCategory } from "./compute-analytics";
 import type { FinanceTransaction } from "@/domain/finance/finance-state";
 import type { ProjectSummary } from "@/features/workspace/workspace-types";
 
@@ -342,5 +342,102 @@ describe("computeAnalytics", () => {
 
     expect(result.incomeTrendRate).toBeCloseTo(19.23, 1);
     expect(result.expenseTrendRate).toBeCloseTo(19.23, 1);
+  });
+
+  it("aggregates income and expense per category across the selected period", () => {
+    const result = computeAnalytics({
+      transactions: [
+        ...transactions,
+        {
+          id: "3",
+          kind: "income",
+          walletId: "cash",
+          amountMinor: 400_000n,
+          currency: "LYD",
+          title: "دخل مصنّف",
+          categoryId: "cat-1",
+          occurredAt: "2026-07-12T10:00:00.000Z",
+        },
+      ],
+      projects: [],
+      totalBalanceMinor: 1_000_000n,
+      categoryNames: new Map([["cat-1", "مستلزمات"]]),
+      months: 3,
+      now,
+    });
+
+    const row = result.categoryBreakdown.find(
+      (item) => item.name === "مستلزمات",
+    );
+    expect(row).toBeDefined();
+    expect(row?.incomeMinor).toBe(400_000n);
+    expect(row?.expenseMinor).toBe(250_000n);
+    expect(row?.netMinor).toBe(150_000n);
+  });
+});
+
+describe("summarizeCurrentMonthByCategory", () => {
+  const now = new Date("2026-07-13T12:00:00.000Z");
+
+  it("sums only current-month expenses per category in the workspace currency", () => {
+    const totals = summarizeCurrentMonthByCategory({
+      transactions: [
+        {
+          id: "1",
+          kind: "expense",
+          walletId: "cash",
+          amountMinor: 250_000n,
+          currency: "LYD",
+          title: "مصروف يوليو",
+          categoryId: "cat-1",
+          occurredAt: "2026-07-11T10:00:00.000Z",
+        },
+        {
+          id: "2",
+          kind: "expense",
+          walletId: "cash",
+          amountMinor: 150_000n,
+          currency: "LYD",
+          title: "مصروف يونيو",
+          categoryId: "cat-1",
+          occurredAt: "2026-06-20T10:00:00.000Z",
+        },
+        {
+          id: "3",
+          kind: "expense",
+          walletId: "cash",
+          amountMinor: 100_000n,
+          currency: "USD",
+          title: "مصروف أجنبي",
+          categoryId: "cat-1",
+          occurredAt: "2026-07-12T10:00:00.000Z",
+        },
+        {
+          id: "4",
+          kind: "income",
+          walletId: "cash",
+          amountMinor: 1_000_000n,
+          currency: "LYD",
+          title: "دخل",
+          categoryId: "cat-1",
+          occurredAt: "2026-07-10T10:00:00.000Z",
+        },
+        {
+          id: "5",
+          kind: "expense",
+          walletId: "cash",
+          amountMinor: 75_000n,
+          currency: "LYD",
+          title: "مصروف غير مصنّف",
+          occurredAt: "2026-07-12T10:00:00.000Z",
+        },
+      ],
+      currency: "LYD",
+      timeZone: "Africa/Tripoli",
+      now,
+    });
+
+    expect(totals.get("cat-1")).toBe(250_000n);
+    expect(totals.has("cat-2")).toBe(false);
   });
 });

@@ -31,6 +31,7 @@ import { formatPlainDateAr, getDateKeyInTimeZone } from "@/lib/date";
 import { AppCard } from "@/shared/ui/AppCard";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 
 type MovementType = "daily" | "withdrawal" | "deduction" | "bonus";
 
@@ -531,6 +532,7 @@ function LiveProjectWorkersTab({
   const createWorker = useCreateWorkerMutation(projectId);
   const recordWork = useRecordDailyWorkMutation(projectId);
   const wageMovement = usePostWageMovementMutation(projectId);
+  const confirm = useConfirm();
   const form = useWorkersFormState(timeZone);
   const workers = workersQuery.data ?? [];
   const workLogs = workLogsQuery.data ?? [];
@@ -604,15 +606,21 @@ function LiveProjectWorkersTab({
       }
     }
     if (
-      (form.movementType === "withdrawal" ||
-        form.movementType === "deduction") &&
-      !window.confirm(
-        form.movementType === "withdrawal"
-          ? "تأكيد تسجيل سحب العامل من المحفظة؟"
-          : "تأكيد خصم هذا المبلغ من رصيد العامل؟",
-      )
+      form.movementType === "withdrawal" ||
+      form.movementType === "deduction"
     ) {
-      return;
+      const ok = await confirm({
+        title:
+          form.movementType === "withdrawal"
+            ? "تأكيد سحب العامل؟"
+            : "تأكيد خصم من رصيد العامل؟",
+        description:
+          form.movementType === "withdrawal"
+            ? "سيتم تسجيل السحب من المحفظة المختارة."
+            : "سيُخصم المبلغ من رصيد العامل.",
+        tone: "warning",
+      });
+      if (!ok) return;
     }
 
     form.setBusy(true);
@@ -722,6 +730,7 @@ function DemoProjectWorkersTab({
   const createWorker = useProjectStore((state) => state.createWorker);
   const recordDailyWork = useProjectStore((state) => state.recordDailyWork);
   const postWageMovement = useProjectStore((state) => state.postWageMovement);
+  const confirm = useConfirm();
   const sortedLogs = useMemo(
     () =>
       [...workLogs].sort((left, right) =>
@@ -759,7 +768,7 @@ function DemoProjectWorkersTab({
     }
   };
 
-  const submitMovement = () => {
+  const submitMovement = async () => {
     if (!form.selectedWorkerId) {
       toast.error("اختر عاملًا");
       return;
@@ -789,15 +798,21 @@ function DemoProjectWorkersTab({
       }
     }
     if (
-      (form.movementType === "withdrawal" ||
-        form.movementType === "deduction") &&
-      !window.confirm(
-        form.movementType === "withdrawal"
-          ? "تأكيد تسجيل سحب العامل من المحفظة؟"
-          : "تأكيد خصم هذا المبلغ من رصيد العامل؟",
-      )
+      form.movementType === "withdrawal" ||
+      form.movementType === "deduction"
     ) {
-      return;
+      const ok = await confirm({
+        title:
+          form.movementType === "withdrawal"
+            ? "تأكيد سحب العامل؟"
+            : "تأكيد خصم من رصيد العامل؟",
+        description:
+          form.movementType === "withdrawal"
+            ? "سيتم تسجيل السحب من المحفظة المختارة."
+            : "سيُخصم المبلغ من رصيد العامل.",
+        tone: "warning",
+      });
+      if (!ok) return;
     }
 
     form.setBusy(true);
@@ -850,7 +865,7 @@ function DemoProjectWorkersTab({
       onMovementAmountChange={form.setMovementAmount}
       onMovementTypeChange={form.setMovementType}
       onSelectedWorkerChange={form.setSelectedWorkerId}
-      onSubmitMovement={submitMovement}
+      onSubmitMovement={() => void submitMovement()}
       onWalletChange={form.setWalletId}
       onWorkDateChange={form.setWorkDate}
       onWorkerNameChange={form.setWorkerName}

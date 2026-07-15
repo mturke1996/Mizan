@@ -11,8 +11,11 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "@/app/App";
 import { AppProviders } from "@/app/AppProviders";
+import { initCapacitorNative } from "@/lib/capacitor-native";
 import { RegisteredPwaUpdatePrompt } from "@/shared/pwa/RegisteredPwaUpdatePrompt";
 import "@/styles/globals.css";
+
+void initCapacitorNative();
 
 const rootElement = document.getElementById("root");
 

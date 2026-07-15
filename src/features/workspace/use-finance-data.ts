@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useWorkspace } from "./use-workspace";
 import {
   archiveInventoryItem,
@@ -40,12 +45,24 @@ import {
   fetchProjectTransactions,
   fetchProjects,
   fetchTransactions,
+  fetchTransactionsPage,
+  fetchAllFilteredTransactions,
   fetchWallets,
   fetchWorkers,
   fetchWorkLogs,
   fetchWorkspaceAchievementUnlocks,
   fetchWorkspaceGoal,
   fetchWorkspaceMemberOptions,
+  filterActiveFinancialEventRows,
+  fetchAllCategories,
+  fetchBudgets,
+  upsertCategoryRpc,
+  upsertBudgetRpc,
+  deleteBudgetRpc,
+  fetchRecurring,
+  upsertRecurringRpc,
+  deleteRecurringRpc,
+  postRecurringDueRpc,
   adjustWalletBalanceRpc,
   openOrLinkProjectWalletRpc,
   postCapitalEntry,
@@ -72,7 +89,10 @@ import {
   upsertInventoryItem,
   upsertProjectMemberRpc,
   upsertWorkspaceGoalRpc,
+  type TransactionFilters,
 } from "./workspace-api";
+import { mapFinancialEvent } from "./mappers";
+import { useFinanceStore } from "@/features/finance/finance-store";
 import type {
   CapitalEntryType,
   DebtDirection,
@@ -90,12 +110,18 @@ import type {
   ProjectModules,
   ProjectStatus,
   ProjectType,
+  CategoryInput,
+  BudgetInput,
+  RecurringInput,
 } from "./workspace-types";
+import type { FinanceTransaction } from "@/domain/finance/finance-state";
 
 export const workspaceKeys = {
   wallets: (workspaceId: string) => ["wallets", workspaceId] as const,
   transactions: (workspaceId: string) =>
     ["transactions", workspaceId] as const,
+  filteredTransactions: (workspaceId: string, filters: unknown) =>
+    ["transactions", workspaceId, "filtered", filters] as const,
   projectTransactionsRoot: (workspaceId: string) =>
     ["project-transactions", workspaceId] as const,
   projectTransactions: (workspaceId: string, projectId: string) =>
@@ -109,6 +135,12 @@ export const workspaceKeys = {
   analytics: (workspaceId: string) => ["analytics", workspaceId] as const,
   finance: (workspaceId: string) => ["finance", workspaceId] as const,
   categories: (workspaceId: string) => ["categories", workspaceId] as const,
+  allCategories: (workspaceId: string) =>
+    ["categories", workspaceId, "all"] as const,
+  allTransactions: (workspaceId: string) =>
+    ["transactions", workspaceId, "all"] as const,
+  budgets: (workspaceId: string) => ["budgets", workspaceId] as const,
+  recurring: (workspaceId: string) => ["recurring", workspaceId] as const,
   workers: (workspaceId: string, projectId: string) =>
     ["workers", workspaceId, projectId] as const,
   workLogs: (workspaceId: string, projectId: string) =>
@@ -201,6 +233,161 @@ export function useTransactionsQuery() {
   });
 }
 
+export interface AllTransactionsResult {
+  transactions: FinanceTransaction[];
+  isLoading: boolean;
+  error: Error | null;
+  refetch: () => void;
+}
+
+/**
+ * Full wallet transaction history (paginated, no 200-row cap) for reports that
+ * must be accurate over the whole selected period. Falls back to the demo
+ * store in demo mode.
+ */
+export function useAllTransactionsQuery(): AllTransactionsResult {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  const storeTransactions = useFinanceStore((state) => state.transactions);
+  const query = useQuery({
+    queryKey: workspaceKeys.allTransactions(workspaceId ?? "none"),
+    queryFn: () =>
+      fetchAllFilteredTransactions(requireLiveWorkspace(workspaceId), {}),
+    enabled: Boolean(workspaceId) && !isDemo,
+  });
+
+  if (!workspaceId && isDemo) {
+    return {
+      transactions: storeTransactions,
+      isLoading: false,
+      error: null,
+      refetch: () => undefined,
+    };
+  }
+
+  return {
+    transactions: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: () => {
+      void query.refetch();
+    },
+  };
+}
+
+export interface FilteredTransactionsResult {
+  transactions: FinanceTransaction[];
+  isLoading: boolean;
+  isFetchingNextPage: boolean;
+  hasNextPage: boolean;
+  error: Error | null;
+  fetchNextPage: () => void;
+  isRefetching: boolean;
+  refetch: () => void;
+}
+
+/**
+ * Server-side filtered, paginated transactions register. Pages accumulate and
+ * `filterActiveFinancialEventRows` runs across the full accumulated set, so a
+ * reversal (loaded first because it is newer) hides its reversed original even
+ * when that original lands on a later page. In demo mode (no live workspace)
+ * it falls back to the local demo store with the same client-side filters.
+ */
+export function useFilteredTransactionsQuery(
+  filters: TransactionFilters,
+): FilteredTransactionsResult {
+  const { workspaceId, isDemo = false } = useWorkspace();
+  const storeTransactions = useFinanceStore((state) => state.transactions);
+
+  const query = useInfiniteQuery({
+    queryKey: workspaceKeys.filteredTransactions(workspaceId ?? "none", filters),
+    queryFn: ({ pageParam }) =>
+      fetchTransactionsPage(
+        requireLiveWorkspace(workspaceId),
+        filters,
+        pageParam,
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.length : undefined,
+    enabled: Boolean(workspaceId),
+  });
+
+  if (!workspaceId && isDemo) {
+    return {
+      transactions: applyTransactionFilters(storeTransactions, filters),
+      isLoading: false,
+      isFetchingNextPage: false,
+      hasNextPage: false,
+      error: null,
+      fetchNextPage: () => undefined,
+      isRefetching: false,
+      refetch: () => undefined,
+    };
+  }
+
+  const accumulatedRows = query.data
+    ? query.data.pages.flatMap((page) => page.rows)
+    : [];
+  const transactions = filterActiveFinancialEventRows(accumulatedRows)
+    .map(mapFinancialEvent)
+    .filter((item): item is FinanceTransaction => item !== null);
+
+  return {
+    transactions,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: Boolean(query.hasNextPage),
+    error: query.error,
+    fetchNextPage: () => {
+      void query.fetchNextPage();
+    },
+    isRefetching: query.isRefetching && !query.isFetchingNextPage,
+    refetch: () => {
+      void query.refetch();
+    },
+  };
+}
+
+function applyTransactionFilters(
+  transactions: FinanceTransaction[],
+  filters: TransactionFilters,
+): FinanceTransaction[] {
+  const search = filters.search?.trim().toLocaleLowerCase("ar");
+  return transactions.filter((transaction) => {
+    if (filters.kind && transaction.kind !== filters.kind) return false;
+    if (
+      filters.walletId &&
+      transaction.walletId !== filters.walletId &&
+      transaction.kind === "transfer" &&
+      transaction.destinationWalletId !== filters.walletId
+    ) {
+      return false;
+    }
+    if (filters.categoryId && transaction.categoryId !== filters.categoryId) {
+      return false;
+    }
+    if (
+      filters.projectId &&
+      transaction.projectId !== filters.projectId
+    ) {
+      return false;
+    }
+    if (filters.dateFrom && transaction.occurredAt < filters.dateFrom) {
+      return false;
+    }
+    if (filters.dateTo && transaction.occurredAt > filters.dateTo) {
+      return false;
+    }
+    if (
+      search &&
+      !transaction.title.toLocaleLowerCase("ar").includes(search)
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
 export function useProjectTransactionsQuery(
   projectId: string | undefined,
 ) {
@@ -234,6 +421,140 @@ export function useCategoriesQuery() {
     queryKey: workspaceKeys.categories(workspaceId ?? "none"),
     queryFn: () => fetchCategories(requireLiveWorkspace(workspaceId)),
     enabled: Boolean(workspaceId),
+  });
+}
+
+export function useAllCategoriesQuery() {
+  const { workspaceId } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.allCategories(workspaceId ?? "none"),
+    queryFn: () => fetchAllCategories(requireLiveWorkspace(workspaceId)),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useUpsertCategory() {
+  const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  return useMutation({
+    mutationFn: (input: CategoryInput) =>
+      upsertCategoryRpc(requireLiveWorkspace(workspaceId), input),
+    onSuccess: () => {
+      if (workspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.categories(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.allCategories(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.analytics(workspaceId),
+        });
+      }
+    },
+  });
+}
+
+export function useBudgetsQuery() {
+  const { workspaceId } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.budgets(workspaceId ?? "none"),
+    queryFn: () => fetchBudgets(requireLiveWorkspace(workspaceId)),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useUpsertBudget() {
+  const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  return useMutation({
+    mutationFn: (input: BudgetInput) =>
+      upsertBudgetRpc(requireLiveWorkspace(workspaceId), input),
+    onSuccess: () => {
+      if (workspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.budgets(workspaceId),
+        });
+      }
+    },
+  });
+}
+
+export function useDeleteBudget() {
+  const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  return useMutation({
+    mutationFn: (budgetId: string) =>
+      deleteBudgetRpc(requireLiveWorkspace(workspaceId), budgetId),
+    onSuccess: () => {
+      if (workspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.budgets(workspaceId),
+        });
+      }
+    },
+  });
+}
+
+export function useRecurringQuery() {
+  const { workspaceId } = useWorkspace();
+  return useQuery({
+    queryKey: workspaceKeys.recurring(workspaceId ?? "none"),
+    queryFn: () => fetchRecurring(requireLiveWorkspace(workspaceId)),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useUpsertRecurring() {
+  const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  return useMutation({
+    mutationFn: (input: RecurringInput) =>
+      upsertRecurringRpc(requireLiveWorkspace(workspaceId), input),
+    onSuccess: () => {
+      if (workspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.recurring(workspaceId),
+        });
+      }
+    },
+  });
+}
+
+export function useDeleteRecurring() {
+  const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  return useMutation({
+    mutationFn: (recurringId: string) =>
+      deleteRecurringRpc(requireLiveWorkspace(workspaceId), recurringId),
+    onSuccess: () => {
+      if (workspaceId) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.recurring(workspaceId),
+        });
+      }
+    },
+  });
+}
+
+export function usePostRecurringDue() {
+  const queryClient = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  return useMutation({
+    mutationFn: () => postRecurringDueRpc(requireLiveWorkspace(workspaceId)),
+    onSuccess: (count) => {
+      if (workspaceId && count > 0) {
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.recurring(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.transactions(workspaceId),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: workspaceKeys.analytics(workspaceId),
+        });
+      }
+    },
   });
 }
 

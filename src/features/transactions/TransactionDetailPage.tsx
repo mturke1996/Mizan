@@ -12,6 +12,7 @@ import {
 import { useFinanceView } from "@/features/workspace/use-finance-view";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { getUserErrorMessage } from "@/lib/user-error";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
@@ -55,6 +56,7 @@ export function TransactionDetailPage() {
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const confirm = useConfirm();
   const transaction = transactions.find((item) => item.id === transactionId);
 
   if (!transaction) {
@@ -88,13 +90,13 @@ export function TransactionDetailPage() {
 
   const handleDelete = async () => {
     if (busy || reverseEvent.isPending) return;
-    if (
-      !window.confirm(
-        "هل تريد حذف هذه المعاملة؟ سيتم عكس أثرها على أرصدة المحافظ.",
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: "حذف المعاملة؟",
+      description: "سيتم عكس أثرها على أرصدة المحافظ.",
+      tone: "danger",
+      confirmLabel: "حذف",
+    });
+    if (!ok) return;
 
     setBusy(true);
     try {

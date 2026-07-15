@@ -4,7 +4,9 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { useAuth } from "@/features/auth/use-auth";
 import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { ErrorState } from "@/shared/ui/ErrorState";
 import { EmptyBlock, LoadingBlock } from "@/features/supervisor/SupervisorUi";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 interface NotificationRow {
   id: string;
@@ -95,6 +97,14 @@ export function NotificationsPage() {
 
       {notificationsQuery.isLoading ? (
         <LoadingBlock rows={4} />
+      ) : notificationsQuery.isError ? (
+        <ErrorState
+          message={getUserErrorMessage(
+            notificationsQuery.error,
+            "تعذر تحميل الإشعارات",
+          )}
+          onRetry={() => void notificationsQuery.refetch()}
+        />
       ) : notifications.length === 0 ? (
         <EmptyBlock
           title="لا إشعارات"

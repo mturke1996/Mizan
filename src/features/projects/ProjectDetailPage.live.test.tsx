@@ -8,6 +8,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { toast } from "sonner";
+import { ConfirmDialogProvider } from "@/shared/ui/confirm-dialog";
 import type { FinanceTransaction } from "@/domain/finance/finance-state";
 import type {
   ProjectSummary,
@@ -210,14 +211,16 @@ function renderPage(
   initialEntry = `/projects/${project.id}`,
 ) {
   return render(
-    <MemoryRouter initialEntries={[initialEntry]}>
-      <Routes>
-        <Route
-          path="/projects/:projectId"
-          element={<ProjectDetailPage />}
-        />
-      </Routes>
-    </MemoryRouter>,
+    <ConfirmDialogProvider>
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <Routes>
+          <Route
+            path="/projects/:projectId"
+            element={<ProjectDetailPage />}
+          />
+        </Routes>
+      </MemoryRouter>
+    </ConfirmDialogProvider>,
   );
 }
 
@@ -284,7 +287,6 @@ describe("ProjectDetailPage live history", () => {
     vi.spyOn(crypto, "randomUUID").mockReturnValue(
       "00000000-0000-4000-8000-000000000001",
     );
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -422,9 +424,7 @@ describe("ProjectDetailPage live history", () => {
       "wallet-1",
     );
     await user.click(screen.getByRole("button", { name: "حفظ الحركة" }));
-    expect(window.confirm).toHaveBeenCalledWith(
-      "تأكيد تسجيل سحب العامل من المحفظة؟",
-    );
+    await user.click(screen.getByRole("button", { name: "تأكيد" }));
     expect(mocks.wageMovement.mutateAsync).toHaveBeenCalledWith({
       workerId: "worker-1",
       entryType: "withdrawal",

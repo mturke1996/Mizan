@@ -25,8 +25,10 @@ import {
 import { computeAnalytics } from "@/domain/analytics/compute-analytics";
 import { formatMinorAmount } from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
+import { BudgetsCard } from "@/features/analytics/BudgetsCard";
 import { groupProjectsByParent } from "@/features/projects/parent-project-tree";
 import {
+  useAllTransactionsQuery,
   useCategoriesQuery,
   useUnlockWorkspaceAchievementMutation,
   useWorkspaceAchievementUnlocksQuery,
@@ -89,11 +91,11 @@ export function AnalyticsPage() {
   const { currency, isDemo = false } = useWorkspace();
   const {
     wallets,
-    transactions,
     isLoading: financeLoading,
     error: financeError,
     refresh: refreshFinance,
   } = useFinanceView();
+  const allTransactions = useAllTransactionsQuery();
   const {
     projects,
     isLoading: projectsLoading,
@@ -127,7 +129,7 @@ export function AnalyticsPage() {
   const analytics = useMemo(
     () =>
       computeAnalytics({
-        transactions,
+        transactions: allTransactions.transactions,
         projects,
         totalBalanceMinor: totalBalance,
         categoryNames,
@@ -136,7 +138,7 @@ export function AnalyticsPage() {
         timeZone: profile?.timezone ?? "Africa/Tripoli",
       }),
     [
-      transactions,
+      allTransactions.transactions,
       projects,
       totalBalance,
       categoryNames,
@@ -165,13 +167,20 @@ export function AnalyticsPage() {
     high: "مرتفعة",
   }[analytics.confidence];
   const analyticsLoading =
-    financeLoading || projectsLoading || categoriesQuery.isLoading;
+    financeLoading ||
+    projectsLoading ||
+    categoriesQuery.isLoading ||
+    allTransactions.isLoading;
   const categoriesError = categoriesQuery.isError
     ? categoriesQuery.error instanceof Error
       ? categoriesQuery.error.message
       : "تعذر تحميل التصنيفات"
     : null;
-  const analyticsError = financeError ?? projectsError ?? categoriesError;
+  const allTransactionsError = allTransactions.error
+    ? allTransactions.error.message
+    : null;
+  const analyticsError =
+    financeError ?? projectsError ?? categoriesError ?? allTransactionsError;
   const periodSelector = (
     <select
       aria-label="الفترة الزمنية"
@@ -224,6 +233,7 @@ export function AnalyticsPage() {
               refreshFinance(),
               refreshProjects(),
               categoriesQuery.refetch(),
+              allTransactions.refetch(),
             ])
           }
         />
@@ -302,6 +312,8 @@ export function AnalyticsPage() {
           tone={analytics.projectedNetMinor >= 0n ? "primary" : "danger"}
         />
       </section>
+
+      <BudgetsCard />
 
       <AppCard className="mb-5 overflow-hidden p-0">
         <div className="border-b border-line p-4 sm:p-5">
@@ -605,6 +617,81 @@ export function AnalyticsPage() {
                 </div>
               </li>
             ))}
+          </ul>
+        )}
+      </AppCard>
+
+      <AppCard className="mb-5 p-4 sm:p-5">
+        <div className="mb-1 flex items-end justify-between">
+          <div>
+            <h2 className="font-bold text-ink">تفصيل التصنيفات</h2>
+            <p className="mt-1 text-xs text-muted">
+              الدخل والمصروف لكل تصنيف خلال الفترة المختارة
+            </p>
+          </div>
+        </div>
+        {analytics.categoryBreakdown.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">
+            لا توجد حركات مصنّفة في هذه الفترة بعد. اربط معاملاتك بالتصنيفات
+            لرؤية هذا التقرير.
+          </p>
+        ) : (
+          <ul className="mt-4 divide-y divide-line">
+            {analytics.categoryBreakdown.map((row) => {
+              const total =
+                row.incomeMinor + row.expenseMinor;
+              const incomePct =
+                total > 0n
+                  ? Number((row.incomeMinor * 100n) / total)
+                  : 0;
+              return (
+                <li key={row.name} className="py-3">
+                  <div className="mb-2 flex items-center justify-between text-sm">
+                    <span className="font-semibold text-ink">{row.name}</span>
+                    <span
+                      className={`numeric text-xs font-bold ${
+                        row.netMinor >= 0n ? "text-success" : "text-danger"
+                      }`}
+                      dir="ltr"
+                    >
+                      {row.netMinor >= 0n ? "+" : ""}
+                      {formatMinorAmount(row.netMinor, {
+                        currency,
+                        locale: "en-US",
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex h-2 overflow-hidden rounded-full bg-surface-subtle">
+                    <span
+                      className="bg-success"
+                      style={{ width: `${incomePct}%` }}
+                      aria-label={`دخل ${row.name}`}
+                    />
+                    <span
+                      className="bg-danger"
+                      style={{ width: `${100 - incomePct}%` }}
+                      aria-label={`مصروف ${row.name}`}
+                    />
+                  </div>
+                  <div className="mt-1.5 flex justify-between text-[11px] text-muted">
+                    <span className="numeric" dir="ltr">
+                      دخل{" "}
+                      {formatMinorAmount(row.incomeMinor, {
+                        currency,
+                        locale: "en-US",
+                      })}
+                    </span>
+                    <span className="numeric" dir="ltr">
+                      مصروف{" "}
+                      {formatMinorAmount(row.expenseMinor, {
+                        currency,
+                        locale: "en-US",
+                      })}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </AppCard>

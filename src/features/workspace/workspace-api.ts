@@ -73,7 +73,14 @@ import type {
   ProjectCashMode,
   ProjectCategorySeed,
   ProjectModules,
+  CategoryInput,
+  CategoryKind,
   CategoryOption,
+  CategoryRecord,
+  BudgetInput,
+  BudgetRecord,
+  RecurringInput,
+  RecurringRecord,
   ProjectMember,
   ProjectMemberRole,
   ProjectSummary,
@@ -87,6 +94,23 @@ import type {
 const PROJECT_TRANSACTION_PAGE_SIZE = 1_000;
 const DEBT_LIST_PAGE_SIZE = 500;
 const DEBT_ENTRY_PAGE_SIZE = 500;
+/** Server-side page size for the unified transactions register. */
+export const TRANSACTION_PAGE_SIZE = 60;
+
+export interface TransactionFilters {
+  kind?: "income" | "expense" | "transfer";
+  walletId?: string;
+  categoryId?: string;
+  projectId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface TransactionPage {
+  rows: FinancialEventDetailRow[];
+  hasMore: boolean;
+}
 
 function quotePostgrestFilterValue(value: string): string {
   return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
@@ -104,7 +128,7 @@ function projectTransactionCursorFilter(
   ].join(",");
 }
 
-type FinancialEventDetailRow = {
+export type FinancialEventDetailRow = {
   id: string;
   event_type: string;
   effective_event_type: string;
@@ -121,7 +145,7 @@ type FinancialEventDetailRow = {
   created_at?: string;
 };
 
-function filterActiveFinancialEventRows(
+export function filterActiveFinancialEventRows(
   rows: FinancialEventDetailRow[],
 ): FinancialEventDetailRow[] {
   const reversedIds = new Set(
@@ -250,6 +274,96 @@ export async function fetchTransactions(
 
   if (error) throwArabic(error, "تعذر تحميل المعاملات");
   return filterActiveFinancialEventRows(data ?? [])
+    .map(mapFinancialEvent)
+    .filter((item): item is FinanceTransaction => item !== null);
+}
+
+/**
+ * Server-side filtered + paginated transactions register. Pushes every active
+ * filter to PostgREST on the RLS-aware `financial_event_details` view and
+ * returns one page; the caller accumulates pages and applies
+ * `filterActiveFinancialEventRows` on the full accumulated set so that a
+ * reversal (more recent, loaded first) correctly hides its original on a
+ * later page — removing the old 200-row client-side cap without a new RPC.
+ */
+export async function fetchTransactionsPage(
+  workspaceId: string,
+  filters: TransactionFilters,
+  page: number,
+  pageSize: number = TRANSACTION_PAGE_SIZE,
+): Promise<TransactionPage> {
+  const supabase = getSupabaseClient();
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("financial_event_details")
+    .select("*")
+    .eq("workspace_id", workspaceId)
+    // Keep reversal rows: they are newer and load first, so the caller can
+    // collect reversed ids and drop the reversed originals on later pages.
+    .order("occurred_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(from, to);
+
+  if (filters.kind) {
+    query = query.eq("effective_event_type", filters.kind);
+  }
+  if (filters.walletId) {
+    // A wallet is involved as the source (expense/transfer) or the
+    // destination (income/transfer); match either side.
+    query = query.or(
+      `source_wallet_id.eq.${filters.walletId},destination_wallet_id.eq.${filters.walletId}`,
+    );
+  }
+  if (filters.categoryId) {
+    query = query.eq("category_id", filters.categoryId);
+  }
+  if (filters.projectId) {
+    query = query.eq("project_id", filters.projectId);
+  }
+  if (filters.dateFrom) {
+    query = query.gte("occurred_at", filters.dateFrom);
+  }
+  if (filters.dateTo) {
+    query = query.lte("occurred_at", filters.dateTo);
+  }
+  if (filters.search && filters.search.trim()) {
+    query = query.ilike("description", `%${filters.search.trim()}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) throwArabic(error, "تعذر تحميل المعاملات");
+
+  const rows = (data ?? []) as unknown as FinancialEventDetailRow[];
+  return {
+    rows,
+    hasMore: rows.length === pageSize,
+  };
+}
+
+/**
+ * Fetch every page matching the filters (capped at a generous limit) and return
+ * the full active transaction set. Used for CSV export of the register.
+ */
+export async function fetchAllFilteredTransactions(
+  workspaceId: string,
+  filters: TransactionFilters,
+  maxPages = 200,
+  pageSize = 1_000,
+): Promise<FinanceTransaction[]> {
+  const allRows: FinancialEventDetailRow[] = [];
+  for (let page = 0; page < maxPages; page += 1) {
+    const result = await fetchTransactionsPage(
+      workspaceId,
+      filters,
+      page,
+      pageSize,
+    );
+    allRows.push(...result.rows);
+    if (!result.hasMore) break;
+  }
+  return filterActiveFinancialEventRows(allRows)
     .map(mapFinancialEvent)
     .filter((item): item is FinanceTransaction => item !== null);
 }
@@ -523,6 +637,259 @@ export async function fetchCategories(
     name: row.name,
     kind: row.kind,
   }));
+}
+
+export async function fetchAllCategories(
+  workspaceId: string,
+): Promise<CategoryRecord[]> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, kind, is_system, is_active")
+    .eq("workspace_id", workspaceId)
+    .order("kind")
+    .order("name");
+
+  if (error) throwArabic(error, "تعذر تحميل التصنيفات");
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    kind: row.kind,
+    isSystem: row.is_system,
+    isActive: row.is_active,
+  }));
+}
+
+export async function upsertCategoryRpc(
+  workspaceId: string,
+  input: CategoryInput,
+): Promise<CategoryRecord> {
+  const supabase = getSupabaseClient();
+  // upsert_category is defined in a migration not yet reflected in the
+  // generated Database types; cast through unknown to call it safely.
+  const result = await supabase.rpc("upsert_category" as never, {
+    p_workspace_id: workspaceId,
+    p_category_id: input.id ?? null,
+    p_name: input.name,
+    p_kind: input.kind,
+    p_is_active: input.isActive ?? true,
+  } as never);
+  const data = result.data as {
+    id: string;
+    name: string;
+    kind: CategoryKind;
+    is_system: boolean;
+    is_active: boolean;
+  } | null;
+  const error = result.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر حفظ التصنيف");
+  if (!data) {
+    throw new Error("تعذر حفظ التصنيف");
+  }
+  return {
+    id: data.id,
+    name: data.name,
+    kind: data.kind,
+    isSystem: data.is_system,
+    isActive: data.is_active,
+  };
+}
+
+export async function fetchBudgets(
+  workspaceId: string,
+): Promise<BudgetRecord[]> {
+  const supabase = getSupabaseClient();
+  // The budgets table is defined in a migration not yet reflected in the
+  // generated Database types; cast the relation/columns through never.
+  const response = await supabase
+    .from("budgets" as never)
+    .select("id, category_id, currency_code, limit_minor")
+    .eq("workspace_id" as never, workspaceId)
+    .order("created_at" as never, { ascending: true });
+  const data = response.data as {
+    id: string;
+    category_id: string;
+    currency_code: string;
+    limit_minor: string;
+  }[] | null;
+  const error = response.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر تحميل الميزانيات");
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    categoryId: row.category_id,
+    currencyCode: row.currency_code,
+    limitMinor: BigInt(row.limit_minor),
+  }));
+}
+
+export async function upsertBudgetRpc(
+  workspaceId: string,
+  input: BudgetInput,
+): Promise<BudgetRecord> {
+  const supabase = getSupabaseClient();
+  // upsert_budget is defined in a migration not yet reflected in the generated
+  // Database types; cast through unknown to call it safely.
+  const result = await supabase.rpc("upsert_budget" as never, {
+    p_workspace_id: workspaceId,
+    p_budget_id: input.id ?? null,
+    p_category_id: input.categoryId,
+    p_currency_code: input.currencyCode,
+    p_limit_minor: toSafeMinorNumber(input.limitMinor),
+  } as never);
+  const data = result.data as {
+    id: string;
+    category_id: string;
+    currency_code: string;
+    limit_minor: string;
+  } | null;
+  const error = result.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر حفظ الميزانية");
+  if (!data) throw new Error("تعذر حفظ الميزانية");
+  return {
+    id: data.id,
+    categoryId: data.category_id,
+    currencyCode: data.currency_code,
+    limitMinor: BigInt(data.limit_minor),
+  };
+}
+
+export async function deleteBudgetRpc(
+  workspaceId: string,
+  budgetId: string,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const result = await supabase.rpc("delete_budget" as never, {
+    p_workspace_id: workspaceId,
+    p_budget_id: budgetId,
+  } as never);
+  const error = result.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر حذف الميزانية");
+}
+
+export async function fetchRecurring(
+  workspaceId: string,
+): Promise<RecurringRecord[]> {
+  const supabase = getSupabaseClient();
+  const response = await supabase
+    .from("recurring_transactions" as never)
+    .select(
+      "id, title, kind, amount_minor, currency_code, wallet_id, category_id, project_id, frequency, interval_steps, next_date, last_posted_at, is_active",
+    )
+    .eq("workspace_id" as never, workspaceId)
+    .order("next_date" as never, { ascending: true });
+  const data = response.data as {
+    id: string;
+    title: string;
+    kind: "income" | "expense";
+    amount_minor: string;
+    currency_code: string;
+    wallet_id: string;
+    category_id: string | null;
+    project_id: string | null;
+    frequency: "daily" | "weekly" | "monthly" | "yearly";
+    interval_steps: number;
+    next_date: string;
+    last_posted_at: string | null;
+    is_active: boolean;
+  }[] | null;
+  const error = response.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر تحميل الحركات المتكررة");
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    title: row.title,
+    kind: row.kind,
+    amountMinor: BigInt(row.amount_minor),
+    currencyCode: row.currency_code,
+    walletId: row.wallet_id,
+    categoryId: row.category_id,
+    projectId: row.project_id,
+    frequency: row.frequency,
+    intervalSteps: row.interval_steps,
+    nextDate: row.next_date,
+    lastPostedAt: row.last_posted_at,
+    isActive: row.is_active,
+  }));
+}
+
+export async function upsertRecurringRpc(
+  workspaceId: string,
+  input: RecurringInput,
+): Promise<RecurringRecord> {
+  const supabase = getSupabaseClient();
+  const result = await supabase.rpc("upsert_recurring" as never, {
+    p_workspace_id: workspaceId,
+    p_recurring_id: input.id ?? null,
+    p_title: input.title,
+    p_kind: input.kind,
+    p_amount_minor: toSafeMinorNumber(input.amountMinor),
+    p_currency_code: input.currencyCode,
+    p_wallet_id: input.walletId,
+    p_category_id: input.categoryId ?? null,
+    p_project_id: input.projectId ?? null,
+    p_frequency: input.frequency,
+    p_interval_steps: input.intervalSteps,
+    p_next_date: input.nextDate,
+    p_is_active: input.isActive ?? true,
+  } as never);
+  const data = result.data as {
+    id: string;
+    title: string;
+    kind: "income" | "expense";
+    amount_minor: string;
+    currency_code: string;
+    wallet_id: string;
+    category_id: string | null;
+    project_id: string | null;
+    frequency: "daily" | "weekly" | "monthly" | "yearly";
+    interval_steps: number;
+    next_date: string;
+    last_posted_at: string | null;
+    is_active: boolean;
+  } | null;
+  const error = result.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر حفظ الحركة المتكررة");
+  if (!data) throw new Error("تعذر حفظ الحركة المتكررة");
+  return {
+    id: data.id,
+    title: data.title,
+    kind: data.kind,
+    amountMinor: BigInt(data.amount_minor),
+    currencyCode: data.currency_code,
+    walletId: data.wallet_id,
+    categoryId: data.category_id,
+    projectId: data.project_id,
+    frequency: data.frequency,
+    intervalSteps: data.interval_steps,
+    nextDate: data.next_date,
+    lastPostedAt: data.last_posted_at,
+    isActive: data.is_active,
+  };
+}
+
+export async function deleteRecurringRpc(
+  workspaceId: string,
+  recurringId: string,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const result = await supabase.rpc("delete_recurring" as never, {
+    p_workspace_id: workspaceId,
+    p_recurring_id: recurringId,
+  } as never);
+  const error = result.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر حذف الحركة المتكررة");
+}
+
+export async function postRecurringDueRpc(
+  workspaceId: string,
+): Promise<number> {
+  const supabase = getSupabaseClient();
+  const result = await supabase.rpc("post_all_recurring_due" as never, {
+    p_workspace_id: workspaceId,
+  } as never);
+  const data = result.data as number | null;
+  const error = result.error as { message?: string } | null;
+  if (error) throwArabic(error, "تعذر ترحيل الحركات المتكررة");
+  return typeof data === "number" ? data : 0;
 }
 
 export async function fetchWorkers(

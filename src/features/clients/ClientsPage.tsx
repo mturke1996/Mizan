@@ -6,6 +6,8 @@ import {
 } from "@/features/workspace/use-finance-data";
 import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { ErrorState } from "@/shared/ui/ErrorState";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 export function ClientsPage() {
   const clientsQuery = useClientsQuery();
@@ -38,6 +40,18 @@ export function ClientsPage() {
         <AppCard
           role="status"
           className="h-40 animate-pulse bg-surface-subtle"
+        />
+      </div>
+    );
+  }
+
+  if (clientsQuery.isError) {
+    return (
+      <div className="px-4 sm:px-6" dir="rtl">
+        <PageHeader title="العملاء" subtitle="زبائن أعمالك" />
+        <ErrorState
+          message={getUserErrorMessage(clientsQuery.error, "تعذر تحميل العملاء")}
+          onRetry={() => void clientsQuery.refetch()}
         />
       </div>
     );

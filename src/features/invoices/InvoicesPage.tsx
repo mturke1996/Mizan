@@ -12,6 +12,8 @@ import { MoneySectionTabs } from "@/shared/navigation/MoneySectionTabs";
 import { AppCard } from "@/shared/ui/AppCard";
 import { Badge, type BadgeTone } from "@/shared/ui/Badge";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { ErrorState } from "@/shared/ui/ErrorState";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { getInvoicePaymentSummary } from "./invoicePayments";
 
 type InvoiceFilter = "all" | InvoiceStatus;
@@ -166,6 +168,19 @@ export function InvoicesPage() {
           role="status"
           aria-label="جاري تحميل الفواتير"
           className="h-40 animate-pulse bg-surface-subtle"
+        />
+      </div>
+    );
+  }
+
+  if (invoicesQuery.isError) {
+    return (
+      <div className="px-4 sm:px-6" dir="rtl">
+        <MoneySectionTabs active="invoices" />
+        <PageHeader title="فواتير" subtitle="فواتير المبيعات" />
+        <ErrorState
+          message={getUserErrorMessage(invoicesQuery.error, "تعذر تحميل الفواتير")}
+          onRetry={() => void invoicesQuery.refetch()}
         />
       </div>
     );

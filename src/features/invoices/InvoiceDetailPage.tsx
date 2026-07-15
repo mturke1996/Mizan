@@ -37,6 +37,7 @@ import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { Badge, type BadgeTone } from "@/shared/ui/Badge";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import {
   canCollectPayment,
@@ -99,6 +100,7 @@ export function InvoiceDetailPage() {
   const walletsQuery = useWalletsQuery();
   const setStatus = useSetInvoiceStatusMutation(invoiceId ?? "");
   const recordPayment = useRecordInvoicePaymentMutation(invoiceId ?? "");
+  const confirm = useConfirm();
   const [pdfBusy, setPdfBusy] = useState<"download" | "share" | null>(null);
 
   const invoice = detailQuery.data;
@@ -179,10 +181,13 @@ export function InvoiceDetailPage() {
 
   const handleStatus = async (status: InvoiceStatus) => {
     if (status === "cancelled") {
-      const confirmed = window.confirm(
-        "إلغاء الفاتورة؟ لن تستطيع تسجيل دفعات بعد ذلك.",
-      );
-      if (!confirmed) return;
+      const ok = await confirm({
+        title: "إلغاء الفاتورة؟",
+        description: "لن تستطيع تسجيل دفعات بعد ذلك.",
+        tone: "warning",
+        confirmLabel: "إلغاء الفاتورة",
+      });
+      if (!ok) return;
     }
     try {
       await setStatus.mutateAsync(status);
@@ -194,10 +199,12 @@ export function InvoiceDetailPage() {
 
   const ensureReadyToShare = async (): Promise<Invoice | null> => {
     if (invoice.status !== "draft") return invoice;
-    const confirmed = window.confirm(
-      "الفاتورة ما زالت مسودة. هل تريد وضعها كمُرسلة قبل المشاركة مع العميل؟",
-    );
-    if (!confirmed) return null;
+    const ok = await confirm({
+      title: "الفاتورة ما زالت مسودة",
+      description: "هل تريد وضعها كمُرسلة قبل المشاركة مع العميل؟",
+      confirmLabel: "وضع كمُرسلة",
+    });
+    if (!ok) return null;
     try {
       const updated = await setStatus.mutateAsync("sent");
       toast.success("تم وضع الفاتورة كمُرسلة");

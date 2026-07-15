@@ -360,6 +360,75 @@ export interface CategoryOption {
   kind: "income" | "expense";
 }
 
+export type CategoryKind = "income" | "expense";
+
+export interface CategoryRecord {
+  id: string;
+  name: string;
+  kind: CategoryKind;
+  isSystem: boolean;
+  isActive: boolean;
+}
+
+export interface CategoryInput {
+  /** Omit for create, provide for update. */
+  id?: string;
+  name: string;
+  kind: CategoryKind;
+  /** Defaults to true. Set false to archive. */
+  isActive?: boolean;
+}
+
+export interface BudgetRecord {
+  id: string;
+  categoryId: string;
+  currencyCode: string;
+  limitMinor: bigint;
+}
+
+export interface BudgetInput {
+  /** Omit for create, provide for update. */
+  id?: string;
+  categoryId: string;
+  currencyCode: string;
+  limitMinor: bigint;
+}
+
+export type RecurringFrequency = "daily" | "weekly" | "monthly" | "yearly";
+
+export interface RecurringRecord {
+  id: string;
+  title: string;
+  kind: CategoryKind;
+  amountMinor: bigint;
+  currencyCode: string;
+  walletId: string;
+  categoryId: string | null;
+  projectId: string | null;
+  frequency: RecurringFrequency;
+  intervalSteps: number;
+  nextDate: string;
+  lastPostedAt: string | null;
+  isActive: boolean;
+}
+
+export interface RecurringInput {
+  /** Omit for create, provide for update. */
+  id?: string;
+  title: string;
+  kind: CategoryKind;
+  amountMinor: bigint;
+  currencyCode: string;
+  walletId: string;
+  categoryId?: string | null;
+  projectId?: string | null;
+  frequency: RecurringFrequency;
+  intervalSteps: number;
+  /** ISO date (YYYY-MM-DD) of the next scheduled posting. */
+  nextDate: string;
+  isActive?: boolean;
+}
+
 export type ProjectCashMode = "off" | "project_cash" | "project_wallet" | "hybrid";
 
 export interface Client {

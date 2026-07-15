@@ -7,10 +7,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { computeAnalytics } from "@/domain/analytics/compute-analytics";
+import { computeEconomicPosition } from "@/domain/analytics/compute-economic-position";
 import {
   formatMinorAmount,
-  getCurrencyScale,
-  parseMajorAmount,
   toSafeMinorNumber,
 } from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
@@ -22,12 +21,17 @@ import {
 import {
   useUpsertWorkspaceGoalMutation,
   useWorkspaceGoalQuery,
+  useInvoicesQuery,
+  useDebtWorkspaceSummaryQuery,
+  useIncomeSourceBalancesQuery,
 } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { toast } from "sonner";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { getUserErrorMessage } from "@/lib/user-error";
 import { BalanceOverview } from "./BalanceOverview";
+import { EconomicPositionCard } from "./EconomicPositionCard";
+import { GoalEditorDialog } from "./GoalEditorDialog";
 import { CashFlowChart } from "./CashFlowChart";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 import { DashboardHeader } from "./DashboardHeader";
@@ -41,6 +45,7 @@ import { WalletSummary } from "./WalletSummary";
 
 export function DashboardPage() {
   const [now] = useState(() => new Date());
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const { profile } = useAuth();
   const { currency, isLoading, error, workspaceId, refresh } = useWorkspace();
   const {
@@ -106,6 +111,9 @@ export function DashboardPage() {
   const goalQuery = useWorkspaceGoalQuery(
     workspaceId && !isLoading ? monthKey : undefined,
   );
+  const invoicesQuery = useInvoicesQuery();
+  const debtSummaryQuery = useDebtWorkspaceSummaryQuery();
+  const incomeBalancesQuery = useIncomeSourceBalancesQuery();
   const upsertGoal = useUpsertWorkspaceGoalMutation();
   const goalMinor = goalQuery.data?.incomeGoalMinor ?? null;
   const goalProgress =
@@ -113,33 +121,37 @@ export function DashboardPage() {
       ? Math.min(100, Number((overview.incomeMinor * 100n) / goalMinor))
       : 0;
 
-  const saveGoal = () => {
-    const raw = window.prompt(
-      "أدخل هدف الدخل الشهري (بالوحدة الرئيسية)",
-      goalMinor
-        ? formatMinorAmount(goalMinor, {
-            currency,
-            locale: "en-US",
-          })
-        : "",
-    );
-    if (!raw) return;
-    try {
-      const minor = parseMajorAmount(raw, getCurrencyScale(currency));
-      void upsertGoal
-        .mutateAsync({
-          monthKey,
-          incomeGoalMinor: toSafeMinorNumber(minor),
-        })
-        .then(() => toast.success("تم حفظ الهدف الشهري"))
-        .catch((saveError) =>
-          toast.error(getUserErrorMessage(saveError, "تعذر حفظ الهدف")),
-        );
-    } catch (parseError) {
-      toast.error(
-        parseError instanceof Error ? parseError.message : "أدخل مبلغًا صحيحًا",
+  const economicPosition = useMemo(
+    () =>
+      computeEconomicPosition({
+        cashMinor: totalBalance,
+        invoices: invoicesQuery.data ?? [],
+        debtSummary: debtSummaryQuery.data ?? null,
+        incomeOutstandingMinor: (incomeBalancesQuery.data ?? []).reduce(
+          (sum, row) => sum + row.balanceMinor,
+          0n,
+        ),
+        currency,
+      }),
+    [
+      totalBalance,
+      invoicesQuery.data,
+      debtSummaryQuery.data,
+      incomeBalancesQuery.data,
+      currency,
+    ],
+  );
+
+  const saveGoalMinor = (minor: bigint) => {
+    void upsertGoal
+      .mutateAsync({
+        monthKey,
+        incomeGoalMinor: toSafeMinorNumber(minor),
+      })
+      .then(() => toast.success("تم حفظ الهدف الشهري"))
+      .catch((saveError) =>
+        toast.error(getUserErrorMessage(saveError, "تعذر حفظ الهدف")),
       );
-    }
   };
 
   return (
@@ -194,6 +206,19 @@ export function DashboardPage() {
               netMinor={overview.netMinor}
             />
 
+            <EconomicPositionCard
+              position={economicPosition}
+              currency={currency}
+            />
+
+            <GoalEditorDialog
+              open={goalDialogOpen}
+              currency={currency}
+              currentGoalMinor={goalMinor}
+              onOpenChange={setGoalDialogOpen}
+              onSave={saveGoalMinor}
+            />
+
             <QuickActions variant="mobile" />
 
             {workspaceId ? (
@@ -218,7 +243,7 @@ export function DashboardPage() {
                   <button
                     className="pressable min-h-10 shrink-0 rounded-xl border border-line bg-canvas px-3 text-xs font-bold text-ink disabled:opacity-60"
                     disabled={upsertGoal.isPending}
-                    onClick={saveGoal}
+                    onClick={() => setGoalDialogOpen(true)}
                     type="button"
                   >
                     {goalMinor ? "تعديل" : "تعيين"}
