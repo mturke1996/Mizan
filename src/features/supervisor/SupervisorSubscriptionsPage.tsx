@@ -504,22 +504,28 @@ export function SupervisorSubscriptionsPage() {
         }
       >
         {action?.type === "change_plan" ? (
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-bold text-ink">
-              الخطة الجديدة
-            </span>
-            <select
-              className="min-h-11 w-full rounded-md border border-line-strong bg-surface px-3 text-sm"
-              onChange={(event) => setPlanId(event.target.value)}
-              value={planId}
-            >
-              {activePlans.map((plan) => (
-                <option key={plan.planId} value={plan.planId}>
-                  {plan.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="space-y-3">
+            <p className="text-sm leading-6 text-muted">
+              عند اختيار خطة مدفوعة (شهرية/سنوية) يُفعَّل الاشتراك تلقائيًا
+              لفترة واحدة — ولن يبقى تجريبيًا.
+            </p>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-bold text-ink">
+                الخطة الجديدة
+              </span>
+              <select
+                className="min-h-11 w-full rounded-md border border-line-strong bg-surface px-3 text-sm"
+                onChange={(event) => setPlanId(event.target.value)}
+                value={planId}
+              >
+                {activePlans.map((plan) => (
+                  <option key={plan.planId} value={plan.planId}>
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         ) : null}
 
         {action?.type === "set_state" ? (

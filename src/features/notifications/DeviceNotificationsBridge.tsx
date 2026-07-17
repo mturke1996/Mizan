@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/features/auth/use-auth";
 import {
   deliverInboxToDevice,
   initDeviceNotifications,
+  registerNotificationTapHandler,
 } from "@/lib/local-notifications";
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -36,12 +38,23 @@ async function fetchRecentUnread(userId: string) {
  */
 export function DeviceNotificationsBridge() {
   const { user, session } = useAuth();
+  const navigate = useNavigate();
   const syncingRef = useRef(false);
 
   useEffect(() => {
     if (!session?.user.id) return;
     void initDeviceNotifications();
   }, [session?.user.id]);
+
+  useEffect(() => {
+    let removeTap: (() => void) | undefined;
+    void registerNotificationTapHandler(() => {
+      navigate("/notifications");
+    }).then((cleanup) => {
+      removeTap = cleanup;
+    });
+    return () => removeTap?.();
+  }, [navigate]);
 
   useEffect(() => {
     if (!user?.id) return;

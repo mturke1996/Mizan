@@ -1586,7 +1586,7 @@ export async function uploadFinancialEventAttachment(input: {
   file: File;
 }): Promise<FinancialEventAttachment> {
   const supabase = getSupabaseClient();
-  const safeName = input.file.name.replace(/[^\w.\-]+/g, "_").slice(0, 80);
+  const safeName = input.file.name.replace(/[^\w.-]+/g, "_").slice(0, 80);
   const objectPath = `${input.workspaceId}/${input.eventId}/${crypto.randomUUID()}-${safeName}`;
   const { error: uploadError } = await supabase.storage
     .from("event-attachments")

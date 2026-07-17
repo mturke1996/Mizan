@@ -93,19 +93,36 @@ function fromDatetimeLocalValue(value: string): string | null {
 
 const TRIAL_MS = 14 * 24 * 60 * 60 * 1000;
 
-function buildDefaultValues(planId: string): CreateCustomerFormValues {
+function isPaidPlan(plan: AdminPlan | undefined): boolean {
+  return (
+    plan?.billingInterval === "monthly" || plan?.billingInterval === "yearly"
+  );
+}
+
+function periodEndForPlan(plan: AdminPlan): string {
+  const months =
+    plan.billingInterval === "yearly"
+      ? 12 * (plan.intervalCount || 1)
+      : plan.intervalCount || 1;
+  const periodEnd = new Date();
+  periodEnd.setMonth(periodEnd.getMonth() + months);
+  return periodEnd.toISOString();
+}
+
+function buildDefaultValues(plan: AdminPlan | undefined): CreateCustomerFormValues {
   const now = Date.now();
+  const paid = isPaidPlan(plan);
   const trialEnd = new Date(now + TRIAL_MS).toISOString();
   return {
     email: "",
     displayName: "",
     workspaceName: "",
     currencyCode: "LYD",
-    planId,
-    subscriptionStatus: "trialing",
+    planId: plan?.planId ?? "",
+    subscriptionStatus: paid ? "active" : "trialing",
     startsAt: new Date(now).toISOString(),
-    trialEndsAt: trialEnd,
-    currentPeriodEndsAt: trialEnd,
+    trialEndsAt: paid ? null : trialEnd,
+    currentPeriodEndsAt: paid && plan ? periodEndForPlan(plan) : trialEnd,
     deliveryMode: "invite",
     note: "",
   };
@@ -139,8 +156,8 @@ export function CreateCustomerDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const activePlans = plans.filter((plan) => plan.isActive);
-  const defaultPlanId = activePlans[0]?.planId ?? "";
-  const [initialValues] = useState(() => buildDefaultValues(defaultPlanId));
+  const defaultPlan = activePlans[0];
+  const [initialValues] = useState(() => buildDefaultValues(defaultPlan));
 
   const {
     register,
@@ -159,11 +176,26 @@ export function CreateCustomerDialog({
   const watched = useWatch({ control });
 
   useEffect(() => {
-    if (!open || !defaultPlanId) return;
-    if (!getValues("planId")) {
-      setValue("planId", defaultPlanId);
+    if (!open) return;
+    reset(buildDefaultValues(defaultPlan));
+  }, [open, defaultPlan, reset]);
+
+  function applyPlanSelection(nextPlanId: string) {
+    const plan = activePlans.find((item) => item.planId === nextPlanId);
+    setValue("planId", nextPlanId, { shouldValidate: true });
+    if (isPaidPlan(plan) && plan) {
+      setValue("subscriptionStatus", "active", { shouldValidate: true });
+      setValue("trialEndsAt", null, { shouldValidate: true });
+      setValue("currentPeriodEndsAt", periodEndForPlan(plan), {
+        shouldValidate: true,
+      });
+      return;
     }
-  }, [open, defaultPlanId, getValues, setValue]);
+    const trialEnd = new Date(Date.now() + TRIAL_MS).toISOString();
+    setValue("subscriptionStatus", "trialing", { shouldValidate: true });
+    setValue("trialEndsAt", trialEnd, { shouldValidate: true });
+    setValue("currentPeriodEndsAt", trialEnd, { shouldValidate: true });
+  }
 
   function handleOpenChange(next: boolean) {
     if (!next && (submitting || isPending)) return;
@@ -174,7 +206,7 @@ export function CreateCustomerDialog({
       setSubmitError(null);
       setStep(0);
       setClientId(crypto.randomUUID());
-      reset(buildDefaultValues(defaultPlanId));
+      reset(buildDefaultValues(defaultPlan));
     }
     onOpenChange(next);
   }
@@ -458,7 +490,8 @@ export function CreateCustomerDialog({
                   <select
                     className={fieldClassName}
                     id="create-customer-plan"
-                    {...register("planId")}
+                    value={watched.planId}
+                    onChange={(event) => applyPlanSelection(event.target.value)}
                   >
                     {activePlans.map((plan) => (
                       <option key={plan.planId} value={plan.planId}>

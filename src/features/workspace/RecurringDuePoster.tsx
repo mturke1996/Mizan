@@ -13,8 +13,11 @@ export function RecurringDuePoster() {
   const { workspaceId, isDemo = false } = useWorkspace();
   const postDue = usePostRecurringDue();
   const postRef = useRef(postDue);
-  postRef.current = postDue;
   const lastRun = useRef(0);
+
+  useEffect(() => {
+    postRef.current = postDue;
+  }, [postDue]);
 
   useEffect(() => {
     if (!workspaceId || isDemo) return;

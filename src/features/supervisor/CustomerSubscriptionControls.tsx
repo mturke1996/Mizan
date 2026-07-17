@@ -78,10 +78,15 @@ export function CustomerSubscriptionControls({
   });
 
   const activePlans = (plansQuery.data ?? []).filter((plan) => plan.isActive);
+  const currentPlan = activePlans.find((plan) => plan.planId === customer.planId);
+  const currentPlanRenewable =
+    currentPlan?.billingInterval === "monthly" ||
+    currentPlan?.billingInterval === "yearly";
   const isFrozen = customer.effectiveSubscriptionStatus === "frozen";
   const isCancelledOrExpired = ["cancelled", "expired"].includes(
     customer.effectiveSubscriptionStatus,
   );
+  const isTrialing = customer.effectiveSubscriptionStatus === "trialing";
 
   const actionMutation = useMutation({
     mutationFn: async (input: { note: string }) => {
@@ -209,6 +214,26 @@ export function CustomerSubscriptionControls({
 
       <section className="space-y-2.5">
         <p className="text-xs font-bold text-ink">إجراءات سريعة</p>
+        {isTrialing && currentPlanRenewable ? (
+          <button
+            className="pressable inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-success-soft px-3 text-sm font-bold text-success"
+            onClick={() => openAction({ type: "renew", periodCount: 1 })}
+            type="button"
+          >
+            <PlayCircle aria-hidden="true" size={16} />
+            تفعيل الاشتراك الآن
+          </button>
+        ) : null}
+        {isTrialing && !currentPlanRenewable ? (
+          <button
+            className="pressable inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-primary-soft px-3 text-sm font-bold text-primary"
+            onClick={() => openAction({ type: "change_plan" })}
+            type="button"
+          >
+            <Shuffle aria-hidden="true" size={16} />
+            اختر خطة مدفوعة للتفعيل
+          </button>
+        ) : null}
         <div className="grid grid-cols-2 gap-2">
           {isFrozen ? (
             <button
@@ -318,22 +343,28 @@ export function CustomerSubscriptionControls({
         ) : null}
 
         {action?.type === "change_plan" ? (
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-bold text-ink">
-              الخطة الجديدة
-            </span>
-            <select
-              className="min-h-11 w-full rounded-md border border-line-strong bg-surface px-3 text-sm"
-              onChange={(event) => setPlanId(event.target.value)}
-              value={planId}
-            >
-              {activePlans.map((plan) => (
-                <option key={plan.planId} value={plan.planId}>
-                  {plan.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="space-y-3">
+            <p className="text-sm leading-6 text-muted">
+              عند اختيار خطة مدفوعة (شهرية/سنوية) يُفعَّل الاشتراك تلقائيًا
+              لفترة واحدة — ولن يبقى تجريبيًا.
+            </p>
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-bold text-ink">
+                الخطة الجديدة
+              </span>
+              <select
+                className="min-h-11 w-full rounded-md border border-line-strong bg-surface px-3 text-sm"
+                onChange={(event) => setPlanId(event.target.value)}
+                value={planId}
+              >
+                {activePlans.map((plan) => (
+                  <option key={plan.planId} value={plan.planId}>
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         ) : null}
 
         {action?.type === "set_state" ? (

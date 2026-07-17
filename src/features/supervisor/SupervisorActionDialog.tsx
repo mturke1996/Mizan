@@ -68,7 +68,7 @@ export function SupervisorActionDialog({
         <Dialog.Content
           aria-describedby={descriptionId}
           aria-labelledby={titleId}
-          className="fixed inset-x-4 top-[10%] z-50 mx-auto max-h-[80vh] w-full max-w-lg overflow-y-auto rounded-lg border border-line bg-surface p-5 shadow-[0_20px_60px_rgb(27_30_60/18%)] sm:inset-x-auto sm:start-1/2 sm:-translate-x-1/2"
+          className="fixed inset-x-4 top-[max(1rem,var(--safe-top))] z-50 mx-auto max-h-[min(80vh,calc(100dvh-2rem-var(--safe-top)-var(--safe-bottom)))] w-full max-w-lg overflow-y-auto rounded-lg border border-line bg-surface p-5 pb-[max(1.25rem,var(--safe-bottom))] shadow-[0_20px_60px_rgb(27_30_60/18%)] sm:inset-x-auto sm:start-1/2 sm:-translate-x-1/2"
           onEscapeKeyDown={(event) => {
             if (isPending) event.preventDefault();
           }}

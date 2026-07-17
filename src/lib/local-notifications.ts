@@ -199,3 +199,27 @@ export async function initDeviceNotifications(): Promise<void> {
     // Native plugins may be unavailable in some builds.
   }
 }
+
+/** Navigate into the inbox when the user taps a device notification. */
+export async function registerNotificationTapHandler(
+  onOpen: (notificationId?: string) => void,
+): Promise<() => void> {
+  if (!isNative()) return () => undefined;
+  try {
+    const { LocalNotifications } = await getLocalNotifications();
+    const handle = await LocalNotifications.addListener(
+      "localNotificationActionPerformed",
+      (event) => {
+        const extra = event.notification.extra as
+          | { notificationId?: string }
+          | undefined;
+        onOpen(extra?.notificationId);
+      },
+    );
+    return () => {
+      void handle.remove();
+    };
+  } catch {
+    return () => undefined;
+  }
+}
