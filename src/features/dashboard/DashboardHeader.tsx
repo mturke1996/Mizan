@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/use-auth";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getArabicGreeting } from "@/lib/date";
+import { notificationKeys } from "@/features/notifications/notification-keys";
 import { MoreNavSheet } from "@/shared/navigation/MoreNavSheet";
 
 interface DashboardHeaderProps {
@@ -24,7 +25,7 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
     (user?.user_metadata?.display_name as string | undefined)?.trim() ||
     "مستخدم ميزان";
   const unreadQuery = useQuery({
-    queryKey: ["notifications-unread", user?.id],
+    queryKey: notificationKeys.unread(user?.id),
     queryFn: async () => {
       const supabase = getSupabaseClient();
       const { count, error } = await supabase

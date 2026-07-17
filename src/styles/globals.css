@@ -183,7 +183,7 @@
   }
 
   .page-enter {
-    animation: page-enter var(--motion-base) var(--ease-standard);
+    animation: page-enter var(--motion-base) var(--ease-standard) both;
   }
 
   @keyframes page-enter {
