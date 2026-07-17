@@ -139,16 +139,30 @@
     unicode-bidi: isolate;
   }
 
+  /* Content rhythm only — system insets live on .app-shell-safe. */
   .safe-top {
-    padding-top: max(16px, var(--safe-top));
+    padding-top: 0.75rem;
   }
 
   .safe-bottom {
-    padding-bottom: max(12px, var(--safe-bottom));
+    padding-bottom: 0.75rem;
+  }
+
+  .app-shell-safe {
+    padding-top: var(--safe-top);
+    padding-right: var(--safe-right);
+    padding-left: var(--safe-left);
   }
 
   .app-scroll-padding {
-    padding-bottom: calc(96px + var(--safe-bottom));
+    /* Compact bottom nav (~3.5rem) + system gesture inset */
+    padding-bottom: calc(3.75rem + var(--safe-bottom));
+  }
+
+  html.is-native-app,
+  html.is-native-app body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .subtle-scrollbar {

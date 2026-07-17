@@ -21,28 +21,65 @@ import { useWorkspace } from "@/features/workspace/use-workspace";
 import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
-function notificationPermission(): NotificationPermission | "unsupported" {
+import {
+  ensureNotificationPermission,
+  scheduleMotivationalNotifications,
+} from "@/lib/local-notifications";
+import { MOTIVATIONAL_NOTIFICATIONS } from "@/lib/motivational-notifications";
+import { Capacitor } from "@capacitor/core";
+
+type DevicePermission = NotificationPermission | "unsupported" | "checking";
+
+function notificationPermission(): DevicePermission {
+  if (Capacitor.isNativePlatform()) return "default";
   return "Notification" in window ? Notification.permission : "unsupported";
 }
 
 export function NotificationSettingsPage() {
-  const [permission, setPermission] = useState(notificationPermission);
+  const [permission, setPermission] = useState<DevicePermission>(
+    notificationPermission,
+  );
   const [requesting, setRequesting] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
 
   async function requestPermission() {
-    if (!("Notification" in window)) return;
     setRequesting(true);
     try {
-      setPermission(await Notification.requestPermission());
+      const granted = await ensureNotificationPermission();
+      setPermission(granted ? "granted" : "denied");
+      if (granted && Capacitor.isNativePlatform()) {
+        await scheduleMotivationalNotifications();
+      }
     } finally {
       setRequesting(false);
     }
   }
 
+  async function rescheduleMotivational() {
+    setScheduling(true);
+    try {
+      const granted = await ensureNotificationPermission();
+      setPermission(granted ? "granted" : "denied");
+      if (!granted) {
+        toast.error("فعّل إذن الإشعارات أولًا");
+        return;
+      }
+      await scheduleMotivationalNotifications();
+      toast.success("تم جدولة الإشعارات التحفيزية اليومية");
+    } finally {
+      setScheduling(false);
+    }
+  }
+
   const permissionCopy = {
+    checking: "جارٍ التحقق من إذن الجهاز…",
     default: "لم يُحسم إذن إشعارات الجهاز بعد.",
-    granted: "إشعارات الجهاز مسموحة في هذا المتصفح.",
-    denied: "الإشعارات محظورة من إعدادات المتصفح.",
+    granted: Capacitor.isNativePlatform()
+      ? "إشعارات الجهاز مفعّلة — تصل حتى والتطبيق مقفل."
+      : "إشعارات الجهاز مسموحة في هذا المتصفح.",
+    denied: Capacitor.isNativePlatform()
+      ? "الإشعارات محظورة من إعدادات التطبيق على الجهاز."
+      : "الإشعارات محظورة من إعدادات المتصفح.",
     unsupported: "هذا المتصفح لا يدعم إشعارات الجهاز.",
   }[permission];
 
@@ -50,7 +87,7 @@ export function NotificationSettingsPage() {
     <div className="px-4 sm:px-6">
       <PageHeader
         title="الإشعارات"
-        subtitle="تنبيهات الحساب والاشتراك والحركات المهمة."
+        subtitle="تنبيهات الحساب والإشارات التحفيزية على الجهاز."
         backTo="/settings"
       />
 
@@ -62,8 +99,8 @@ export function NotificationSettingsPage() {
           <div className="min-w-0 flex-1">
             <h2 className="font-bold text-ink">مركز إشعارات ميزان</h2>
             <p className="mt-1 text-sm leading-6 text-muted">
-              يحتفظ التطبيق بالتنبيهات داخل حسابك حتى إن كانت إشعارات الجهاز
-              مغلقة.
+              صندوق داخل التطبيق دائمًا، وعلى أندرويد تُعرض إشارات الإدارة
+              والتحفيز كتبيهات جهاز.
             </p>
             <Link
               to="/notifications"
@@ -75,10 +112,10 @@ export function NotificationSettingsPage() {
         </div>
       </AppCard>
 
-      <AppCard className="p-4 sm:p-5">
+      <AppCard className="mb-4 p-4 sm:p-5">
         <h2 className="font-bold text-ink">إذن الجهاز</h2>
         <p className="mt-2 text-sm leading-6 text-muted">{permissionCopy}</p>
-        {permission === "default" ? (
+        {permission === "default" || permission === "checking" ? (
           <button
             type="button"
             disabled={requesting}
@@ -90,10 +127,43 @@ export function NotificationSettingsPage() {
         ) : null}
         {permission === "denied" ? (
           <p className="mt-3 rounded-sm bg-warning-soft p-3 text-xs leading-5 text-warning">
-            غيّر الإذن من إعدادات الموقع في المتصفح؛ لا يستطيع التطبيق تجاوز
-            اختيارك.
+            افتح إعدادات التطبيق على الهاتف وفعّل الإشعارات يدويًا.
           </p>
         ) : null}
+        {permission === "granted" ? (
+          <button
+            type="button"
+            disabled={scheduling}
+            onClick={() => void rescheduleMotivational()}
+            className="pressable mt-4 min-h-11 rounded-xl border border-line bg-surface-subtle px-4 text-sm font-bold text-ink disabled:opacity-60"
+          >
+            {scheduling ? "جاري الجدولة…" : "إعادة جدولة التحفيز اليومي"}
+          </button>
+        ) : null}
+      </AppCard>
+
+      <AppCard className="p-4 sm:p-5">
+        <h2 className="font-bold text-ink">الإشعارات التحفيزية اليومية</h2>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          ثلاث رسائل عامة تُجدول على الجهاز وتظهر حتى والتطبيق مقفل.
+        </p>
+        <ul className="mt-4 space-y-2">
+          {MOTIVATIONAL_NOTIFICATIONS.map((item) => (
+            <li
+              key={item.id}
+              className="rounded-xl border border-line bg-canvas/70 px-3.5 py-3"
+            >
+              <p className="text-xs font-bold text-ink">
+                {item.title}
+                <span className="ms-2 font-semibold text-muted">
+                  {String(item.hour).padStart(2, "0")}:
+                  {String(item.minute).padStart(2, "0")}
+                </span>
+              </p>
+              <p className="mt-1 text-[12px] leading-5 text-muted">{item.body}</p>
+            </li>
+          ))}
+        </ul>
       </AppCard>
     </div>
   );

@@ -39,7 +39,7 @@ export function AuthLayout({
   footer,
 }: AuthLayoutProps) {
   return (
-    <main className="min-h-dvh bg-surface lg:flex lg:items-center lg:bg-canvas lg:px-6 lg:py-6">
+    <main className="app-shell-safe min-h-dvh bg-surface lg:flex lg:items-center lg:bg-canvas lg:px-6 lg:py-6 lg:pt-6">
       <div className="mx-auto grid min-h-dvh w-full bg-surface lg:min-h-[680px] lg:max-w-6xl lg:overflow-hidden lg:rounded-[14px] lg:border lg:border-line lg:shadow-[0_20px_60px_rgb(27_30_60/7%)] lg:grid-cols-[0.92fr_1.08fr]">
         <aside className="relative hidden overflow-hidden bg-auth-panel p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <Link

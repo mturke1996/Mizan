@@ -232,7 +232,8 @@ export function SupervisorSubscriptionsPage() {
       <div>
         <h1 className="text-2xl font-bold text-ink">الاشتراكات</h1>
         <p className="mt-1 text-sm text-muted">
-          تجديد، تغيير الخطة، وتحديث الحالة مع توثيق القرار.
+          تمديد وتجميد وإلغاء مباشر — بدون انتظار طلب دفع من العميل، مع توثيق
+          كل قرار.
         </p>
       </div>
 
@@ -427,6 +428,37 @@ export function SupervisorSubscriptionsPage() {
                   type="button"
                 >
                   تغيير الخطة
+                </button>
+                <button
+                  className="pressable min-h-9 rounded-sm border border-line-strong bg-surface px-2 text-[10px] font-bold text-warning"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openAction(row, {
+                      type: "set_state",
+                      targetStatus:
+                        row.effectiveSubscriptionStatus === "frozen"
+                          ? "active"
+                          : "frozen",
+                    });
+                  }}
+                  type="button"
+                >
+                  {row.effectiveSubscriptionStatus === "frozen"
+                    ? "إلغاء التجميد"
+                    : "تجميد"}
+                </button>
+                <button
+                  className="pressable min-h-9 rounded-sm border border-line-strong bg-surface px-2 text-[10px] font-bold text-danger"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openAction(row, {
+                      type: "schedule",
+                      targetStatus: "cancelled",
+                    });
+                  }}
+                  type="button"
+                >
+                  جدولة إلغاء
                 </button>
               </div>
             </div>

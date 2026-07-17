@@ -12,6 +12,7 @@ import {
   WorkspaceProvider,
   type WorkspaceContextValue,
 } from "@/features/workspace/WorkspaceProvider";
+import { DeviceNotificationsBridge } from "@/features/notifications/DeviceNotificationsBridge";
 import { RecurringDuePoster } from "@/features/workspace/RecurringDuePoster";
 import { ConfirmDialogProvider } from "@/shared/ui/confirm-dialog";
 
@@ -101,6 +102,7 @@ export function AppProviders({
         <WorkspaceProvider value={workspaceValue}>
           {children}
           {!isTestHarness ? <RecurringDuePoster /> : null}
+          {!isTestHarness ? <DeviceNotificationsBridge /> : null}
           <Toaster
             position="top-center"
             dir="rtl"

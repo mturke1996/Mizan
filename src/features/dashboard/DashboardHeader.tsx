@@ -43,7 +43,7 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
 
   return (
     <>
-      <header className="safe-top flex items-center justify-between border-b border-line/70 bg-canvas/90 px-4 pb-3 backdrop-blur-md sm:px-6 md:min-h-[76px] md:border-line md:bg-surface md:px-6 md:py-0 md:backdrop-blur-none lg:px-8 xl:px-10">
+      <header className="flex items-center justify-between border-b border-line/70 bg-canvas/90 px-4 pt-2 pb-3 backdrop-blur-md sm:px-6 md:min-h-[76px] md:border-line md:bg-surface md:px-6 md:py-0 md:backdrop-blur-none lg:px-8 xl:px-10">
         <h1 className="sr-only">ملخصك المالي</h1>
         <div className="flex min-w-0 items-center gap-3 md:hidden">
           <button

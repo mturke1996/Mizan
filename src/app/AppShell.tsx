@@ -33,7 +33,10 @@ export function AppShell() {
         انتقل إلى المحتوى
       </a>
       <DesktopSidebar />
-      <div dir="rtl" className="min-w-0 bg-surface md:bg-canvas">
+      <div
+        dir="rtl"
+        className="app-shell-safe min-w-0 bg-surface md:bg-canvas md:pt-0 md:ps-0 md:pe-0"
+      >
         <OfflineStatusBanner />
         <main
           ref={mainRef}

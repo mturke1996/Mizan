@@ -31,6 +31,7 @@ const fetchCustomerDetail = vi.fn();
 const supervisorSetAccountStatus = vi.fn();
 const sendCustomerPasswordSetup = vi.fn();
 const fetchPayments = vi.fn();
+const fetchAdminPlans = vi.fn();
 
 vi.mock("./customer-admin-api", async () => {
   const actual = await vi.importActual<typeof import("./customer-admin-api")>(
@@ -41,6 +42,16 @@ vi.mock("./customer-admin-api", async () => {
     fetchCustomerDetail: (...args: unknown[]) => fetchCustomerDetail(...args),
     sendCustomerPasswordSetup: (...args: unknown[]) =>
       sendCustomerPasswordSetup(...args),
+  };
+});
+
+vi.mock("./billing-admin-api", async () => {
+  const actual = await vi.importActual<typeof import("./billing-admin-api")>(
+    "./billing-admin-api",
+  );
+  return {
+    ...actual,
+    fetchAdminPlans: (...args: unknown[]) => fetchAdminPlans(...args),
   };
 });
 
@@ -72,6 +83,7 @@ describe("CustomerDetailsPanel", () => {
   beforeEach(() => {
     fetchCustomerDetail.mockResolvedValue(customer);
     fetchPayments.mockResolvedValue({ rows: [], total: 0 });
+    fetchAdminPlans.mockResolvedValue([]);
     supervisorSetAccountStatus.mockResolvedValue(undefined);
     sendCustomerPasswordSetup.mockResolvedValue(undefined);
     Object.defineProperty(window, "matchMedia", {
@@ -110,6 +122,23 @@ describe("CustomerDetailsPanel", () => {
       screen.getByRole("button", { name: "إرسال رابط تعيين كلمة المرور" }),
     ).toBeInTheDocument();
     expect(screen.queryByText("إعادة إرسال الدعوة")).not.toBeInTheDocument();
+  });
+
+  it("exposes direct subscription controls without a payment request", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    await screen.findByText("سارة");
+    await user.click(screen.getByRole("tab", { name: "الاشتراك" }));
+
+    expect(
+      await screen.findByText("تحكم مباشر بالاشتراك"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "تجميد الاشتراك" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /إلغاء فوري/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\+1\s*فترة/i })).toBeInTheDocument();
   });
 
   it("requires a note when suspending", async () => {

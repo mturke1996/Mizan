@@ -54,7 +54,11 @@ const navGroups = [
   {
     label: "التواصل",
     items: [
-      { to: "/supervisor/messages", label: "الرسائل", icon: MessageSquare },
+      {
+        to: "/supervisor/messages",
+        label: "الإشارات",
+        icon: MessageSquare,
+      },
     ],
   },
   {

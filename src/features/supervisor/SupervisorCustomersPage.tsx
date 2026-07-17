@@ -171,7 +171,8 @@ export function SupervisorCustomersPage() {
         <div>
           <h1 className="text-2xl font-bold text-ink">العملاء</h1>
           <p className="mt-1 text-sm text-muted">
-            إدارة الحسابات والاشتراكات والمدفوعات المرتبطة.
+            افتح العميل لتمديد الاشتراك أو تجميده أو إلغائه ومراجعة المدفوعات —
+            حتى بدون طلب دفع منه.
           </p>
         </div>
         <button

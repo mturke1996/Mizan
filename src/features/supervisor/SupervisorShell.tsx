@@ -50,8 +50,8 @@ export function SupervisorShell() {
       },
       {
         path: "/supervisor/messages",
-        title: "الرسائل",
-        subtitle: "حملات الإشعار والتواصل داخل التطبيق",
+        title: "الإشارات والرسائل",
+        subtitle: "قوالب تحفيزية وحملات تصل لصندوق المستخدم والجهاز",
       },
       {
         path: "/supervisor/customers",
@@ -95,8 +95,8 @@ export function SupervisorShell() {
         انتقل إلى المحتوى
       </a>
       <SupervisorNav />
-      <div dir="rtl" className="min-w-0">
-        <header className="hidden min-h-[76px] items-center justify-between border-b border-line bg-surface px-8 lg:flex xl:px-10">
+      <div dir="rtl" className="app-shell-safe min-w-0 lg:pt-0 lg:ps-0 lg:pe-0">
+        <header className="hidden min-h-[76px] items-center justify-between border-b border-line bg-surface/95 px-8 backdrop-blur-md lg:flex xl:px-10">
           <div>
             <p className="text-lg font-bold tracking-tight text-ink">
               {pageMeta.title}
@@ -104,6 +104,12 @@ export function SupervisorShell() {
             <p className="mt-0.5 text-xs text-muted">{pageMeta.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              to="/supervisor/messages"
+              className="pressable inline-flex min-h-10 items-center gap-2 rounded-[10px] border border-line bg-canvas px-3.5 text-xs font-bold text-ink hover:bg-surface-subtle"
+            >
+              إرسال إشارة
+            </Link>
             <Link
               to="/supervisor/payments"
               className="pressable inline-flex min-h-10 items-center gap-2 rounded-[10px] bg-primary px-3.5 text-xs font-bold text-primary-on hover:bg-primary-hover"
@@ -119,7 +125,7 @@ export function SupervisorShell() {
         <main
           ref={mainRef}
           id="supervisor-main"
-          className="page-enter mx-auto w-full max-w-384 px-4 pb-8 sm:px-6 lg:px-8 xl:px-10"
+          className="page-enter mx-auto w-full max-w-384 px-4 pb-10 sm:px-6 lg:px-8 xl:px-10"
         >
           <Outlet />
         </main>

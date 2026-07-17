@@ -50,7 +50,7 @@ export function BottomNavigation() {
     <nav
       dir="rtl"
       aria-label="التنقل الرئيسي"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-384 border-t border-line bg-surface/95 px-2 pt-2 pb-[max(8px,var(--safe-bottom))] [box-shadow:var(--shadow-nav)] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-384 border-t border-line bg-surface/96 px-1.5 pt-1 pb-[max(6px,var(--safe-bottom))] [box-shadow:var(--shadow-nav)] backdrop-blur-xl md:hidden"
     >
       <ul className="grid grid-cols-5">
         {navigationItems.map((item) => {
@@ -64,7 +64,7 @@ export function BottomNavigation() {
                 className={({ isActive }) => {
                   const active = isItemActive(pathname, item, isActive);
                   return [
-                    "pressable flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[10px] font-bold transition-colors",
+                    "pressable flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10px] font-bold transition-colors",
                     active ? "text-primary" : "text-muted",
                   ].join(" ");
                 }}
@@ -75,17 +75,17 @@ export function BottomNavigation() {
                     <>
                       <span
                         className={[
-                          "grid size-9 place-items-center rounded-xl transition-[background-color,transform] duration-200",
+                          "grid size-8 place-items-center rounded-lg transition-[background-color,transform] duration-200",
                           active ? "bg-primary-soft scale-105" : "bg-transparent",
                         ].join(" ")}
                       >
                         <Icon
                           aria-hidden="true"
-                          size={20}
+                          size={18}
                           strokeWidth={active ? 2.15 : 1.75}
                         />
                       </span>
-                      <span>{item.label}</span>
+                      <span className="leading-none">{item.label}</span>
                     </>
                   );
                 }}

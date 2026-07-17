@@ -18,10 +18,21 @@ const config: CapacitorConfig = {
       backgroundColor: "#F7F8FC",
       showSpinner: false,
     },
+    /**
+     * Modern Android (15+) is edge-to-edge. SystemBars injects
+     * --safe-area-inset-* CSS variables used by the app shell.
+     */
+    SystemBars: {
+      insetsHandling: "css",
+      style: "LIGHT",
+    },
     StatusBar: {
       style: "LIGHT",
       backgroundColor: "#F7F8FC",
       overlaysWebView: false,
+    },
+    LocalNotifications: {
+      iconColor: "#4338CA",
     },
   },
 };

@@ -4,12 +4,16 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  Megaphone,
   Package,
+  Sparkles,
   Users,
+  Zap,
 } from "lucide-react";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { SUPERVISOR_SIGNAL_TEMPLATES } from "@/lib/motivational-notifications";
 import { AppCard } from "@/shared/ui/AppCard";
 import {
   fetchActionQueue,
@@ -131,6 +135,78 @@ export function SupervisorOperationsPage() {
           طابور القرارات ومؤشرات التشغيل الحقيقية
         </p>
       </div>
+
+      <section
+        aria-labelledby="control-hero"
+        className="overflow-hidden rounded-[24px] border border-line bg-surface shadow-[0_16px_40px_rgb(27_30_60/6%)]"
+      >
+        <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgb(17_21_40)_0%,rgb(45_52_110)_55%,rgb(67_56_202)_100%)] px-5 py-6 text-white sm:px-7">
+          <div className="pointer-events-none absolute -start-8 top-0 size-40 rounded-full bg-white/10 blur-3xl" />
+          <div className="pointer-events-none absolute -end-10 bottom-0 size-44 rounded-full bg-emerald-400/20 blur-3xl" />
+          <div className="relative flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white/70">
+                <Sparkles aria-hidden="true" size={13} />
+                لوحة تحكم ميزان
+              </p>
+              <h2
+                className="mt-2 text-[22px] font-bold tracking-tight sm:text-[26px]"
+                id="control-hero"
+              >
+                شغّل المنصة بإشارات واضحة
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-white/72">
+                راقب الطابور، راجع المدفوعات، وأرسل رسائل تحفيزية للمستخدمين من
+                مكان واحد بسلاسة أعلى.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/supervisor/messages"
+                className="pressable inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-[#111528]"
+              >
+                <Megaphone aria-hidden="true" size={16} />
+                إرسال إشارة
+              </Link>
+              <Link
+                to="/supervisor/payments"
+                className="pressable inline-flex min-h-11 items-center gap-2 rounded-xl bg-white/12 px-4 text-sm font-bold text-white ring-1 ring-inset ring-white/20 hover:bg-white/18"
+              >
+                <CreditCard aria-hidden="true" size={16} />
+                المدفوعات
+                {metrics.payments.pending > 0 ? (
+                  <span className="rounded-md bg-amber-400 px-1.5 text-[10px] font-bold text-[#111528]">
+                    {metrics.payments.pending}
+                  </span>
+                ) : null}
+              </Link>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-2 p-3 sm:grid-cols-3">
+          {SUPERVISOR_SIGNAL_TEMPLATES.filter((item) => item.key !== "custom").map(
+            (template) => (
+              <Link
+                key={template.key}
+                to="/supervisor/messages"
+                className="pressable flex items-start gap-3 rounded-2xl border border-line/80 bg-canvas/70 px-3.5 py-3.5 hover:bg-primary-soft/40"
+              >
+                <span className="mt-0.5 grid size-9 place-items-center rounded-xl bg-primary-soft text-primary">
+                  <Zap aria-hidden="true" size={16} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-bold text-ink">
+                    {template.label}
+                  </span>
+                  <span className="mt-1 line-clamp-2 block text-[11px] leading-4 text-muted">
+                    {template.body}
+                  </span>
+                </span>
+              </Link>
+            ),
+          )}
+        </div>
+      </section>
 
       <section aria-labelledby="action-queue-heading">
         <div className="mb-3 flex items-end justify-between gap-3">

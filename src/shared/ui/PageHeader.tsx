@@ -16,9 +16,9 @@ export function PageHeader({
   action,
 }: PageHeaderProps) {
   return (
-    <header className="safe-top mb-6">
+    <header className="mb-5 pt-2">
       {(backTo || action) && (
-        <div className="mb-5 flex min-h-11 items-center justify-between">
+        <div className="mb-4 flex min-h-10 items-center justify-between">
           {backTo ? (
             <Link
               to={backTo}

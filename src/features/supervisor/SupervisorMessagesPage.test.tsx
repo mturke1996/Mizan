@@ -71,9 +71,10 @@ describe("SupervisorMessagesPage", () => {
     renderPage();
 
     expect(await screen.findByText("محرر الحملة")).toBeInTheDocument();
-    expect(screen.getByText(/معاينة المستلمين التقريبية/)).toBeInTheDocument();
+    expect(screen.getByText("إشارات سريعة")).toBeInTheDocument();
+    expect(await screen.findByText(/2 مستلم/)).toBeInTheDocument();
 
     await user.selectOptions(screen.getByDisplayValue("النشطون"), "grace");
-    expect(screen.getByText(/1 مستلم/)).toBeInTheDocument();
+    expect(await screen.findByText(/1 مستلم/)).toBeInTheDocument();
   });
 });

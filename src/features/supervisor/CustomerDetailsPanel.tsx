@@ -2,6 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as Tabs from "@radix-ui/react-tabs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  CheckCircle2,
   ChartNoAxesCombined,
   CreditCard,
   ExternalLink,
@@ -9,10 +10,13 @@ import {
   KeyRound,
   LayoutDashboard,
   MessageSquareText,
+  PauseCircle,
+  RefreshCw,
   ScrollText,
   UserRoundCog,
   WalletCards,
   X,
+  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -23,16 +27,19 @@ import {
   sendCustomerPasswordSetup,
 } from "./customer-admin-api";
 import type { AccountStatus, SupervisorCustomerRow } from "./customer-admin-types";
-import { SupervisorActionDialog } from "./SupervisorActionDialog";
 import { CustomerControlLedger } from "./CustomerControlLedger";
 import { CustomerFinancialReadPanel } from "./CustomerFinancialReadPanel";
 import { CustomerMessagesPanel } from "./CustomerMessagesPanel";
+import { CustomerSubscriptionControls } from "./CustomerSubscriptionControls";
+import { SupervisorActionDialog } from "./SupervisorActionDialog";
 import {
   createPaymentProofUrl,
   fetchPayments,
   invalidateSupervisor,
+  reviewPayment,
   supervisorKeys,
   supervisorSetAccountStatus,
+  type PaymentRequestRow,
 } from "./supervisor-api";
 import { ErrorBlock, LoadingBlock, StatusBadge } from "./SupervisorUi";
 import {
@@ -159,6 +166,10 @@ function CustomerPanelBody({
   const [accountAction, setAccountAction] = useState<AccountAction | null>(null);
   const [passwordSetupOpen, setPasswordSetupOpen] = useState(false);
   const [proofUrls, setProofUrls] = useState<Record<string, string>>({});
+  const [reviewTarget, setReviewTarget] = useState<{
+    payment: PaymentRequestRow;
+    decision: "approve" | "reject";
+  } | null>(null);
   const displayName = customer.displayName || "بدون اسم";
 
   const paymentsQuery = useQuery({
@@ -173,7 +184,7 @@ function CustomerPanelBody({
         limit: 20,
         offset: 0,
       }),
-    enabled: tab === "payments",
+    enabled: tab === "payments" || tab === "summary",
   });
 
   const statusMutation = useMutation({
@@ -211,6 +222,38 @@ function CustomerPanelBody({
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
+  const reviewMutation = useMutation({
+    mutationFn: (input: {
+      id: string;
+      decision: "approve" | "reject";
+      note: string;
+    }) => reviewPayment(input.id, input.decision, input.note),
+    onSuccess: async (_data, variables) => {
+      toast.success(
+        variables.decision === "approve" ? "تمت الموافقة" : "تم الرفض",
+      );
+      setReviewTarget(null);
+      await invalidateSupervisor(queryClient);
+      await queryClient.invalidateQueries({
+        queryKey: customerAdminKeys.detail(customer.userId),
+      });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  function openPaymentReview(
+    payment: PaymentRequestRow,
+    decision: "approve" | "reject",
+  ) {
+    if (decision === "approve" && !payment.proofObjectPath) {
+      toast.error(
+        "الموافقة تتطلب إثبات دفع. لتمديد الاشتراك بدون إثبات استخدم تبويب الاشتراك.",
+      );
+      return;
+    }
+    setReviewTarget({ payment, decision });
+  }
 
   function openAccountAction(status: AccountStatus) {
     if (status === "active") {
@@ -352,6 +395,37 @@ function CustomerPanelBody({
                   value={formatDateAr(customer.createdAt)}
                 />
               </dl>
+
+              <div className="mt-5 space-y-2.5">
+                <p className="text-xs font-bold text-ink">اختصارات التحكم</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    className="pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-primary-soft px-3 text-sm font-bold text-primary"
+                    onClick={() => setTab("subscription")}
+                    type="button"
+                  >
+                    <RefreshCw aria-hidden="true" size={15} />
+                    تمديد / إيقاف
+                  </button>
+                  <button
+                    className="pressable inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-line bg-canvas px-3 text-sm font-bold text-ink"
+                    onClick={() => setTab("payments")}
+                    type="button"
+                  >
+                    <WalletCards aria-hidden="true" size={15} />
+                    المدفوعات
+                    {customer.pendingPayments > 0 ? (
+                      <span className="rounded-full bg-warning-soft px-1.5 py-0.5 text-[10px] font-bold text-warning">
+                        {customer.pendingPayments}
+                      </span>
+                    ) : null}
+                  </button>
+                </div>
+                <p className="text-[11px] leading-relaxed text-muted">
+                  التمديد والتجميد لا يحتاجان طلب دفع من العميل — استخدم تبويب
+                  الاشتراك للتحكم المباشر.
+                </p>
+              </div>
             </Tabs.Content>
 
             <Tabs.Content className="outline-none" value="account">
@@ -452,6 +526,7 @@ function CustomerPanelBody({
                   }
                 />
               </dl>
+              <CustomerSubscriptionControls customer={customer} />
             </Tabs.Content>
 
             <Tabs.Content className="outline-none" value="payments">
@@ -510,38 +585,88 @@ function CustomerPanelBody({
                       <p className="mt-2 text-[11px] text-soft">
                         {formatDateAr(payment.createdAt)}
                       </p>
-                      {payment.proofObjectPath ? (
-                        proofUrls[payment.id] ? (
-                          <a
-                            className="pressable mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-primary"
-                            href={proofUrls[payment.id]}
-                            rel="noreferrer"
-                            target="_blank"
-                          >
-                            <ExternalLink aria-hidden="true" size={14} />
-                            فتح الإثبات
-                          </a>
-                        ) : (
-                          <button
-                            className="pressable mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-primary disabled:opacity-50"
-                            disabled={proofMutation.isPending}
-                            onClick={() =>
-                              proofMutation.mutate({
-                                id: payment.id,
-                                path: payment.proofObjectPath!,
-                              })
-                            }
-                            type="button"
-                          >
-                            <Eye aria-hidden="true" size={14} />
-                            عرض الإثبات
-                          </button>
-                        )
-                      ) : null}
+                      <div className="mt-3 grid gap-2">
+                        {payment.proofObjectPath ? (
+                          proofUrls[payment.id] ? (
+                            <a
+                              className="pressable inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-primary"
+                              href={proofUrls[payment.id]}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              <ExternalLink aria-hidden="true" size={14} />
+                              فتح الإثبات
+                            </a>
+                          ) : (
+                            <button
+                              className="pressable inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-primary disabled:opacity-50"
+                              disabled={proofMutation.isPending}
+                              onClick={() =>
+                                proofMutation.mutate({
+                                  id: payment.id,
+                                  path: payment.proofObjectPath!,
+                                })
+                              }
+                              type="button"
+                            >
+                              <Eye aria-hidden="true" size={14} />
+                              عرض الإثبات
+                            </button>
+                          )
+                        ) : null}
+                        {payment.status === "pending" ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              className="pressable inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-success-soft px-3 text-xs font-bold text-success disabled:opacity-50"
+                              disabled={!payment.proofObjectPath}
+                              onClick={() =>
+                                openPaymentReview(payment, "approve")
+                              }
+                              type="button"
+                            >
+                              <CheckCircle2 aria-hidden="true" size={14} />
+                              موافقة
+                            </button>
+                            <button
+                              className="pressable inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-danger-soft px-3 text-xs font-bold text-danger"
+                              onClick={() =>
+                                openPaymentReview(payment, "reject")
+                              }
+                              type="button"
+                            >
+                              <XCircle aria-hidden="true" size={14} />
+                              رفض
+                            </button>
+                          </div>
+                        ) : null}
+                        {payment.status === "pending" &&
+                        !payment.proofObjectPath ? (
+                          <p className="text-[11px] text-muted">
+                            لا يوجد إثبات — للتمديد اليدوي استخدم تبويب الاشتراك.
+                          </p>
+                        ) : null}
+                      </div>
                     </li>
                   ))}
                 </ul>
               )}
+              {customer.pendingPayments === 0 ? (
+                <div className="mt-4 rounded-2xl border border-dashed border-line bg-canvas/80 px-3.5 py-3">
+                  <p className="text-xs font-bold text-ink">بدون طلب دفع؟</p>
+                  <p className="mt-1 text-[11px] text-muted">
+                    يمكنك تمديد أو تجميد الاشتراك مباشرة من تبويب الاشتراك دون
+                    انتظار العميل.
+                  </p>
+                  <button
+                    className="pressable mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary-soft px-3 text-xs font-bold text-primary"
+                    onClick={() => setTab("subscription")}
+                    type="button"
+                  >
+                    <PauseCircle aria-hidden="true" size={14} />
+                    فتح تحكم الاشتراك
+                  </button>
+                </div>
+              ) : null}
             </Tabs.Content>
 
             <Tabs.Content className="outline-none" value="messages">
@@ -600,6 +725,38 @@ function CustomerPanelBody({
         title="إرسال رابط تعيين كلمة المرور"
         tone="primary"
       />
+
+      {reviewTarget ? (
+        <SupervisorActionDialog
+          confirmLabel={
+            reviewTarget.decision === "approve" ? "موافقة" : "رفض"
+          }
+          description={
+            reviewTarget.decision === "approve"
+              ? `الموافقة على دفع ${formatMinorCurrency(reviewTarget.payment.amountMinor, reviewTarget.payment.currencyCode)} وتفعيل/تمديد الاشتراك.`
+              : `رفض طلب الدفع لـ ${reviewTarget.payment.planName}.`
+          }
+          isPending={reviewMutation.isPending}
+          noteRequired={reviewTarget.decision === "reject"}
+          onConfirm={(note) =>
+            reviewMutation.mutate({
+              id: reviewTarget.payment.id,
+              decision: reviewTarget.decision,
+              note,
+            })
+          }
+          onOpenChange={(open) => {
+            if (!open) setReviewTarget(null);
+          }}
+          open
+          title={
+            reviewTarget.decision === "approve"
+              ? "موافقة على الدفع"
+              : "رفض طلب الدفع"
+          }
+          tone={reviewTarget.decision === "approve" ? "primary" : "danger"}
+        />
+      ) : null}
     </>
   );
 }
