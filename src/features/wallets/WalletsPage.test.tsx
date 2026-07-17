@@ -27,14 +27,15 @@ describe("WalletsPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "أموالي" }),
+      screen.getByRole("heading", { name: "المحافظ" }),
     ).toBeInTheDocument();
     expect(screen.getByText("24,850")).toBeInTheDocument();
-    expect(screen.getByText("المحفظة النقدية")).toBeInTheDocument();
-    expect(screen.getByText("محفظة الاستثمارات")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "تحويل بين المحافظ" }),
-    ).toHaveAttribute("href", "/transfer");
+    expect(screen.getAllByText("المحفظة النقدية").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("محفظة الاستثمارات").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "تحويل" })).toHaveAttribute(
+      "href",
+      "/transfer",
+    );
   });
 
   it("teaches a new user how to create the first wallet", () => {

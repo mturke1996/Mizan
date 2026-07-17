@@ -55,10 +55,10 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       navigationQueries.getByRole("link", { name: "أموالي" }),
-    ).toHaveAttribute("href", "/wallets");
+    ).toHaveAttribute("href", "/debts");
     expect(
-      navigationQueries.getByRole("button", { name: "المزيد" }),
-    ).toBeInTheDocument();
+      navigationQueries.getByRole("link", { name: "المحافظ" }),
+    ).toHaveAttribute("href", "/wallets");
   });
 
   it("renders the personal income route", async () => {

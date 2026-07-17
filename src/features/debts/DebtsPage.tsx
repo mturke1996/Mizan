@@ -4,22 +4,29 @@ import {
   CalendarClock,
   Plus,
   Scale,
+  Search,
+  Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { computeDebtAnalytics } from "@/domain/debts/compute-debt-analytics";
 import { formatMinorAmount } from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
+import { useArchiveDebtMutation } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import type {
   DebtStatus,
   DebtSummary,
 } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { MoneySectionTabs } from "@/shared/navigation/MoneySectionTabs";
 import { Badge, type BadgeTone } from "@/shared/ui/Badge";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
+import { useDebtStore } from "./debt-store";
 import { useDebtsView } from "./use-debts-view";
 
 type DebtFilter = "all" | "receivable" | "payable" | "overdue";
@@ -90,9 +97,13 @@ function settlementProgress(debt: DebtSummary): number {
 function DebtCard({
   debt,
   today,
+  onArchive,
+  archiving,
 }: {
   debt: DebtSummary;
   today: string;
+  onArchive: (debt: DebtSummary) => void;
+  archiving: boolean;
 }) {
   const DirectionIcon =
     debt.direction === "receivable" ? ArrowDownLeft : ArrowUpRight;
@@ -104,102 +115,128 @@ function DebtCard({
 
   return (
     <li>
-      <Link
-        to={`/debts/${encodeURIComponent(debt.id)}`}
-        className="pressable group block rounded-[20px] border border-line bg-surface p-4 shadow-[0_8px_28px_rgb(27_30_60/4%)] transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgb(27_30_60/8%)] sm:p-5"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span
-              className={[
-                "grid size-11 shrink-0 place-items-center rounded-2xl ring-1 ring-inset",
-                debt.direction === "receivable"
-                  ? "bg-success-soft text-success ring-success/15"
-                  : "bg-warning-soft text-warning ring-warning/15",
-              ].join(" ")}
-            >
-              <DirectionIcon aria-hidden="true" size={18} strokeWidth={1.8} />
-            </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <strong className="truncate text-[15px] font-bold tracking-tight text-ink">
-                  {debt.partyName}
-                </strong>
-                <Badge tone={STATUS_TONES[debt.status]}>
-                  {STATUS_LABELS[debt.status]}
-                </Badge>
-                {overdue ? (
-                  <span className="rounded-full bg-danger-soft px-2 py-0.5 text-[10px] font-bold text-danger">
-                    متأخر
-                  </span>
-                ) : null}
+      <div className="group relative overflow-hidden rounded-[22px] border border-line bg-surface shadow-[0_8px_28px_rgb(27_30_60/4%)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgb(27_30_60/8%)]">
+        <Link
+          to={`/debts/${encodeURIComponent(debt.id)}`}
+          className="pressable block p-4 sm:p-5"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <span
+                className={[
+                  "grid size-11 shrink-0 place-items-center rounded-2xl ring-1 ring-inset",
+                  debt.direction === "receivable"
+                    ? "bg-success-soft text-success ring-success/15"
+                    : "bg-warning-soft text-warning ring-warning/15",
+                ].join(" ")}
+              >
+                <DirectionIcon aria-hidden="true" size={18} strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <strong className="truncate text-[15px] font-bold tracking-tight text-ink">
+                    {debt.partyName}
+                  </strong>
+                  <Badge tone={STATUS_TONES[debt.status]}>
+                    {STATUS_LABELS[debt.status]}
+                  </Badge>
+                  {overdue ? (
+                    <span className="rounded-full bg-danger-soft px-2 py-0.5 text-[10px] font-bold text-danger">
+                      متأخر
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-xs text-muted">
+                  {directionLabel}
+                  {debt.projectName ? ` · ${debt.projectName}` : ""}
+                </p>
               </div>
-              <p className="mt-1 text-xs text-muted">
-                {directionLabel}
-                {debt.projectName ? ` · ${debt.projectName}` : ""}
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-semibold text-muted">المتبقي</p>
+              <p
+                className={[
+                  "numeric mt-0.5 text-lg font-black tracking-tight",
+                  overdue ? "text-danger" : "text-ink",
+                ].join(" ")}
+                dir="ltr"
+              >
+                {formatMinorAmount(debt.balanceMinor, money)}
+              </p>
+              <p className="mt-0.5 text-[10px] font-bold text-muted">
+                {debt.currencyCode}
               </p>
             </div>
           </div>
-          <div className="text-left">
-            <p className="text-[10px] font-semibold text-muted">المتبقي</p>
+
+          {isOutstanding(debt) && debt.principalMinor > 0n ? (
+            <div className="mt-4">
+              <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted">
+                <span>التسديد</span>
+                <span className="numeric font-bold" dir="ltr">
+                  {progress}%
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-subtle">
+                <div
+                  className={[
+                    "h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]",
+                    debt.direction === "receivable" ? "bg-success" : "bg-warning",
+                  ].join(" ")}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {debt.dueOn ? (
             <p
               className={[
-                "numeric mt-0.5 text-lg font-black tracking-tight",
-                overdue ? "text-danger" : "text-ink",
+                "mt-3 inline-flex items-center gap-1.5 text-[11px]",
+                overdue ? "font-bold text-danger" : "text-muted",
               ].join(" ")}
-              dir="ltr"
             >
-              {formatMinorAmount(debt.balanceMinor, money)}
+              <CalendarClock aria-hidden="true" size={13} />
+              {overdue ? "متأخر منذ " : "الاستحقاق "}
+              <bdi>{formatDate(debt.dueOn)}</bdi>
             </p>
-            <p className="mt-0.5 text-[10px] font-bold text-muted">
-              {debt.currencyCode}
-            </p>
-          </div>
-        </div>
+          ) : null}
+        </Link>
 
-        {isOutstanding(debt) && debt.principalMinor > 0n ? (
-          <div className="mt-4">
-            <div className="mb-1.5 flex items-center justify-between text-[10px] text-muted">
-              <span>التسديد</span>
-              <span className="numeric font-bold" dir="ltr">
-                {progress}%
-              </span>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-surface-subtle">
-              <div
-                className={[
-                  "h-full rounded-full transition-[width] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]",
-                  debt.direction === "receivable" ? "bg-success" : "bg-warning",
-                ].join(" ")}
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {debt.dueOn ? (
-          <p
-            className={[
-              "mt-3 inline-flex items-center gap-1.5 text-[11px]",
-              overdue ? "font-bold text-danger" : "text-muted",
-            ].join(" ")}
+        <div className="flex border-t border-line">
+          <Link
+            to={`/debts/${encodeURIComponent(debt.id)}`}
+            className="pressable flex min-h-11 flex-1 items-center justify-center text-xs font-bold text-primary hover:bg-primary-soft"
           >
-            <CalendarClock aria-hidden="true" size={13} />
-            {overdue ? "متأخر منذ " : "الاستحقاق "}
-            <bdi>{formatDate(debt.dueOn)}</bdi>
-          </p>
-        ) : null}
-      </Link>
+            فتح / سداد
+          </Link>
+          <button
+            type="button"
+            aria-label={`حذف دين ${debt.partyName}`}
+            disabled={archiving}
+            onClick={() => onArchive(debt)}
+            className="pressable flex min-h-11 flex-1 items-center justify-center gap-1.5 border-s border-line text-xs font-bold text-danger hover:bg-danger-soft disabled:opacity-60"
+          >
+            <Trash2 size={14} />
+            حذف
+          </button>
+        </div>
+      </div>
     </li>
   );
 }
 
 export function DebtsPage() {
   const [now] = useState(() => new Date());
+  const [query, setQuery] = useState("");
+  const [archivingId, setArchivingId] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const confirm = useConfirm();
   const { profile } = useAuth();
-  const { currency } = useWorkspace();
+  const { currency, isDemo = false } = useWorkspace();
   const { debts, isLoading, error, refresh } = useDebtsView();
+  const archiveDemoDebt = useDebtStore((state) => state.archiveDebt);
+  const archiveDebt = useArchiveDebtMutation();
   const requestedFilter = searchParams.get("filter");
   const activeFilter = FILTERS.some(
     (filter) => filter.value === requestedFilter,
@@ -208,20 +245,67 @@ export function DebtsPage() {
     : "all";
   const timeZone = profile?.timezone ?? "Africa/Tripoli";
   const today = todayInTimeZone(now, timeZone);
+  const currencyDebts = debts.filter((debt) => debt.currencyCode === currency);
   const analytics = computeDebtAnalytics({
-    debts: debts.filter((debt) => debt.currencyCode === currency),
+    debts: currencyDebts,
     now,
     timeZone,
   });
-  const filtered = debts.filter((debt) => {
-    if (activeFilter === "receivable") {
-      return debt.direction === "receivable";
-    }
-    if (activeFilter === "payable") return debt.direction === "payable";
-    if (activeFilter === "overdue") return isOverdue(debt, today);
-    return true;
-  });
+  const filtered = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase("ar");
+    return debts.filter((debt) => {
+      if (activeFilter === "receivable") {
+        if (debt.direction !== "receivable") return false;
+      } else if (activeFilter === "payable") {
+        if (debt.direction !== "payable") return false;
+      } else if (activeFilter === "overdue") {
+        if (!isOverdue(debt, today)) return false;
+      }
+      if (!q) return true;
+      return (
+        debt.partyName.toLocaleLowerCase("ar").includes(q) ||
+        (debt.projectName?.toLocaleLowerCase("ar").includes(q) ?? false) ||
+        (debt.note?.toLocaleLowerCase("ar").includes(q) ?? false)
+      );
+    });
+  }, [debts, activeFilter, today, query]);
   const money = { currency, locale: "en-US" as const };
+  const recvShare =
+    analytics.receivableMinor + analytics.payableMinor > 0n
+      ? Number(
+          (analytics.receivableMinor * 100n) /
+            (analytics.receivableMinor + analytics.payableMinor),
+        )
+      : 50;
+
+  const handleArchive = async (debt: DebtSummary) => {
+    if (archivingId) return;
+    const ok = await confirm({
+      title: `حذف دين «${debt.partyName}»؟`,
+      description: "سيُخفى من القائمة مع الإبقاء على السجل الداخلي.",
+      warning:
+        debt.balanceMinor > 0n
+          ? "ما زال هناك رصيد متبقٍ على هذا الدين."
+          : undefined,
+      tone: "danger",
+      confirmLabel: "حذف الدين",
+    });
+    if (!ok) return;
+    setArchivingId(debt.id);
+    try {
+      if (isDemo) {
+        archiveDemoDebt(debt.id);
+      } else {
+        await archiveDebt.mutateAsync(debt.id);
+      }
+      toast.success("تم حذف الدين");
+      await refresh();
+    } catch (archiveError) {
+      toast.error(getUserErrorMessage(archiveError, "تعذر حذف الدين"));
+    } finally {
+      setArchivingId(null);
+    }
+  };
 
   const header = (
     <PageHeader
@@ -242,7 +326,7 @@ export function DebtsPage() {
 
   if (isLoading) {
     return (
-      <div className="px-4 sm:px-6">
+      <div className="page-enter px-4 sm:px-6">
         <MoneySectionTabs active="debts" />
         {header}
         <div
@@ -260,7 +344,7 @@ export function DebtsPage() {
 
   if (error) {
     return (
-      <div className="px-4 sm:px-6">
+      <div className="page-enter px-4 sm:px-6">
         <MoneySectionTabs active="debts" />
         {header}
         <ErrorState message={error} onRetry={() => void refresh()} />
@@ -269,14 +353,13 @@ export function DebtsPage() {
   }
 
   return (
-    <div className="px-4 pb-6 sm:px-6">
+    <div className="page-enter px-4 pb-6 sm:px-6">
       <MoneySectionTabs active="debts" />
       {header}
 
-      {/* Balance hero */}
       <section
         aria-label="ملخص أرصدة الديون"
-        className="mb-5 overflow-hidden rounded-[24px] border border-line bg-surface shadow-[0_12px_36px_rgb(27_30_60/6%)]"
+        className="mb-4 overflow-hidden rounded-[26px] border border-line bg-surface shadow-[0_14px_40px_rgb(27_30_60/7%)]"
       >
         <div className="relative overflow-hidden bg-[linear-gradient(145deg,rgb(67_56_202/14%),rgb(245_158_11/8%)_48%,rgb(16_185_129/10%))] px-5 py-5 sm:px-6">
           <div className="pointer-events-none absolute -start-10 top-0 size-40 rounded-full bg-primary/10 blur-3xl" />
@@ -288,7 +371,7 @@ export function DebtsPage() {
               </p>
               <p
                 className={[
-                  "numeric mt-1 text-3xl font-black tracking-tight",
+                  "numeric mt-1 text-3xl font-black tracking-tight sm:text-[34px]",
                   analytics.netMinor < 0n ? "text-danger" : "text-ink",
                 ].join(" ")}
                 dir="ltr"
@@ -303,6 +386,13 @@ export function DebtsPage() {
                   ? `${analytics.openCount} رصيد مفتوح يحتاج متابعة`
                   : "لا أرصدة مفتوحة الآن"}
               </p>
+              <div
+                className="mt-4 flex h-2 overflow-hidden rounded-full bg-surface/60"
+                aria-hidden="true"
+              >
+                <span className="bg-success" style={{ width: `${recvShare}%` }} />
+                <span className="bg-warning" style={{ width: `${100 - recvShare}%` }} />
+              </div>
             </div>
             <span className="grid size-12 place-items-center rounded-2xl bg-surface/80 text-primary shadow-[0_8px_20px_rgb(27_30_60/8%)] backdrop-blur-sm">
               <Scale aria-hidden="true" size={22} strokeWidth={1.7} />
@@ -344,6 +434,21 @@ export function DebtsPage() {
           </Link>
         ) : null}
       </section>
+
+      <label className="relative mb-3 block">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 start-3.5 -translate-y-1/2 text-muted"
+          size={16}
+        />
+        <input
+          aria-label="بحث في الديون"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="ابحث بالطرف أو المشروع…"
+          className="min-h-12 w-full rounded-2xl border border-line bg-surface py-2 pe-4 ps-10 text-sm text-ink placeholder:text-muted"
+        />
+      </label>
 
       <nav
         aria-label="تصفية الديون"
@@ -410,7 +515,13 @@ export function DebtsPage() {
         ) : (
           <ul className="space-y-3">
             {filtered.map((debt) => (
-              <DebtCard key={debt.id} debt={debt} today={today} />
+              <DebtCard
+                key={debt.id}
+                debt={debt}
+                today={today}
+                onArchive={(item) => void handleArchive(item)}
+                archiving={archivingId === debt.id}
+              />
             ))}
           </ul>
         )}

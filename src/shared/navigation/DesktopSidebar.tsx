@@ -30,7 +30,7 @@ interface NavigationItem {
 const mainItems: NavigationItem[] = [
   { label: "لوحة الملخص", to: "/", icon: House, end: true },
   { label: "المعاملات", to: "/transactions", icon: ReceiptText },
-  { label: "أموالي", to: "/wallets", icon: WalletCards },
+  { label: "المحافظ", to: "/wallets", icon: WalletCards },
   { label: "دخلي", to: "/income", icon: BriefcaseBusiness },
   { label: "الديون", to: "/debts", icon: Scale },
   { label: "فواتير", to: "/invoices", icon: FileText },
