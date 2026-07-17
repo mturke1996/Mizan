@@ -55,7 +55,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       navigationQueries.getByRole("link", { name: "أموالي" }),
-    ).toHaveAttribute("href", "/debts");
+    ).toHaveAttribute("href", "/wallets");
     expect(
       navigationQueries.getByRole("button", { name: "المزيد" }),
     ).toBeInTheDocument();
@@ -78,10 +78,9 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "الديون" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("navigation", { name: "أقسام أموالي" }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "فواتير" })).toHaveAttribute(
+    const moneyNav = screen.getByRole("navigation", { name: "أقسام أموالي" });
+    expect(moneyNav).toBeInTheDocument();
+    expect(within(moneyNav).getByRole("link", { name: "فواتير" })).toHaveAttribute(
       "href",
       "/invoices",
     );

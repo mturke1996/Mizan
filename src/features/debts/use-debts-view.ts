@@ -36,7 +36,9 @@ export function useDebtsView(): {
 
   if (!workspaceId) {
     return {
-      debts: isDemo ? demoDebts : [],
+      debts: isDemo
+        ? demoDebts.filter((debt) => !debt.archivedAt)
+        : [],
       isLoading: workspaceLoading,
       isLive: false,
       error: isDemo ? null : workspaceError,

@@ -1,6 +1,15 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
-import { Briefcase, Calendar, Gift, Minus, Wallet } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import {
+  Briefcase,
+  Calendar,
+  Gift,
+  Minus,
+  Pencil,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import {
   formatMinorAmount,
   getCurrencyScale,
@@ -8,15 +17,19 @@ import {
   toSafeMinorNumber,
 } from "@/domain/money/money";
 import {
+  useArchiveIncomeSourceMutation,
   useIncomeEntriesQuery,
   useIncomeSourceBalancesQuery,
   useIncomeSourcesQuery,
   usePostIncomeEntryMutation,
+  useUpdateIncomeSourceMutation,
   useWalletsQuery,
 } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import type { IncomeEntryType } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 type ActionType = IncomeEntryType | null;
@@ -31,18 +44,26 @@ const ENTRY_TYPE_LABELS: Record<IncomeEntryType, string> = {
 
 export function IncomeSourceDetailPage() {
   const { sourceId } = useParams();
-  const { currency } = useWorkspace();
+  const navigate = useNavigate();
+  const confirm = useConfirm();
+  const { currency, isDemo = false } = useWorkspace();
   const sourcesQuery = useIncomeSourcesQuery();
   const balancesQuery = useIncomeSourceBalancesQuery();
   const entriesQuery = useIncomeEntriesQuery(sourceId);
   const walletsQuery = useWalletsQuery();
   const postEntry = usePostIncomeEntryMutation(sourceId ?? "");
+  const updateSource = useUpdateIncomeSourceMutation(sourceId ?? "");
+  const archiveSource = useArchiveIncomeSourceMutation();
 
   const [activeAction, setActiveAction] = useState<ActionType>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [walletId, setWalletId] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPlace, setEditPlace] = useState("");
+  const [metaBusy, setMetaBusy] = useState(false);
 
   const source = sourcesQuery.data?.find((s) => s.id === sourceId);
   const balance = balancesQuery.data?.find((b) => b.sourceId === sourceId);
@@ -117,6 +138,61 @@ export function IncomeSourceDetailPage() {
   const showSalary = source.payKind === "monthly" || source.payKind === "both";
   const showDaily = source.payKind === "daily" || source.payKind === "both";
 
+  const openEditor = () => {
+    setEditName(source.name);
+    setEditPlace(source.place ?? "");
+    setEditing(true);
+  };
+
+  const saveMeta = async () => {
+    if (isDemo) {
+      toast.message("تعديل مصادر الدخل متاح في الحساب المتصل");
+      return;
+    }
+    const name = editName.trim();
+    if (name.length < 2) {
+      toast.error("اكتب اسمًا واضحًا للمصدر");
+      return;
+    }
+    setMetaBusy(true);
+    try {
+      await updateSource.mutateAsync({
+        name,
+        place: editPlace.trim() || null,
+      });
+      setEditing(false);
+      toast.success("تم تحديث مصدر الدخل");
+    } catch (error) {
+      toast.error(getUserErrorMessage(error, "تعذر تحديث مصدر الدخل"));
+    } finally {
+      setMetaBusy(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (isDemo) {
+      toast.message("حذف مصادر الدخل متاح في الحساب المتصل");
+      return;
+    }
+    const ok = await confirm({
+      title: `حذف مصدر «${source.name}»؟`,
+      description: "سيُخفى من القائمة مع الإبقاء على سجل الحركات.",
+      tone: "danger",
+      confirmLabel: "حذف المصدر",
+    });
+    if (!ok) return;
+    setMetaBusy(true);
+    try {
+      await archiveSource.mutateAsync(source.id);
+      toast.success("تم حذف مصدر الدخل");
+      navigate("/income");
+    } catch (error) {
+      toast.error(getUserErrorMessage(error, "تعذر حذف مصدر الدخل"));
+    } finally {
+      setMetaBusy(false);
+    }
+  };
+
   return (
     <div className="px-4 sm:px-6 pb-6" dir="rtl">
       <PageHeader
@@ -124,6 +200,63 @@ export function IncomeSourceDetailPage() {
         subtitle={source.place || payKindLabel(source.payKind)}
         backTo="/income"
       />
+
+      {editing ? (
+        <AppCard className="mb-5 space-y-3 rounded-[18px] p-4">
+          <h3 className="text-sm font-bold text-ink">تعديل المصدر</h3>
+          <input
+            aria-label="اسم مصدر الدخل"
+            className="min-h-11 w-full rounded-xl border border-control-border bg-surface px-3 text-sm"
+            value={editName}
+            onChange={(event) => setEditName(event.target.value)}
+          />
+          <input
+            aria-label="مكان العمل"
+            className="min-h-11 w-full rounded-xl border border-control-border bg-surface px-3 text-sm"
+            placeholder="مكان العمل (اختياري)"
+            value={editPlace}
+            onChange={(event) => setEditPlace(event.target.value)}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="pressable min-h-11 rounded-xl border border-line text-sm font-bold"
+              disabled={metaBusy}
+              onClick={() => setEditing(false)}
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              className="pressable min-h-11 rounded-xl bg-primary text-sm font-bold text-primary-on disabled:opacity-60"
+              disabled={metaBusy || updateSource.isPending}
+              onClick={() => void saveMeta()}
+            >
+              حفظ
+            </button>
+          </div>
+        </AppCard>
+      ) : (
+        <div className="mb-5 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="pressable flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-surface text-sm font-bold text-ink"
+            onClick={openEditor}
+          >
+            <Pencil aria-hidden="true" size={16} />
+            تعديل المصدر
+          </button>
+          <button
+            type="button"
+            className="pressable flex min-h-12 items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger-soft text-sm font-bold text-danger"
+            disabled={metaBusy || archiveSource.isPending}
+            onClick={() => void handleArchive()}
+          >
+            <Trash2 aria-hidden="true" size={16} />
+            حذف المصدر
+          </button>
+        </div>
+      )}
 
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="مستحق" value={formatMinorAmount(outstanding, money)} tone="success" />

@@ -25,6 +25,7 @@ function debt(
     projectId: null,
     projectName: null,
     note: null,
+    archivedAt: null,
     createdBy: "user-1",
     createdAt: "2026-07-01T10:00:00.000Z",
     updatedAt: "2026-07-01T10:00:00.000Z",

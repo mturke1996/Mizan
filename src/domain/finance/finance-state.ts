@@ -142,6 +142,48 @@ export function setWalletBalance(
   };
 }
 
+export function renameWallet(
+  state: FinanceState,
+  walletId: string,
+  name: string,
+): FinanceState {
+  const trimmed = name.trim();
+  if (!trimmed) throw new Error("اسم المحفظة مطلوب");
+  getWallet(state, walletId);
+  if (
+    state.wallets.some(
+      (wallet) =>
+        wallet.id !== walletId &&
+        wallet.name.trim().toLocaleLowerCase("ar") ===
+          trimmed.toLocaleLowerCase("ar"),
+    )
+  ) {
+    throw new Error("يوجد محفظة بنفس الاسم");
+  }
+
+  return {
+    wallets: state.wallets.map((wallet) =>
+      wallet.id === walletId ? { ...wallet, name: trimmed } : wallet,
+    ),
+    transactions: state.transactions,
+  };
+}
+
+export function archiveWallet(
+  state: FinanceState,
+  walletId: string,
+): FinanceState {
+  const wallet = getWallet(state, walletId);
+  if (wallet.balanceMinor !== 0n) {
+    throw new Error("انقل الرصيد أو صفّره قبل حذف المحفظة");
+  }
+
+  return {
+    wallets: state.wallets.filter((candidate) => candidate.id !== walletId),
+    transactions: state.transactions,
+  };
+}
+
 export function deleteTransaction(
   state: FinanceState,
   transactionId: string,

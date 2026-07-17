@@ -126,6 +126,7 @@ export function mapDebtSummary(row: {
   project_id: string | null;
   project_name: string | null;
   note: string | null;
+  archived_at?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -160,6 +161,7 @@ export function mapDebtSummary(row: {
     projectId: row.project_id,
     projectName: row.project_name,
     note: row.note,
+    archivedAt: row.archived_at ?? null,
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

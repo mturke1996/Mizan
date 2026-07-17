@@ -37,7 +37,7 @@ describe("WalletDetailPage", () => {
       screen.getByRole("link", { name: "تحويل من هذه المحفظة" }),
     ).toHaveAttribute("href", "/transfer?from=cash");
     expect(
-      screen.getByRole("button", { name: "تعديل رصيد الخزنة" }),
+      screen.getByRole("button", { name: "تعديل الرصيد" }),
     ).toBeInTheDocument();
   });
 
@@ -56,7 +56,7 @@ describe("WalletDetailPage", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("button", { name: "تعديل رصيد الخزنة" }));
+    await user.click(screen.getByRole("button", { name: "تعديل الرصيد" }));
     const input = screen.getByLabelText("الرصيد المستهدف بعملة LYD");
     await user.clear(input);
     await user.type(input, "3000");

@@ -6,7 +6,10 @@ import {
 } from "@tanstack/react-query";
 import { useWorkspace } from "./use-workspace";
 import {
+  archiveDebtRpc,
+  archiveIncomeSourceRpc,
   archiveInventoryItem,
+  archiveWalletRpc,
   acceptWorkspaceInviteRpc,
   createDebtRpc,
   createIncomeSourceRpc,
@@ -69,6 +72,9 @@ import {
   postCapitalEntry,
   postDebtEntryRpc,
   postIncomeEntryRpc,
+  renameWalletRpc,
+  updateDebtRpc,
+  updateIncomeSourceRpc,
   postInventoryMovementRpc,
   postLivestockEventRpc,
   postProjectCashEntryRpc,
@@ -798,6 +804,106 @@ export function usePostDebtEntryMutation(debtId: string) {
         }),
         invalidateFinance(),
       ]);
+    },
+  });
+}
+
+export function useUpdateDebtMutation(debtId: string) {
+  const { workspaceId, currency } = useWorkspace();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: {
+      partyName?: string;
+      partyPhone?: string | null;
+      dueOn?: string | null;
+      note?: string | null;
+      clearDueOn?: boolean;
+    }) =>
+      updateDebtRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        debtId: requireDebtId(debtId),
+        ...input,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debts(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debtDetail(workspaceId, debtId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debtParties(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debtWorkspaceSummary(workspaceId, currency),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useArchiveDebtMutation() {
+  const { workspaceId, currency } = useWorkspace();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (debtId: string) =>
+      archiveDebtRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        debtId: requireDebtId(debtId),
+      }),
+    onSuccess: async (_data, debtId) => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debts(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debtDetail(workspaceId, debtId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.debtWorkspaceSummary(workspaceId, currency),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.analytics(workspaceId),
+        }),
+      ]);
+    },
+  });
+}
+
+export function useRenameWalletMutation() {
+  const { workspaceId } = useWorkspace();
+  const invalidate = useInvalidateFinance();
+
+  return useMutation({
+    mutationFn: (input: { walletId: string; name: string }) =>
+      renameWalletRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        walletId: input.walletId,
+        name: input.name,
+      }),
+    onSuccess: async () => {
+      await invalidate();
+    },
+  });
+}
+
+export function useArchiveWalletMutation() {
+  const { workspaceId } = useWorkspace();
+  const invalidate = useInvalidateFinance();
+
+  return useMutation({
+    mutationFn: (walletId: string) =>
+      archiveWalletRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        walletId,
+      }),
+    onSuccess: async () => {
+      await invalidate();
     },
   });
 }
@@ -1949,6 +2055,54 @@ export function useCreateIncomeSourceMutation() {
       await queryClient.invalidateQueries({
         queryKey: workspaceKeys.incomeSources(workspaceId),
       });
+    },
+  });
+}
+
+export function useUpdateIncomeSourceMutation(sourceId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      name?: string;
+      place?: string | null;
+      payKind?: IncomePayKind;
+      dailyWageMinor?: number;
+      monthlySalaryMinor?: number;
+    }) =>
+      updateIncomeSourceRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        sourceId,
+        ...input,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await queryClient.invalidateQueries({
+        queryKey: workspaceKeys.incomeSources(workspaceId),
+      });
+    },
+  });
+}
+
+export function useArchiveIncomeSourceMutation() {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sourceId: string) =>
+      archiveIncomeSourceRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        sourceId,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.incomeSources(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.incomeSourceBalances(workspaceId),
+        }),
+      ]);
     },
   });
 }

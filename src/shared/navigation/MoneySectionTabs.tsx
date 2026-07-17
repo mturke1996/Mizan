@@ -1,16 +1,22 @@
-import { BriefcaseBusiness, FileText, Scale } from "lucide-react";
+import { BriefcaseBusiness, FileText, Scale, WalletCards } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 /**
- * Shared switcher between personal income, debts, and invoices.
+ * Shared switcher between wallets, income, debts, and invoices.
  * Keeps money flows one tap apart on mobile and desktop.
  */
 export function MoneySectionTabs({
   active,
 }: {
-  active: "income" | "debts" | "invoices";
+  active: "wallets" | "income" | "debts" | "invoices";
 }) {
   const tabs = [
+    {
+      id: "wallets" as const,
+      to: "/wallets",
+      label: "أموالي",
+      Icon: WalletCards,
+    },
     {
       id: "income" as const,
       to: "/income",
@@ -34,7 +40,7 @@ export function MoneySectionTabs({
   return (
     <nav
       aria-label="أقسام أموالي"
-      className="mb-5 grid grid-cols-3 gap-1 rounded-2xl border border-line/80 bg-surface-subtle/80 p-1"
+      className="mb-5 grid grid-cols-2 gap-1 rounded-2xl border border-line/80 bg-surface-subtle/80 p-1 sm:grid-cols-4"
     >
       {tabs.map(({ id, to, label, Icon }) => {
         const isActive = active === id;

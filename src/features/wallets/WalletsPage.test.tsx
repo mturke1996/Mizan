@@ -27,7 +27,7 @@ describe("WalletsPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "المحافظ" }),
+      screen.getByRole("heading", { name: "أموالي" }),
     ).toBeInTheDocument();
     expect(screen.getByText("24,850")).toBeInTheDocument();
     expect(screen.getByText("المحفظة النقدية")).toBeInTheDocument();

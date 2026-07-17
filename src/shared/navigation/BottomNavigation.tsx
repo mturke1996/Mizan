@@ -1,9 +1,9 @@
 import {
-  BriefcaseBusiness,
   Ellipsis,
   FolderKanban,
   House,
   ReceiptText,
+  WalletCards,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -24,9 +24,9 @@ const navigationItems: NavigationItem[] = [
   { label: "المعاملات", to: "/transactions", icon: ReceiptText },
   {
     label: "أموالي",
-    to: "/debts",
-    icon: BriefcaseBusiness,
-    matchPrefixes: ["/income", "/debts", "/invoices"],
+    to: "/wallets",
+    icon: WalletCards,
+    matchPrefixes: ["/wallets", "/income", "/debts", "/invoices"],
   },
   { label: "المشاريع", to: "/projects", icon: FolderKanban },
   { label: "المزيد", to: "#more", icon: Ellipsis, kind: "more" },
@@ -39,7 +39,6 @@ const MORE_PREFIXES = [
   "/budgets",
   "/notifications",
   "/settings",
-  "/wallets",
 ];
 
 function isItemActive(pathname: string, item: NavigationItem, navActive: boolean) {

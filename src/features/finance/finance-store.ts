@@ -3,7 +3,9 @@ import { useStore } from "zustand";
 import {
   addWallet as addWalletToState,
   addWalletTransaction,
+  archiveWallet as archiveWalletInState,
   deleteTransaction as deleteTransactionFromState,
+  renameWallet as renameWalletInState,
   setWalletBalance as setWalletBalanceInState,
   transferBetweenWallets,
   updateTransaction as updateTransactionInState,
@@ -18,6 +20,8 @@ interface FinanceActions {
   addTransaction: (input: AddWalletTransactionInput) => void;
   transfer: (input: TransferBetweenWalletsInput) => void;
   setWalletBalance: (walletId: string, balanceMinor: bigint) => void;
+  renameWallet: (walletId: string, name: string) => void;
+  archiveWallet: (walletId: string) => void;
   deleteTransaction: (transactionId: string) => void;
   updateTransaction: (
     transactionId: string,
@@ -161,6 +165,27 @@ export function createFinanceStore(
           },
           walletId,
           balanceMinor,
+        ),
+      ),
+    renameWallet: (walletId, name) =>
+      set((current) =>
+        renameWalletInState(
+          {
+            wallets: current.wallets,
+            transactions: current.transactions,
+          },
+          walletId,
+          name,
+        ),
+      ),
+    archiveWallet: (walletId) =>
+      set((current) =>
+        archiveWalletInState(
+          {
+            wallets: current.wallets,
+            transactions: current.transactions,
+          },
+          walletId,
         ),
       ),
     deleteTransaction: (transactionId) =>

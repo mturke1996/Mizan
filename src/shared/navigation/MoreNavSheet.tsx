@@ -8,6 +8,7 @@ import {
   PiggyBank,
   ReceiptText,
   Repeat2,
+  Scale,
   Settings,
   Users,
   WalletCards,
@@ -49,12 +50,6 @@ const primaryLinks: MoreLink[] = [
     icon: Users,
   },
   {
-    to: "/wallets",
-    label: "المحافظ",
-    description: "الأرصدة والتحويلات",
-    icon: WalletCards,
-  },
-  {
     to: "/notifications",
     label: "الإشعارات",
     description: "تنبيهات الاشتراك والمعاملات",
@@ -85,10 +80,22 @@ const settingsLinks: MoreLink[] = [
 
 const moneyLinks: MoreLink[] = [
   {
+    to: "/wallets",
+    label: "أموالي",
+    description: "الأرصدة والتحويلات",
+    icon: WalletCards,
+  },
+  {
     to: "/income",
     label: "دخلي",
     description: "مصادر الدخل والمستحقات",
     icon: BriefcaseBusiness,
+  },
+  {
+    to: "/debts",
+    label: "الديون",
+    description: "مستحق لك وعليك",
+    icon: Scale,
   },
   {
     to: "/invoices",

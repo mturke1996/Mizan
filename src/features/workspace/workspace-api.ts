@@ -54,6 +54,7 @@ import type {
   FinancialEventAttachment,
   IncomeEntry,
   IncomeEntryType,
+  IncomePayKind,
   IncomeSource,
   IncomeSourceBalance,
   Invoice,
@@ -379,6 +380,7 @@ export async function fetchDebts(workspaceId: string): Promise<DebtSummary[]> {
       .from("debt_balances")
       .select("*")
       .eq("workspace_id", workspaceId)
+      .is("archived_at", null)
       .order("due_on", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false })
       .range(from, to);
@@ -974,6 +976,66 @@ export async function postDebtEntryRpc(input: {
   });
   if (error) throwArabic(error, "تعذر حفظ حركة الدين");
   return data as string;
+}
+
+export async function updateDebtRpc(input: {
+  workspaceId: string;
+  debtId: string;
+  partyName?: string;
+  partyPhone?: string | null;
+  dueOn?: string | null;
+  note?: string | null;
+  clearDueOn?: boolean;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("update_debt", {
+    p_workspace_id: input.workspaceId,
+    p_debt_id: input.debtId,
+    p_party_name: input.partyName ?? null,
+    p_party_phone: input.partyPhone ?? null,
+    p_due_on: input.dueOn ?? null,
+    p_note: input.note ?? null,
+    p_clear_due_on: input.clearDueOn ?? false,
+  });
+  if (error) throwArabic(error, "تعذر تحديث الدين");
+}
+
+export async function archiveDebtRpc(input: {
+  workspaceId: string;
+  debtId: string;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("archive_debt", {
+    p_workspace_id: input.workspaceId,
+    p_debt_id: input.debtId,
+  });
+  if (error) throwArabic(error, "تعذر حذف الدين");
+}
+
+export async function renameWalletRpc(input: {
+  workspaceId: string;
+  walletId: string;
+  name: string;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("rename_wallet", {
+    p_workspace_id: input.workspaceId,
+    p_wallet_id: input.walletId,
+    p_name: input.name,
+  });
+  if (error) throwArabic(error, "تعذر إعادة تسمية المحفظة");
+}
+
+export async function archiveWalletRpc(input: {
+  workspaceId: string;
+  walletId: string;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("archive_wallet", {
+    p_workspace_id: input.workspaceId,
+    p_wallet_id: input.walletId,
+  });
+  if (error) throwArabic(error, "تعذر حذف المحفظة");
 }
 
 export async function createWalletRpc(input: {
@@ -2091,6 +2153,40 @@ export async function postIncomeEntryRpc(input: {
   });
   if (error) throwArabic(error, "تعذر تسجيل حركة الدخل");
   return data.id;
+}
+
+export async function updateIncomeSourceRpc(input: {
+  workspaceId: string;
+  sourceId: string;
+  name?: string;
+  place?: string | null;
+  payKind?: IncomePayKind;
+  dailyWageMinor?: number;
+  monthlySalaryMinor?: number;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("update_income_source", {
+    p_workspace_id: input.workspaceId,
+    p_source_id: input.sourceId,
+    p_name: input.name ?? null,
+    p_place_label: input.place ?? null,
+    p_pay_kind: input.payKind ?? null,
+    p_default_daily_wage_minor: input.dailyWageMinor ?? null,
+    p_monthly_salary_minor: input.monthlySalaryMinor ?? null,
+  });
+  if (error) throwArabic(error, "تعذر تحديث مصدر الدخل");
+}
+
+export async function archiveIncomeSourceRpc(input: {
+  workspaceId: string;
+  sourceId: string;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("archive_income_source", {
+    p_workspace_id: input.workspaceId,
+    p_source_id: input.sourceId,
+  });
+  if (error) throwArabic(error, "تعذر حذف مصدر الدخل");
 }
 
 // ─── Invoices ─────────────────────────────────────────────────

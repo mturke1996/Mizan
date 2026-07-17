@@ -109,6 +109,14 @@ const DATABASE_MESSAGES: Record<string, string> = {
     "اختر محفظة بعملة الدين نفسها",
   "wallet-backed debt payment is outside bigint range":
     "مبلغ الدفعة أكبر من النطاق المدعوم",
+  debt_not_found: "الدين غير موجود أو محذوف",
+  invalid_party_name: "اكتب اسمًا واضحًا للطرف",
+  invalid_party_phone: "رقم هاتف الطرف أطول من اللازم",
+  wallet_not_found: "المحفظة غير موجودة أو محذوفة",
+  invalid_wallet_name: "اكتب اسمًا واضحًا للمحفظة",
+  wallet_balance_not_zero: "انقل الرصيد أو صفّره قبل حذف المحفظة",
+  income_source_not_found: "مصدر الدخل غير موجود أو محذوف",
+  invalid_name: "اكتب اسمًا واضحًا",
   debt_event_managed:
     "هذه المعاملة مرتبطة بدين. عدّلها من سجل الديون وليس من المعاملات",
   "Debt-linked wallet events must be managed through debt RPCs":

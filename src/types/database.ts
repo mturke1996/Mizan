@@ -1080,6 +1080,7 @@ export type Database = {
           due_on: string | null;
           project_id: string | null;
           note: string | null;
+          archived_at: string | null;
           created_by: string;
           client_id: string;
           payload_hash: string;
@@ -1097,6 +1098,7 @@ export type Database = {
           due_on?: string | null;
           project_id?: string | null;
           note?: string | null;
+          archived_at?: string | null;
           created_by: string;
           client_id: string;
           payload_hash: string;
@@ -1107,6 +1109,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["debt_status"];
           due_on?: string | null;
           note?: string | null;
+          archived_at?: string | null;
         }
       >;
       debt_entries: Table<
@@ -1713,6 +1716,7 @@ export type Database = {
         project_id: string | null;
         project_name: string | null;
         note: string | null;
+        archived_at: string | null;
         created_by: string;
         created_at: string;
         updated_at: string;
@@ -2509,6 +2513,59 @@ export type Database = {
           p_client_id: string;
         };
         Returns: string;
+      };
+      update_debt: {
+        Args: {
+          p_workspace_id: string;
+          p_debt_id: string;
+          p_party_name?: string | null;
+          p_party_phone?: string | null;
+          p_due_on?: string | null;
+          p_note?: string | null;
+          p_clear_due_on?: boolean;
+        };
+        Returns: Database["public"]["Tables"]["debts"]["Row"];
+      };
+      archive_debt: {
+        Args: {
+          p_workspace_id: string;
+          p_debt_id: string;
+        };
+        Returns: Database["public"]["Tables"]["debts"]["Row"];
+      };
+      rename_wallet: {
+        Args: {
+          p_workspace_id: string;
+          p_wallet_id: string;
+          p_name: string;
+        };
+        Returns: Database["public"]["Tables"]["wallets"]["Row"];
+      };
+      archive_wallet: {
+        Args: {
+          p_workspace_id: string;
+          p_wallet_id: string;
+        };
+        Returns: Database["public"]["Tables"]["wallets"]["Row"];
+      };
+      update_income_source: {
+        Args: {
+          p_workspace_id: string;
+          p_source_id: string;
+          p_name?: string | null;
+          p_place_label?: string | null;
+          p_pay_kind?: Database["public"]["Enums"]["income_pay_kind"] | null;
+          p_default_daily_wage_minor?: number | null;
+          p_monthly_salary_minor?: number | null;
+        };
+        Returns: Database["public"]["Tables"]["income_sources"]["Row"];
+      };
+      archive_income_source: {
+        Args: {
+          p_workspace_id: string;
+          p_source_id: string;
+        };
+        Returns: Database["public"]["Tables"]["income_sources"]["Row"];
       };
       refresh_operational_notifications: {
         Args: { p_workspace_id: string };

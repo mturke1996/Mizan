@@ -51,9 +51,20 @@ export interface DebtStoreState {
   readonly entriesByClientOperation: Record<string, EntryIntent>;
 }
 
+export interface DemoDebtUpdateInput {
+  readonly debtId: string;
+  readonly partyName?: string;
+  readonly partyPhone?: string | null;
+  readonly dueOn?: string | null;
+  readonly note?: string | null;
+  readonly clearDueOn?: boolean;
+}
+
 export interface DebtStoreActions {
   createDebt: (input: DemoDebtCreateInput) => string;
   postEntry: (input: DemoDebtEntryInput) => DebtEntry;
+  updateDebt: (input: DemoDebtUpdateInput) => void;
+  archiveDebt: (debtId: string) => void;
   replaceState: (state: DebtStoreState) => void;
 }
 
@@ -250,6 +261,7 @@ export function createDebtStore(
         projectId: input.projectId ?? null,
         projectName: input.projectName ?? null,
         note: normalizeOptional(input.note),
+        archivedAt: null,
         createdBy: "demo",
         createdAt: now,
         updatedAt: now,
@@ -339,6 +351,66 @@ export function createDebtStore(
       }));
       return entry;
     },
+    updateDebt: (input) => {
+      const debt = get().debts.find((candidate) => candidate.id === input.debtId);
+      if (!debt) throw new Error("الدين غير موجود");
+      if (debt.archivedAt) throw new Error("لا يمكن تعديل دين محذوف");
+
+      const now = new Date().toISOString();
+      const nextName = input.partyName?.trim();
+      if (nextName !== undefined && nextName.length < 2) {
+        throw new Error("اكتب اسمًا واضحًا للطرف");
+      }
+      const nextPhone =
+        input.partyPhone === undefined
+          ? undefined
+          : normalizeOptional(input.partyPhone);
+      const nextNote =
+        input.note === undefined ? undefined : normalizeOptional(input.note);
+      const nextDueOn = input.clearDueOn
+        ? null
+        : input.dueOn === undefined
+          ? undefined
+          : input.dueOn || null;
+
+      set((state) => ({
+        parties: state.parties.map((party) =>
+          party.id === debt.partyId
+            ? {
+                ...party,
+                name: nextName ?? party.name,
+                phone: nextPhone === undefined ? party.phone : nextPhone,
+                updatedAt: now,
+              }
+            : party,
+        ),
+        debts: state.debts.map((candidate) =>
+          candidate.id === debt.id
+            ? {
+                ...candidate,
+                partyName: nextName ?? candidate.partyName,
+                partyPhone:
+                  nextPhone === undefined ? candidate.partyPhone : nextPhone,
+                dueOn: nextDueOn === undefined ? candidate.dueOn : nextDueOn,
+                note: nextNote === undefined ? candidate.note : nextNote,
+                updatedAt: now,
+              }
+            : candidate,
+        ),
+      }));
+    },
+    archiveDebt: (debtId) => {
+      const debt = get().debts.find((candidate) => candidate.id === debtId);
+      if (!debt) throw new Error("الدين غير موجود");
+      const now = new Date().toISOString();
+      set((state) => ({
+        debts: state.debts.map((candidate) =>
+          candidate.id === debtId
+            ? { ...candidate, archivedAt: now, updatedAt: now }
+            : candidate,
+        ),
+      }));
+    },
     replaceState: (state) => set(cloneState(state)),
   }));
 }
@@ -372,6 +444,7 @@ const demoDebt: DebtSummary = {
   projectId: null,
   projectName: null,
   note: "دفعة توريد",
+  archivedAt: null,
   createdBy: "demo",
   createdAt: "2026-07-01T09:00:00.000Z",
   updatedAt: "2026-07-08T09:00:00.000Z",

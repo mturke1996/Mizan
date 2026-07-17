@@ -6,11 +6,12 @@ import {
   ReceiptText,
   Save,
   Scale,
+  Trash2,
   WalletCards,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -22,7 +23,9 @@ import {
 } from "@/domain/money/money";
 import { useFinanceStore } from "@/features/finance/finance-store";
 import {
+  useArchiveDebtMutation,
   usePostDebtEntryMutation,
+  useUpdateDebtMutation,
 } from "@/features/workspace/use-finance-data";
 import { useFinanceView } from "@/features/workspace/use-finance-view";
 import { useWorkspace } from "@/features/workspace/use-workspace";
@@ -34,6 +37,7 @@ import type {
 import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { Badge, type BadgeTone } from "@/shared/ui/Badge";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import { useDebtStore } from "./debt-store";
@@ -149,6 +153,8 @@ function EntryTimelineRow({ entry }: { entry: DebtEntry }) {
 
 export function DebtDetailPage() {
   const { debtId } = useParams();
+  const navigate = useNavigate();
+  const confirm = useConfirm();
   const { isDemo = false } = useWorkspace();
   const { debt, entries, isLoading, error, refresh } =
     useDebtDetailView(debtId);
@@ -159,8 +165,18 @@ export function DebtDetailPage() {
     refresh: refreshFinance,
   } = useFinanceView();
   const postDemoEntry = useDebtStore((state) => state.postEntry);
+  const updateDemoDebt = useDebtStore((state) => state.updateDebt);
+  const archiveDemoDebt = useDebtStore((state) => state.archiveDebt);
   const addDemoTransaction = useFinanceStore((state) => state.addTransaction);
   const postEntry = usePostDebtEntryMutation(debtId ?? "");
+  const updateDebt = useUpdateDebtMutation(debtId ?? "");
+  const archiveDebt = useArchiveDebtMutation();
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [metaName, setMetaName] = useState("");
+  const [metaPhone, setMetaPhone] = useState("");
+  const [metaDueOn, setMetaDueOn] = useState("");
+  const [metaNote, setMetaNote] = useState("");
+  const [metaBusy, setMetaBusy] = useState(false);
   const submitIntentRef = useRef<SubmitIntent | null>(null);
   const today = new Date().toISOString().slice(0, 10);
   const {
@@ -285,6 +301,17 @@ export function DebtDetailPage() {
       return;
     }
 
+    if (values.entryType === "write_off") {
+      const ok = await confirm({
+        title: "شطب كامل الرصيد المتبقي؟",
+        description: "لا يمكن التراجع عن الشطب بعد الحفظ.",
+        warning: "سيُغلق الدين نهائيًا كمشطوب.",
+        tone: "danger",
+        confirmLabel: "تأكيد الشطب",
+      });
+      if (!ok) return;
+    }
+
     const payload = {
       entryType: values.entryType,
       amountMinor: signedAmount,
@@ -352,6 +379,84 @@ export function DebtDetailPage() {
       toast.error(
         getUserErrorMessage(submissionError, "تعذر حفظ حركة الدين"),
       );
+    }
+  };
+
+  const openMetaEditor = () => {
+    if (!debt) return;
+    setMetaName(debt.partyName);
+    setMetaPhone(debt.partyPhone ?? "");
+    setMetaDueOn(debt.dueOn ?? "");
+    setMetaNote(debt.note ?? "");
+    setEditingMeta(true);
+  };
+
+  const saveMeta = async () => {
+    if (!debt || !debtId || metaBusy) return;
+    const name = metaName.trim();
+    if (name.length < 2) {
+      toast.error("اكتب اسمًا واضحًا للطرف");
+      return;
+    }
+    setMetaBusy(true);
+    try {
+      const clearDueOn = !metaDueOn;
+      if (isDemo) {
+        updateDemoDebt({
+          debtId,
+          partyName: name,
+          partyPhone: metaPhone,
+          dueOn: metaDueOn || null,
+          note: metaNote,
+          clearDueOn,
+        });
+      } else {
+        await updateDebt.mutateAsync({
+          partyName: name,
+          partyPhone: metaPhone,
+          dueOn: metaDueOn || null,
+          note: metaNote,
+          clearDueOn,
+        });
+      }
+      setEditingMeta(false);
+      toast.success("تم تحديث بيانات الدين");
+    } catch (submissionError) {
+      toast.error(
+        getUserErrorMessage(submissionError, "تعذر تحديث بيانات الدين"),
+      );
+    } finally {
+      setMetaBusy(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    if (!debt || !debtId || metaBusy || archiveDebt.isPending) return;
+    const ok = await confirm({
+      title: `حذف دين «${debt.partyName}»؟`,
+      description: "سيُخفى من القائمة مع الإبقاء على السجل الداخلي.",
+      warning:
+        debt.balanceMinor > 0n
+          ? "ما زال هناك رصيد متبقٍ على هذا الدين."
+          : undefined,
+      tone: "danger",
+      confirmLabel: "حذف الدين",
+    });
+    if (!ok) return;
+
+    setMetaBusy(true);
+    try {
+      if (isDemo) {
+        archiveDemoDebt(debtId);
+      } else {
+        await archiveDebt.mutateAsync(debtId);
+      }
+      toast.success("تم حذف الدين");
+      navigate("/debts");
+    } catch (submissionError) {
+      toast.error(getUserErrorMessage(submissionError, "تعذر حذف الدين"));
+    } finally {
+      setMetaBusy(false);
     }
   };
 
@@ -543,10 +648,99 @@ export function DebtDetailPage() {
       </AppCard>
 
       {debt.note ? (
-        <p className="mb-5 rounded-sm bg-surface-subtle px-4 py-3 text-sm leading-6 text-muted">
+        <p className="mb-5 rounded-xl bg-surface-subtle px-4 py-3 text-sm leading-6 text-muted">
           {debt.note}
         </p>
       ) : null}
+
+      {editingMeta ? (
+        <AppCard className="mb-5 space-y-3 p-4 sm:p-5">
+          <h2 className="text-sm font-bold text-ink">تعديل بيانات الدين</h2>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold text-muted">
+              اسم الطرف
+            </span>
+            <input
+              aria-label="اسم الطرف"
+              className={inputClassName}
+              value={metaName}
+              onChange={(event) => setMetaName(event.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold text-muted">
+              الهاتف
+            </span>
+            <input
+              aria-label="هاتف الطرف"
+              className={inputClassName}
+              value={metaPhone}
+              onChange={(event) => setMetaPhone(event.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold text-muted">
+              تاريخ الاستحقاق
+            </span>
+            <input
+              aria-label="تاريخ الاستحقاق"
+              type="date"
+              className={inputClassName}
+              value={metaDueOn}
+              onChange={(event) => setMetaDueOn(event.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold text-muted">
+              ملاحظة
+            </span>
+            <textarea
+              aria-label="ملاحظة الدين"
+              className={`${inputClassName} min-h-24 py-3`}
+              value={metaNote}
+              onChange={(event) => setMetaNote(event.target.value)}
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="pressable min-h-11 rounded-xl border border-line text-sm font-bold text-ink"
+              disabled={metaBusy}
+              onClick={() => setEditingMeta(false)}
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              className="pressable min-h-11 rounded-xl bg-primary text-sm font-bold text-primary-on disabled:opacity-60"
+              disabled={metaBusy || updateDebt.isPending}
+              onClick={() => void saveMeta()}
+            >
+              حفظ
+            </button>
+          </div>
+        </AppCard>
+      ) : (
+        <div className="mb-5 grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            className="pressable flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-surface text-sm font-bold text-ink hover:bg-surface-subtle"
+            onClick={openMetaEditor}
+          >
+            <Pencil aria-hidden="true" size={16} />
+            تعديل البيانات
+          </button>
+          <button
+            type="button"
+            className="pressable flex min-h-12 items-center justify-center gap-2 rounded-xl border border-danger/30 bg-danger-soft text-sm font-bold text-danger"
+            disabled={metaBusy || archiveDebt.isPending}
+            onClick={() => void handleArchive()}
+          >
+            <Trash2 aria-hidden="true" size={16} />
+            حذف الدين
+          </button>
+        </div>
+      )}
 
       {closed ? (
         <AppCard className="mb-6 flex items-start gap-3 p-4 sm:p-5">

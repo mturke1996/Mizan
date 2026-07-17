@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { formatMinorAmount } from "@/domain/money/money";
 import { useFinanceView } from "@/features/workspace/use-finance-view";
 import { useWorkspace } from "@/features/workspace/use-workspace";
+import { MoneySectionTabs } from "@/shared/navigation/MoneySectionTabs";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
@@ -30,15 +31,16 @@ export function WalletsPage() {
   );
 
   return (
-    <div className="px-4 sm:px-6">
+    <div className="px-4 sm:px-6" dir="rtl">
+      <MoneySectionTabs active="wallets" />
       <PageHeader
-        title="المحافظ"
-        subtitle="كل أرصدتك موزعة بوضوح."
+        title="أموالي"
+        subtitle="أرصدة المحافظ والحركة اليومية."
         action={
           <Link
             to="/wallets/new"
             aria-label="إضافة محفظة"
-            className="pressable flex min-h-11 items-center gap-2 rounded-sm border border-line-strong bg-surface px-4 text-sm font-bold text-ink hover:bg-surface-subtle"
+            className="pressable flex min-h-11 items-center gap-2 rounded-xl border border-line-strong bg-surface px-4 text-sm font-bold text-ink hover:bg-surface-subtle"
           >
             <Plus aria-hidden="true" size={18} />
             إضافة

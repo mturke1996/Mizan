@@ -123,6 +123,7 @@ export interface DebtSummary {
   projectId: string | null;
   projectName: string | null;
   note: string | null;
+  archivedAt: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

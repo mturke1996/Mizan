@@ -146,6 +146,7 @@ function queryResult(data: unknown[]) {
   const query = {
     select: vi.fn(),
     eq: vi.fn(),
+    is: vi.fn(),
     lte: vi.fn(),
     or: vi.fn(),
     order: vi.fn(),
@@ -158,6 +159,7 @@ function queryResult(data: unknown[]) {
   };
   query.select.mockReturnValue(query);
   query.eq.mockReturnValue(query);
+  query.is.mockReturnValue(query);
   query.lte.mockReturnValue(query);
   query.or.mockReturnValue(query);
   query.order.mockReturnValue(query);

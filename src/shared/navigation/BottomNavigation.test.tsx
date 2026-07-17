@@ -34,9 +34,6 @@ describe("BottomNavigation", () => {
       "href",
       "/clients",
     );
-    expect(screen.getByRole("link", { name: /المحافظ/ })).toHaveAttribute(
-      "href",
-      "/wallets",
-    );
+    expect(screen.queryByRole("link", { name: /المحافظ/ })).not.toBeInTheDocument();
   });
 });

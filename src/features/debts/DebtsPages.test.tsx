@@ -119,6 +119,30 @@ describe("debt pages", () => {
     });
   });
 
+  it("archives a demo debt after confirmation", async () => {
+    const user = userEvent.setup();
+    renderDemo(
+      <Routes>
+        <Route path="/debts/:debtId" element={<DebtDetailPage />} />
+        <Route path="/debts" element={<DebtsPage />} />
+      </Routes>,
+      "/debts/demo-debt-receivable",
+    );
+
+    await user.click(screen.getByRole("button", { name: "حذف الدين" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "حذف الدين" }));
+
+    await waitFor(() => {
+      expect(
+        debtStore
+          .getState()
+          .debts.find((debt) => debt.id === "demo-debt-receivable")
+          ?.archivedAt,
+      ).toBeTruthy();
+    });
+  });
+
   it("posts a partial demo payment and records its wallet transaction", async () => {
     const user = userEvent.setup();
     renderDemo(
