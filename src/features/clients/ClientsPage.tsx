@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Plus, Users } from "lucide-react";
 import {
   useClientsQuery,
@@ -133,23 +134,25 @@ export function ClientsPage() {
       ) : (
         <ul className="divide-y divide-line overflow-hidden rounded-[18px] border border-line bg-surface">
           {clients.map((client) => (
-            <li
-              key={client.id}
-              className="flex items-center justify-between px-4 py-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-ink">
-                  {client.name}
-                </p>
-                {client.phone ? (
-                  <p className="text-[11px] text-muted" dir="ltr">
-                    {client.phone}
+            <li key={client.id}>
+              <Link
+                to={`/clients/${encodeURIComponent(client.id)}`}
+                className="flex items-center justify-between px-4 py-3 transition-colors hover:bg-surface-subtle"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink">
+                    {client.name}
                   </p>
-                ) : null}
-              </div>
-              <span className="shrink-0 text-[10px] text-muted">
-                {new Date(client.createdAt).toLocaleDateString("ar-LY")}
-              </span>
+                  {client.phone ? (
+                    <p className="text-[11px] text-muted" dir="ltr">
+                      {client.phone}
+                    </p>
+                  ) : null}
+                </div>
+                <span className="shrink-0 text-[10px] text-muted">
+                  {new Date(client.createdAt).toLocaleDateString("ar-LY")}
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

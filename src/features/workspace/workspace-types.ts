@@ -520,6 +520,7 @@ export interface IncomeEntry {
 }
 
 export type InvoiceStatus =
+  | "estimate"
   | "draft"
   | "sent"
   | "paid"

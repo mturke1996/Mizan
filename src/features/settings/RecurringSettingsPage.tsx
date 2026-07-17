@@ -30,10 +30,10 @@ import type {
 } from "@/features/workspace/workspace-types";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { controlClassName } from "@/shared/ui/form-field";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
-const inputClass =
-  "min-h-11 w-full rounded-md border border-line-strong bg-surface px-3 text-sm text-ink focus:border-primary focus:outline-none";
+const inputClass = controlClassName;
 
 const FREQUENCY_LABEL: Record<RecurringFrequency, string> = {
   daily: "يومي",

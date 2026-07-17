@@ -9,6 +9,7 @@ import { useCreateIncomeSourceMutation } from "@/features/workspace/use-finance-
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import type { IncomePayKind } from "@/features/workspace/workspace-types";
 import { AppCard } from "@/shared/ui/AppCard";
+import { MoneyField, TextField } from "@/shared/ui/form-field";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 export function IncomeSourceFormPage() {
@@ -24,8 +25,6 @@ export function IncomeSourceFormPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const scale = getCurrencyScale(currency);
-  const inputClass =
-    "w-full rounded-xl border border-line bg-surface-subtle px-3 py-2.5 text-sm text-ink placeholder:text-muted";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,37 +65,23 @@ export function IncomeSourceFormPage() {
 
       <AppCard className="rounded-[18px] p-4 sm:p-5">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-ink">
-              اسم المصدر *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="مثال: مقهى الحي، وظيفة الشركة..."
-              required
-              className={inputClass}
-            />
-          </div>
+          <TextField
+            label="اسم المصدر"
+            onChange={(e) => setName(e.target.value)}
+            placeholder="مثال: مقهى الحي، وظيفة الشركة..."
+            required
+            value={name}
+          />
+
+          <TextField
+            label="مكان العمل"
+            onChange={(e) => setPlace(e.target.value)}
+            placeholder="اختياري"
+            value={place}
+          />
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-ink">
-              مكان العمل
-            </label>
-            <input
-              type="text"
-              value={place}
-              onChange={(e) => setPlace(e.target.value)}
-              placeholder="اختياري"
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-ink">
-              نوع الدفع
-            </label>
+            <p className="mb-2 text-xs font-bold text-muted">نوع الدفع</p>
             <div className="flex gap-2">
               {(
                 [
@@ -110,7 +95,7 @@ export function IncomeSourceFormPage() {
                   type="button"
                   onClick={() => setPayKind(opt.value)}
                   className={[
-                    "flex-1 rounded-xl py-2.5 text-xs font-bold transition-colors",
+                    "pressable flex-1 rounded-sm py-2.5 text-xs font-bold transition-colors",
                     payKind === opt.value
                       ? "bg-primary text-primary-on"
                       : "bg-surface-subtle text-muted hover:bg-primary-soft hover:text-primary",
@@ -123,37 +108,23 @@ export function IncomeSourceFormPage() {
           </div>
 
           {(payKind === "daily" || payKind === "both") && (
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-ink">
-                الأجرة اليومية ({currency})
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                dir="ltr"
-                value={dailyWage}
-                onChange={(e) => setDailyWage(e.target.value)}
-                placeholder="0"
-                className={`numeric ${inputClass}`}
-              />
-            </div>
+            <MoneyField
+              currency={currency}
+              label="الأجرة اليومية"
+              onChange={(e) => setDailyWage(e.target.value)}
+              placeholder="0"
+              value={dailyWage}
+            />
           )}
 
           {(payKind === "monthly" || payKind === "both") && (
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-ink">
-                الراتب الشهري ({currency})
-              </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                dir="ltr"
-                value={monthlySalary}
-                onChange={(e) => setMonthlySalary(e.target.value)}
-                placeholder="0"
-                className={`numeric ${inputClass}`}
-              />
-            </div>
+            <MoneyField
+              currency={currency}
+              label="الراتب الشهري"
+              onChange={(e) => setMonthlySalary(e.target.value)}
+              placeholder="0"
+              value={monthlySalary}
+            />
           )}
 
           <button

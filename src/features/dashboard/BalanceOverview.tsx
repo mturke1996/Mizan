@@ -55,7 +55,7 @@ export function BalanceOverview({
   return (
     <section
       aria-labelledby="mobile-balance-title"
-      className="relative mb-4 overflow-hidden rounded-[22px] text-primary-on lg:hidden"
+      className="relative mb-4 overflow-hidden rounded-[22px] text-primary-on md:hidden"
       style={{
         background:
           "linear-gradient(145deg, var(--mizan-auth-panel) 0%, var(--mizan-primary) 52%, #5f67d8 100%)",

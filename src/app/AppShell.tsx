@@ -24,7 +24,7 @@ export function AppShell() {
   return (
     <div
       dir="ltr"
-      className="min-h-dvh w-full bg-canvas lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]"
+      className="min-h-dvh w-full bg-canvas md:grid md:grid-cols-[14rem_minmax(0,1fr)] lg:grid-cols-[15.5rem_minmax(0,1fr)]"
     >
       <a
         href="#main-content"
@@ -33,7 +33,7 @@ export function AppShell() {
         انتقل إلى المحتوى
       </a>
       <DesktopSidebar />
-      <div dir="rtl" className="min-w-0 bg-surface lg:bg-canvas">
+      <div dir="rtl" className="min-w-0 bg-surface md:bg-canvas">
         <OfflineStatusBanner />
         <main
           ref={mainRef}

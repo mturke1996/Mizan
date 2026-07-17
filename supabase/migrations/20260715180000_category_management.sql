@@ -7,6 +7,8 @@
 -- restore categories. System categories remain immutable.
 
 -- 1) Partial unique index: only one *active* category per (workspace, kind, name).
+-- NOTE: any INSERT ... ON CONFLICT targeting this index must include
+-- `WHERE (is_active)` (see 20260717160000_fix_category_on_conflict_partial.sql).
 drop index if exists public.categories_workspace_kind_name_unique;
 create unique index categories_workspace_kind_name_unique
   on public.categories (workspace_id, kind, lower(btrim(name)))
@@ -16,9 +18,9 @@ create unique index categories_workspace_kind_name_unique
 --    kind is immutable after creation; system categories cannot be touched.
 create or replace function public.upsert_category(
   p_workspace_id uuid,
-  p_category_id uuid default null,
   p_name text,
   p_kind public.category_kind,
+  p_category_id uuid default null,
   p_is_active boolean default true
 )
 returns public.categories
@@ -93,5 +95,5 @@ begin
 end;
 $fn$;
 
-revoke all on function public.upsert_category(uuid, uuid, text, public.category_kind, boolean) from public;
-grant execute on function public.upsert_category(uuid, uuid, text, public.category_kind, boolean) to authenticated;
+revoke all on function public.upsert_category(uuid, text, public.category_kind, uuid, boolean) from public;
+grant execute on function public.upsert_category(uuid, text, public.category_kind, uuid, boolean) to authenticated;

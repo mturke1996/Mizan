@@ -9,6 +9,7 @@ import type {
 import { getInvoicePaymentSummary } from "./invoicePayments";
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  estimate: "عرض سعر",
   draft: "مسودة",
   sent: "مُرسلة",
   paid: "مدفوعة",

@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   workersQuery: vi.fn(),
   workLogsQuery: vi.fn(),
   createWorkerHook: vi.fn(),
+  updateWorkerHook: vi.fn(),
   recordWorkHook: vi.fn(),
   wageMovementHook: vi.fn(),
   updateProjectHook: vi.fn(),
@@ -32,6 +33,9 @@ const mocks = vi.hoisted(() => ({
   workersRefetch: vi.fn(),
   workLogsRefetch: vi.fn(),
   createWorker: {
+    mutateAsync: vi.fn(),
+  },
+  updateWorker: {
     mutateAsync: vi.fn(),
   },
   recordWork: {
@@ -79,6 +83,8 @@ vi.mock("@/features/workspace/use-finance-data", () => ({
     mocks.workLogsQuery(projectId),
   useCreateWorkerMutation: (projectId: string) =>
     mocks.createWorkerHook(projectId),
+  useUpdateWorkerMutation: (projectId: string) =>
+    mocks.updateWorkerHook(projectId),
   useRecordDailyWorkMutation: (projectId: string) =>
     mocks.recordWorkHook(projectId),
   usePostWageMovementMutation: (projectId: string) =>
@@ -228,11 +234,13 @@ describe("ProjectDetailPage live history", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.createWorker.mutateAsync.mockResolvedValue(undefined);
+    mocks.updateWorker.mutateAsync.mockResolvedValue(undefined);
     mocks.recordWork.mutateAsync.mockResolvedValue(undefined);
     mocks.wageMovement.mutateAsync.mockResolvedValue(undefined);
     mocks.updateProject.isPending = false;
     mocks.updateProject.mutateAsync.mockResolvedValue(undefined);
     mocks.createWorkerHook.mockReturnValue(mocks.createWorker);
+    mocks.updateWorkerHook.mockReturnValue(mocks.updateWorker);
     mocks.recordWorkHook.mockReturnValue(mocks.recordWork);
     mocks.wageMovementHook.mockReturnValue(mocks.wageMovement);
     mocks.updateProjectHook.mockReturnValue(mocks.updateProject);
@@ -384,22 +392,25 @@ describe("ProjectDetailPage live history", () => {
 
     expect(mocks.workersQuery).toHaveBeenCalledWith(project.id);
     expect(mocks.workLogsQuery).toHaveBeenCalledWith(project.id);
-    expect(screen.getAllByText("سالم")).toHaveLength(2);
+    expect(screen.getAllByText("سالم").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("4 يوم عمل")).toBeInTheDocument();
     expect(screen.getByText("سالم · يومية")).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("اسم العامل"), "محمود");
-    await user.type(
-      screen.getByLabelText("الأجر اليومي بعملة LYD"),
-      "1.750",
-    );
+    await user.type(screen.getByLabelText("الأجر اليومي (LYD)"), "1.750");
     await user.click(screen.getByRole("button", { name: "إضافة عامل" }));
     expect(mocks.createWorker.mutateAsync).toHaveBeenCalledWith({
       name: "محمود",
       dailyWageMinor: 1_750,
     });
 
-    await user.selectOptions(screen.getByLabelText("العامل"), "worker-1");
+    const movementWorkerSelect = screen
+      .getAllByLabelText("العامل")
+      .find((element) =>
+        within(element).queryByRole("option", { name: "اختر العامل" }),
+      );
+    expect(movementWorkerSelect).toBeTruthy();
+    await user.selectOptions(movementWorkerSelect!, "worker-1");
     await user.click(screen.getByRole("button", { name: "حفظ الحركة" }));
     expect(mocks.recordWork.mutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -411,16 +422,13 @@ describe("ProjectDetailPage live history", () => {
 
     const toastError = vi.spyOn(toast, "error");
     await user.click(screen.getByRole("button", { name: "سحب" }));
-    await user.type(
-      screen.getByLabelText("مبلغ الحركة بعملة LYD"),
-      "2.000",
-    );
+    await user.type(screen.getByLabelText("مبلغ الحركة (LYD)"), "2.000");
     await user.click(screen.getByRole("button", { name: "حفظ الحركة" }));
     expect(toastError).toHaveBeenCalledWith("اختر محفظة السحب");
     expect(mocks.wageMovement.mutateAsync).not.toHaveBeenCalled();
 
     await user.selectOptions(
-      screen.getByLabelText("محفظة سحب أجر العامل"),
+      screen.getByLabelText("محفظة السحب"),
       "wallet-1",
     );
     await user.click(screen.getByRole("button", { name: "حفظ الحركة" }));

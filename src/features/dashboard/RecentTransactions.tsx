@@ -51,9 +51,9 @@ export function RecentTransactions({
   return (
     <section
       aria-labelledby="transactions-title"
-      className="overflow-hidden rounded-[18px] border border-line bg-surface pb-1 shadow-[0_8px_24px_rgb(27_30_60/4%)] lg:pb-0"
+      className="overflow-hidden rounded-[18px] border border-line bg-surface pb-1 shadow-[0_8px_24px_rgb(27_30_60/4%)] md:pb-0"
     >
-      <div className="mb-1 flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5 lg:mb-0 lg:py-4">
+      <div className="mb-1 flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5 md:mb-0 md:py-4">
         <h2 id="transactions-title" className="text-sm font-bold text-ink sm:text-base">
           أحدث المعاملات
         </h2>
@@ -66,11 +66,11 @@ export function RecentTransactions({
         </Link>
       </div>
 
-      <div className="px-1 lg:hidden">
+      <div className="px-1 md:hidden">
         <TransactionList transactions={recent.slice(0, 4)} wallets={wallets} />
       </div>
 
-      <div className="hidden overflow-x-auto lg:block">
+      <div className="hidden overflow-x-auto md:block">
         {recent.length === 0 ? (
           <div className="grid min-h-64 place-items-center text-center">
             <div>

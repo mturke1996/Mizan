@@ -19,6 +19,7 @@ import { useWorkspace } from "@/features/workspace/use-workspace";
 import type { Invoice } from "@/features/workspace/workspace-types";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { controlClassName } from "@/shared/ui/form-field";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import { getUserErrorMessage } from "@/lib/user-error";
 import { canEditInvoice } from "./invoicePayments";
@@ -65,12 +66,13 @@ export function InvoiceFormPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [prefilledId, setPrefilledId] = useState<string | null>(null);
   const [showFullPreview, setShowFullPreview] = useState(false);
-  const [submitMode, setSubmitMode] = useState<"draft" | "sent">("draft");
+  const [submitMode, setSubmitMode] = useState<"estimate" | "draft" | "sent">(
+    "draft",
+  );
 
   const clients = clientsQuery.data ?? [];
   const existing = detailQuery.data;
-  const inputClass =
-    "w-full rounded-xl border border-line bg-surface-subtle px-3 py-2.5 text-sm text-ink placeholder:text-muted";
+  const inputClass = controlClassName;
 
   useEffect(() => {
     if (!isEdit || !existing || prefilledId === existing.id) return;
@@ -542,7 +544,8 @@ export function InvoiceFormPage() {
                   className={`numeric ${inputClass}`}
                 />
                 <p className="mt-1 text-[10px] text-muted">
-                  اترك 0 إن لم تكن تطبّق ضريبة
+                  تُحسب تلقائيًا من الإجمالي الفرعي وتظهر كبند ضريبة منفصل على
+                  الفاتورة. اترك 0 إن لم تطبّق ضريبة.
                 </p>
               </div>
             </div>
@@ -618,16 +621,26 @@ export function InvoiceFormPage() {
               {saving ? "جاري الحفظ..." : "حفظ التعديلات"}
             </button>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <button
+                type="submit"
+                disabled={saving}
+                onClick={() => setSubmitMode("estimate")}
+                className="pressable w-full rounded-xl border border-line bg-surface py-3 text-sm font-bold text-ink disabled:opacity-50"
+              >
+                {saving && submitMode === "estimate"
+                  ? "جاري الحفظ..."
+                  : "عرض سعر"}
+              </button>
               <button
                 type="submit"
                 disabled={saving}
                 onClick={() => setSubmitMode("draft")}
-                className="pressable w-full rounded-xl border border-line bg-surface py-3 text-sm font-bold text-ink disabled:opacity-50"
+                className="pressable w-full rounded-xl border border-line bg-surface-subtle py-3 text-sm font-bold text-ink disabled:opacity-50"
               >
                 {saving && submitMode === "draft"
                   ? "جاري الحفظ..."
-                  : "حفظ كمسودة"}
+                  : "مسودة"}
               </button>
               <button
                 type="submit"

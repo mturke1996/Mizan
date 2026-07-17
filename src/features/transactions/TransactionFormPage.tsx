@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowDownLeft, ArrowUpRight, Save } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useConfirm } from "@/shared/ui/confirm-dialog";
 import {
   Link,
   useNavigate,
@@ -33,6 +34,7 @@ import { useWorkspace } from "@/features/workspace/use-workspace";
 import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { controlClassName } from "@/shared/ui/form-field";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 const transactionSchema = z.object({
@@ -70,6 +72,7 @@ function splitTitleAndNote(description: string): {
 }
 
 export function TransactionFormPage() {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const { transactionId } = useParams();
   const [searchParams] = useSearchParams();
@@ -219,6 +222,20 @@ export function TransactionFormPage() {
       });
       return;
     }
+
+    // Lite approval: large expenses need an explicit in-app confirm.
+    const approvalThreshold =
+      1000n * 10n ** BigInt(getCurrencyScale(wallet.currency));
+    if (values.kind === "expense" && amountMinor >= approvalThreshold) {
+      const ok = await confirm({
+        title: "تأكيد مصروف كبير؟",
+        description: `المبلغ يعادل أو يتجاوز 1,000 ${wallet.currency}. راجع التفاصيل قبل التسجيل.`,
+        tone: "warning",
+        confirmLabel: "تسجيل المصروف",
+      });
+      if (!ok) return;
+    }
+
     const title = values.title.trim();
     const description = values.note?.trim()
       ? `${title} — ${values.note.trim()}`
@@ -343,8 +360,7 @@ export function TransactionFormPage() {
     }
   };
 
-  const inputClassName =
-    "min-h-12 w-full rounded-md border border-line-strong bg-surface px-4 text-sm text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-muted";
+  const inputClassName = `${controlClassName} min-h-12 px-4`;
   const formError = walletsError ?? projectsError;
   const pageTitle = isEdit ? "تعديل المعاملة" : "معاملة جديدة";
   const pageSubtitle = isEdit

@@ -97,17 +97,17 @@ grant delete on public.recurring_transactions to authenticated;
 -- active and match the kind; an optional project must be active.
 create or replace function public.upsert_recurring(
   p_workspace_id uuid,
-  p_recurring_id uuid default null,
   p_title text,
   p_kind public.transaction_kind,
   p_amount_minor bigint,
   p_currency_code text,
   p_wallet_id uuid,
+  p_next_date date,
+  p_recurring_id uuid default null,
   p_category_id uuid default null,
   p_project_id uuid default null,
   p_frequency public.recurring_frequency default 'monthly',
   p_interval_steps int default 1,
-  p_next_date date,
   p_is_active boolean default true
 )
 returns public.recurring_transactions
@@ -330,14 +330,14 @@ end;
 $fn$;
 
 revoke all on function public.upsert_recurring(
-  uuid, uuid, text, public.transaction_kind, bigint, text, uuid, uuid, uuid,
-  public.recurring_frequency, int, date, boolean
+  uuid, text, public.transaction_kind, bigint, text, uuid, date, uuid, uuid, uuid,
+  public.recurring_frequency, int, boolean
 ) from public;
 revoke all on function public.delete_recurring(uuid, uuid) from public;
 revoke all on function public.post_all_recurring_due(uuid, timestamptz) from public;
 grant execute on function public.upsert_recurring(
-  uuid, uuid, text, public.transaction_kind, bigint, text, uuid, uuid, uuid,
-  public.recurring_frequency, int, date, boolean
+  uuid, text, public.transaction_kind, bigint, text, uuid, date, uuid, uuid, uuid,
+  public.recurring_frequency, int, boolean
 ) to authenticated;
 grant execute on function public.delete_recurring(uuid, uuid) to authenticated;
 grant execute on function public.post_all_recurring_due(uuid, timestamptz) to authenticated;

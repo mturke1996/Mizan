@@ -72,10 +72,10 @@ grant delete on public.budgets to authenticated;
 -- must be an active expense category in the workspace.
 create or replace function public.upsert_budget(
   p_workspace_id uuid,
-  p_budget_id uuid default null,
   p_category_id uuid,
   p_currency_code text,
-  p_limit_minor bigint
+  p_limit_minor bigint,
+  p_budget_id uuid default null
 )
 returns public.budgets
 language plpgsql
@@ -155,7 +155,7 @@ begin
 end;
 $fn$;
 
-revoke all on function public.upsert_budget(uuid, uuid, uuid, text, bigint) from public;
+revoke all on function public.upsert_budget(uuid, uuid, text, bigint, uuid) from public;
 revoke all on function public.delete_budget(uuid, uuid) from public;
-grant execute on function public.upsert_budget(uuid, uuid, uuid, text, bigint) to authenticated;
+grant execute on function public.upsert_budget(uuid, uuid, text, bigint, uuid) to authenticated;
 grant execute on function public.delete_budget(uuid, uuid) to authenticated;

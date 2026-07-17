@@ -19,6 +19,7 @@ import {
   createProjectRpc,
   createWalletRpc,
   createWorkerRpc,
+  updateWorkerRpc,
   fetchCapitalEntries,
   fetchCategories,
   fetchClients,
@@ -1192,6 +1193,44 @@ export function useCreateWorkerMutation(projectId: string) {
   });
 }
 
+export function useUpdateWorkerMutation(projectId: string) {
+  const { workspaceId } = useWorkspace();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: {
+      workerId: string;
+      name?: string;
+      phone?: string | null;
+      dailyWageMinor?: number;
+      status?: "active" | "inactive";
+      clearPhone?: boolean;
+    }) =>
+      updateWorkerRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        projectId: requireProjectId(projectId),
+        ...input,
+      }),
+    onSuccess: async () => {
+      if (!workspaceId) return;
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.workers(workspaceId, projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projects(workspaceId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.projectDetail(workspaceId, projectId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: workspaceKeys.analytics(workspaceId),
+        }),
+      ]);
+    },
+  });
+}
+
 export function useRecordDailyWorkMutation(projectId: string) {
   const { workspaceId } = useWorkspace();
   const queryClient = useQueryClient();
@@ -1681,11 +1720,12 @@ export function useUpsertClientMutation() {
   const { workspaceId } = useWorkspace();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name: string; phone?: string }) =>
+    mutationFn: (input: { name: string; phone?: string; clientId?: string }) =>
       upsertClientRpc({
         workspaceId: requireLiveWorkspace(workspaceId),
         name: input.name,
         phone: input.phone,
+        clientId: input.clientId,
       }),
     onSuccess: async () => {
       if (!workspaceId) return;
@@ -2134,6 +2174,8 @@ export function useRecordInvoicePaymentMutation(invoiceId: string) {
       method?: InvoicePaymentMethod;
       notes?: string;
       paidOn?: string;
+      categoryId?: string;
+      projectId?: string;
     }) =>
       recordInvoicePaymentRpc({
         workspaceId: requireLiveWorkspace(workspaceId),
@@ -2144,6 +2186,8 @@ export function useRecordInvoicePaymentMutation(invoiceId: string) {
         method: input.method,
         notes: input.notes,
         paidOn: input.paidOn,
+        categoryId: input.categoryId,
+        projectId: input.projectId,
       }),
     onSuccess: async () => {
       if (!workspaceId) return;

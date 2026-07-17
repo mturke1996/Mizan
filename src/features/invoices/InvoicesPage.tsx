@@ -20,6 +20,7 @@ type InvoiceFilter = "all" | InvoiceStatus;
 
 const FILTERS: ReadonlyArray<{ value: InvoiceFilter; label: string }> = [
   { value: "all", label: "الكل" },
+  { value: "estimate", label: "عرض سعر" },
   { value: "draft", label: "مسودة" },
   { value: "sent", label: "مُرسلة" },
   { value: "partially_paid", label: "جزئيًا" },
@@ -29,6 +30,7 @@ const FILTERS: ReadonlyArray<{ value: InvoiceFilter; label: string }> = [
 ];
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  estimate: "عرض سعر",
   draft: "مسودة",
   sent: "مُرسلة",
   paid: "مدفوعة",
@@ -38,6 +40,7 @@ const STATUS_LABELS: Record<InvoiceStatus, string> = {
 };
 
 const STATUS_TONES: Record<InvoiceStatus, BadgeTone> = {
+  estimate: "info",
   draft: "neutral",
   sent: "info",
   paid: "success",

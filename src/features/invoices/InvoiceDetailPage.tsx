@@ -21,7 +21,9 @@ import {
   shareInvoicePdf,
 } from "@/features/pdf/lazyPdf";
 import {
+  useCategoriesQuery,
   useInvoiceDetailQuery,
+  useProjectsQuery,
   useRecordInvoicePaymentMutation,
   useSetInvoiceStatusMutation,
   useWalletsQuery,
@@ -38,9 +40,11 @@ import { AppCard } from "@/shared/ui/AppCard";
 import { Badge, type BadgeTone } from "@/shared/ui/Badge";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { useConfirm } from "@/shared/ui/confirm-dialog";
+import { controlClassName } from "@/shared/ui/form-field";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import {
   canCollectPayment,
+  canConvertEstimate,
   canEditInvoice,
   getInvoicePaymentSummary,
   METHOD_LABELS,
@@ -48,6 +52,7 @@ import {
 import { InvoicePreviewFrame, PrintableInvoice } from "./PrintableInvoice";
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
+  estimate: "عرض سعر",
   draft: "مسودة",
   sent: "مُرسلة",
   paid: "مدفوعة",
@@ -57,6 +62,7 @@ const STATUS_LABELS: Record<InvoiceStatus, string> = {
 };
 
 const STATUS_TONES: Record<InvoiceStatus, BadgeTone> = {
+  estimate: "info",
   draft: "neutral",
   sent: "info",
   paid: "success",
@@ -69,6 +75,7 @@ const STATUS_ACTIONS: ReadonlyArray<{
   status: InvoiceStatus;
   label: string;
 }> = [
+  { status: "estimate", label: "عرض سعر" },
   { status: "draft", label: "مسودة" },
   { status: "sent", label: "إرسال للعميل" },
   { status: "cancelled", label: "إلغاء" },
@@ -100,6 +107,8 @@ export function InvoiceDetailPage() {
   const walletsQuery = useWalletsQuery();
   const setStatus = useSetInvoiceStatusMutation(invoiceId ?? "");
   const recordPayment = useRecordInvoicePaymentMutation(invoiceId ?? "");
+  const categoriesQuery = useCategoriesQuery();
+  const projectsQuery = useProjectsQuery();
   const confirm = useConfirm();
   const [pdfBusy, setPdfBusy] = useState<"download" | "share" | null>(null);
 
@@ -123,6 +132,8 @@ export function InvoiceDetailPage() {
   const [walletId, setWalletId] = useState("");
   const [method, setMethod] = useState<InvoicePaymentMethod>("cash");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [paymentCategoryId, setPaymentCategoryId] = useState("");
+  const [paymentProjectId, setPaymentProjectId] = useState("");
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const defaultsReadyFor = useRef<string | null>(null);
 
@@ -175,9 +186,16 @@ export function InvoiceDetailPage() {
   const money = { currency: invoice.currencyCode, locale: "en-US" as const };
   const editable = canEditInvoice(invoice);
   const collectable = canCollectPayment(invoice);
+  const convertible = canConvertEstimate(invoice);
+  const incomeCategories = (categoriesQuery.data ?? []).filter(
+    (category) => category.kind === "income",
+  );
+  const activeProjects = (projectsQuery.data ?? []).filter(
+    (project) => project.status === "active",
+  );
   const shareText = buildInvoiceWhatsAppText(invoice, workspaceName);
-  const inputClass =
-    "w-full rounded-xl border border-line bg-surface-subtle px-3 py-2.5 text-sm text-ink placeholder:text-muted";
+  const paymentLink = `${window.location.origin}/invoices/${encodeURIComponent(invoice.id)}`;
+  const inputClass = controlClassName;
 
   const handleStatus = async (status: InvoiceStatus) => {
     if (status === "cancelled") {
@@ -303,6 +321,8 @@ export function InvoiceDetailPage() {
         walletId,
         method,
         notes: paymentNotes.trim() || undefined,
+        categoryId: paymentCategoryId || undefined,
+        projectId: paymentProjectId || undefined,
       });
       toast.success("تم تسجيل الدفعة");
       setPaymentNotes("");
@@ -458,6 +478,29 @@ export function InvoiceDetailPage() {
               تعديل
             </Link>
           ) : null}
+          {convertible ? (
+            <button
+              type="button"
+              disabled={setStatus.isPending}
+              onClick={() => void handleStatus("draft")}
+              className="pressable inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-bold text-primary-on disabled:opacity-50"
+            >
+              تحويل لفاتورة
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard
+                .writeText(paymentLink)
+                .then(() => toast.success("تم نسخ رابط الفاتورة"))
+                .catch(() => toast.error("تعذر نسخ الرابط"));
+            }}
+            className="pressable inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-ink"
+          >
+            <Copy size={14} />
+            رابط الفاتورة
+          </button>
           <button
             type="button"
             onClick={handleMailto}
@@ -582,6 +625,46 @@ export function InvoiceDetailPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-ink">
+                    التصنيف (اختياري)
+                  </label>
+                  <select
+                    value={paymentCategoryId}
+                    onChange={(event) =>
+                      setPaymentCategoryId(event.target.value)
+                    }
+                    className={inputClass}
+                  >
+                    <option value="">بدون تصنيف</option>
+                    {incomeCategories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-ink">
+                    المشروع (اختياري)
+                  </label>
+                  <select
+                    value={paymentProjectId}
+                    onChange={(event) =>
+                      setPaymentProjectId(event.target.value)
+                    }
+                    className={inputClass}
+                  >
+                    <option value="">بدون مشروع</option>
+                    {activeProjects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-ink">

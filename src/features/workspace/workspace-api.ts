@@ -665,23 +665,13 @@ export async function upsertCategoryRpc(
   input: CategoryInput,
 ): Promise<CategoryRecord> {
   const supabase = getSupabaseClient();
-  // upsert_category is defined in a migration not yet reflected in the
-  // generated Database types; cast through unknown to call it safely.
-  const result = await supabase.rpc("upsert_category" as never, {
+  const { data, error } = await supabase.rpc("upsert_category", {
     p_workspace_id: workspaceId,
     p_category_id: input.id ?? null,
     p_name: input.name,
     p_kind: input.kind,
     p_is_active: input.isActive ?? true,
-  } as never);
-  const data = result.data as {
-    id: string;
-    name: string;
-    kind: CategoryKind;
-    is_system: boolean;
-    is_active: boolean;
-  } | null;
-  const error = result.error as { message?: string } | null;
+  });
   if (error) throwArabic(error, "تعذر حفظ التصنيف");
   if (!data) {
     throw new Error("تعذر حفظ التصنيف");
@@ -689,7 +679,7 @@ export async function upsertCategoryRpc(
   return {
     id: data.id,
     name: data.name,
-    kind: data.kind,
+    kind: data.kind as CategoryKind,
     isSystem: data.is_system,
     isActive: data.is_active,
   };
@@ -699,20 +689,11 @@ export async function fetchBudgets(
   workspaceId: string,
 ): Promise<BudgetRecord[]> {
   const supabase = getSupabaseClient();
-  // The budgets table is defined in a migration not yet reflected in the
-  // generated Database types; cast the relation/columns through never.
-  const response = await supabase
-    .from("budgets" as never)
+  const { data, error } = await supabase
+    .from("budgets")
     .select("id, category_id, currency_code, limit_minor")
-    .eq("workspace_id" as never, workspaceId)
-    .order("created_at" as never, { ascending: true });
-  const data = response.data as {
-    id: string;
-    category_id: string;
-    currency_code: string;
-    limit_minor: string;
-  }[] | null;
-  const error = response.error as { message?: string } | null;
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: true });
   if (error) throwArabic(error, "تعذر تحميل الميزانيات");
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -727,22 +708,13 @@ export async function upsertBudgetRpc(
   input: BudgetInput,
 ): Promise<BudgetRecord> {
   const supabase = getSupabaseClient();
-  // upsert_budget is defined in a migration not yet reflected in the generated
-  // Database types; cast through unknown to call it safely.
-  const result = await supabase.rpc("upsert_budget" as never, {
+  const { data, error } = await supabase.rpc("upsert_budget", {
     p_workspace_id: workspaceId,
     p_budget_id: input.id ?? null,
     p_category_id: input.categoryId,
     p_currency_code: input.currencyCode,
     p_limit_minor: toSafeMinorNumber(input.limitMinor),
-  } as never);
-  const data = result.data as {
-    id: string;
-    category_id: string;
-    currency_code: string;
-    limit_minor: string;
-  } | null;
-  const error = result.error as { message?: string } | null;
+  });
   if (error) throwArabic(error, "تعذر حفظ الميزانية");
   if (!data) throw new Error("تعذر حفظ الميزانية");
   return {
@@ -758,11 +730,10 @@ export async function deleteBudgetRpc(
   budgetId: string,
 ): Promise<void> {
   const supabase = getSupabaseClient();
-  const result = await supabase.rpc("delete_budget" as never, {
+  const { error } = await supabase.rpc("delete_budget", {
     p_workspace_id: workspaceId,
     p_budget_id: budgetId,
-  } as never);
-  const error = result.error as { message?: string } | null;
+  });
   if (error) throwArabic(error, "تعذر حذف الميزانية");
 }
 
@@ -770,29 +741,13 @@ export async function fetchRecurring(
   workspaceId: string,
 ): Promise<RecurringRecord[]> {
   const supabase = getSupabaseClient();
-  const response = await supabase
-    .from("recurring_transactions" as never)
+  const { data, error } = await supabase
+    .from("recurring_transactions")
     .select(
       "id, title, kind, amount_minor, currency_code, wallet_id, category_id, project_id, frequency, interval_steps, next_date, last_posted_at, is_active",
     )
-    .eq("workspace_id" as never, workspaceId)
-    .order("next_date" as never, { ascending: true });
-  const data = response.data as {
-    id: string;
-    title: string;
-    kind: "income" | "expense";
-    amount_minor: string;
-    currency_code: string;
-    wallet_id: string;
-    category_id: string | null;
-    project_id: string | null;
-    frequency: "daily" | "weekly" | "monthly" | "yearly";
-    interval_steps: number;
-    next_date: string;
-    last_posted_at: string | null;
-    is_active: boolean;
-  }[] | null;
-  const error = response.error as { message?: string } | null;
+    .eq("workspace_id", workspaceId)
+    .order("next_date", { ascending: true });
   if (error) throwArabic(error, "تعذر تحميل الحركات المتكررة");
   return (data ?? []).map((row) => ({
     id: row.id,
@@ -816,7 +771,7 @@ export async function upsertRecurringRpc(
   input: RecurringInput,
 ): Promise<RecurringRecord> {
   const supabase = getSupabaseClient();
-  const result = await supabase.rpc("upsert_recurring" as never, {
+  const { data, error } = await supabase.rpc("upsert_recurring", {
     p_workspace_id: workspaceId,
     p_recurring_id: input.id ?? null,
     p_title: input.title,
@@ -830,23 +785,7 @@ export async function upsertRecurringRpc(
     p_interval_steps: input.intervalSteps,
     p_next_date: input.nextDate,
     p_is_active: input.isActive ?? true,
-  } as never);
-  const data = result.data as {
-    id: string;
-    title: string;
-    kind: "income" | "expense";
-    amount_minor: string;
-    currency_code: string;
-    wallet_id: string;
-    category_id: string | null;
-    project_id: string | null;
-    frequency: "daily" | "weekly" | "monthly" | "yearly";
-    interval_steps: number;
-    next_date: string;
-    last_posted_at: string | null;
-    is_active: boolean;
-  } | null;
-  const error = result.error as { message?: string } | null;
+  });
   if (error) throwArabic(error, "تعذر حفظ الحركة المتكررة");
   if (!data) throw new Error("تعذر حفظ الحركة المتكررة");
   return {
@@ -871,11 +810,10 @@ export async function deleteRecurringRpc(
   recurringId: string,
 ): Promise<void> {
   const supabase = getSupabaseClient();
-  const result = await supabase.rpc("delete_recurring" as never, {
+  const { error } = await supabase.rpc("delete_recurring", {
     p_workspace_id: workspaceId,
     p_recurring_id: recurringId,
-  } as never);
-  const error = result.error as { message?: string } | null;
+  });
   if (error) throwArabic(error, "تعذر حذف الحركة المتكررة");
 }
 
@@ -883,11 +821,9 @@ export async function postRecurringDueRpc(
   workspaceId: string,
 ): Promise<number> {
   const supabase = getSupabaseClient();
-  const result = await supabase.rpc("post_all_recurring_due" as never, {
+  const { data, error } = await supabase.rpc("post_all_recurring_due", {
     p_workspace_id: workspaceId,
-  } as never);
-  const data = result.data as number | null;
-  const error = result.error as { message?: string } | null;
+  });
   if (error) throwArabic(error, "تعذر ترحيل الحركات المتكررة");
   return typeof data === "number" ? data : 0;
 }
@@ -911,15 +847,26 @@ export async function fetchWorkers(
 export async function fetchWorkLogs(
   workspaceId: string,
   projectId: string,
+  options?: { fromDate?: string; toDate?: string; limit?: number },
 ): Promise<WorkLogEntry[]> {
   const supabase = getSupabaseClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("project_work_log_details")
     .select("*")
     .eq("workspace_id", workspaceId)
     .eq("project_id", projectId)
     .order("work_date", { ascending: false })
-    .limit(100);
+    .order("created_at", { ascending: false })
+    .limit(options?.limit ?? 500);
+
+  if (options?.fromDate) {
+    query = query.gte("work_date", options.fromDate);
+  }
+  if (options?.toDate) {
+    query = query.lte("work_date", options.toDate);
+  }
+
+  const { data, error } = await query;
 
   if (error) throwArabic(error, "تعذر تحميل يوميات العمل");
   return (data ?? []).map(mapWorkLog);
@@ -1374,6 +1321,31 @@ export async function createWorkerRpc(input: {
     p_phone: input.phone ?? null,
   });
   if (error) throwArabic(error, "تعذر إضافة العامل");
+  return data;
+}
+
+export async function updateWorkerRpc(input: {
+  workspaceId: string;
+  projectId: string;
+  workerId: string;
+  name?: string;
+  phone?: string | null;
+  dailyWageMinor?: number;
+  status?: "active" | "inactive";
+  clearPhone?: boolean;
+}): Promise<unknown> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("update_project_worker", {
+    p_workspace_id: input.workspaceId,
+    p_project_id: input.projectId,
+    p_worker_id: input.workerId,
+    p_name: input.name ?? null,
+    p_phone: input.phone ?? null,
+    p_daily_wage_minor: input.dailyWageMinor ?? null,
+    p_status: input.status ?? null,
+    p_clear_phone: input.clearPhone ?? false,
+  });
+  if (error) throwArabic(error, "تعذر تحديث بيانات العامل");
   return data;
 }
 
@@ -2273,6 +2245,8 @@ export async function recordInvoicePaymentRpc(input: {
   method?: InvoicePaymentMethod;
   notes?: string;
   paidOn?: string;
+  categoryId?: string;
+  projectId?: string;
 }): Promise<InvoicePayment> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc("record_invoice_payment", {
@@ -2284,6 +2258,8 @@ export async function recordInvoicePaymentRpc(input: {
     p_method: input.method ?? "cash",
     p_notes: input.notes ?? null,
     p_paid_on: input.paidOn ?? null,
+    p_category_id: input.categoryId ?? null,
+    p_project_id: input.projectId ?? null,
   });
   if (error) throwArabic(error, "تعذر تسجيل دفعة الفاتورة");
   return mapInvoicePayment(data);

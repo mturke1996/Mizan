@@ -2,9 +2,11 @@ import {
   Bell,
   BriefcaseBusiness,
   ChartNoAxesCombined,
+  FileBarChart2,
   FileText,
   FolderKanban,
   House,
+  PiggyBank,
   Plus,
   ReceiptText,
   Scale,
@@ -35,6 +37,8 @@ const mainItems: NavigationItem[] = [
   { label: "المشاريع", to: "/projects", icon: FolderKanban },
   { label: "العملاء", to: "/clients", icon: Users },
   { label: "التحليلات", to: "/analytics", icon: ChartNoAxesCombined },
+  { label: "التقارير", to: "/reports", icon: FileBarChart2 },
+  { label: "الميزانيات", to: "/budgets", icon: PiggyBank },
 ];
 
 const utilityItems: NavigationItem[] = [
@@ -91,7 +95,7 @@ export function DesktopSidebar() {
   return (
     <aside
       dir="rtl"
-      className="hidden h-dvh flex-col overflow-hidden bg-[#111528] text-white lg:sticky lg:top-0 lg:flex"
+      className="hidden h-dvh flex-col overflow-hidden bg-[#111528] text-white md:sticky md:top-0 md:flex"
     >
       <div className="flex h-[76px] items-center border-b border-white/7 px-5">
         <Link to="/" className="flex items-center gap-3" aria-label="ميزان">

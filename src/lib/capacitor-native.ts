@@ -14,6 +14,7 @@ export async function initCapacitorNative(): Promise<void> {
   } catch {
     // Plugins optional during dev / web builds.
   }
+
 }
 
 export async function hapticSuccess(): Promise<void> {

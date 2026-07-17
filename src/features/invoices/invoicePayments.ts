@@ -41,6 +41,7 @@ export function canEditInvoice(
   if (invoice.status === "cancelled") return false;
   if ((invoice.paidMinor ?? 0n) !== 0n) return false;
   return (
+    invoice.status === "estimate" ||
     invoice.status === "draft" ||
     invoice.status === "sent" ||
     invoice.status === "overdue"
@@ -50,8 +51,18 @@ export function canEditInvoice(
 export function canCollectPayment(
   invoice: Pick<Invoice, "status" | "totalMinor" | "paidMinor">,
 ): boolean {
-  if (invoice.status === "draft" || invoice.status === "cancelled") {
+  if (
+    invoice.status === "draft" ||
+    invoice.status === "estimate" ||
+    invoice.status === "cancelled"
+  ) {
     return false;
   }
   return getInvoicePaymentSummary(invoice).remainingMinor > 0n;
+}
+
+export function canConvertEstimate(
+  invoice: Pick<Invoice, "status">,
+): boolean {
+  return invoice.status === "estimate";
 }

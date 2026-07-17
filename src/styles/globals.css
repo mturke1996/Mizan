@@ -184,7 +184,7 @@
   }
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 48rem) {
   .app-scroll-padding {
     padding-bottom: 2.5rem;
   }

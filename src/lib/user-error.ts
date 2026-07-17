@@ -9,6 +9,8 @@ const DATABASE_MESSAGES: Record<string, string> = {
   active_project_not_found: "المشروع غير موجود أو مؤرشف",
   workspace_not_found: "مساحة العمل غير موجودة أو غير نشطة",
   module_disabled: "هذه الميزة غير مفعّلة في إعدادات المشروع",
+  seed_category_conflict: "تعارض في تصنيفات المشروع. أعد المحاولة أو غيّر الأسماء",
+  wage_category_conflict: "تعذر تجهيز تصنيف الأجور. أعد المحاولة",
   invalid_amount: "أدخل مبلغًا صحيحًا أكبر من صفر",
   invalid_daily_wage: "أدخل أجرًا يوميًا صحيحًا أكبر من صفر",
   invalid_project_name: "اكتب اسمًا واضحًا للمشروع",

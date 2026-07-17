@@ -16,6 +16,7 @@ import { useFinanceView } from "@/features/workspace/use-finance-view";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
+import { controlClassName } from "@/shared/ui/form-field";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 const transferSchema = z
@@ -94,8 +95,7 @@ export function TransferPage() {
       wallet.currency === sourceWallet?.currency,
   );
   const hasTransferPair = sourceWallets.length >= 2;
-  const fieldClassName =
-    "min-h-12 w-full rounded-md border border-line-strong bg-surface px-4 text-sm text-ink";
+  const fieldClassName = `${controlClassName} min-h-12 px-4`;
 
   useEffect(() => {
     if (!sourceWallets.length) return;

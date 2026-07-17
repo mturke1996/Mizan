@@ -55,6 +55,7 @@ export function TransactionDetailPage() {
     transactionId ?? "",
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const confirm = useConfirm();
   const transaction = transactions.find((item) => item.id === transactionId);
@@ -206,14 +207,24 @@ export function TransactionDetailPage() {
               <Paperclip aria-hidden="true" size={16} />
               مرفقات الإثبات
             </h2>
-            <button
-              className="pressable min-h-10 rounded-sm border border-line px-3 text-xs font-bold text-ink disabled:opacity-60"
-              disabled={uploadAttachment.isPending || !transactionId}
-              onClick={() => fileInputRef.current?.click()}
-              type="button"
-            >
-              {uploadAttachment.isPending ? "جارٍ الرفع…" : "إرفاق ملف"}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="pressable min-h-10 rounded-sm border border-line px-3 text-xs font-bold text-ink disabled:opacity-60"
+                disabled={uploadAttachment.isPending || !transactionId}
+                onClick={() => fileInputRef.current?.click()}
+                type="button"
+              >
+                {uploadAttachment.isPending ? "جارٍ الرفع…" : "ملف / معرض"}
+              </button>
+              <button
+                className="pressable min-h-10 rounded-sm bg-primary-soft px-3 text-xs font-bold text-primary disabled:opacity-60"
+                disabled={uploadAttachment.isPending || !transactionId}
+                onClick={() => cameraInputRef.current?.click()}
+                type="button"
+              >
+                التقاط صورة
+              </button>
+            </div>
             <input
               accept="image/jpeg,image/png,image/webp,application/pdf"
               className="hidden"
@@ -231,6 +242,26 @@ export function TransactionDetailPage() {
                   );
               }}
               ref={fileInputRef}
+              type="file"
+            />
+            <input
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file || !transactionId) return;
+                void uploadAttachment
+                  .mutateAsync(file)
+                  .then(() => toast.success("تم رفع صورة الإثبات"))
+                  .catch((error) =>
+                    toast.error(
+                      getUserErrorMessage(error, "تعذر رفع المرفق"),
+                    ),
+                  );
+              }}
+              ref={cameraInputRef}
               type="file"
             />
           </div>

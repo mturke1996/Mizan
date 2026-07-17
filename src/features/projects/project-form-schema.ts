@@ -191,6 +191,7 @@ export function createProjectPayloadFingerprint(
       workers: payload.modules.workers,
       capital: payload.modules.capital,
       inventory: payload.modules.inventory,
+      livestock: payload.modules.livestock,
     },
     seedCategories: payload.seedCategories.map((category) => ({
       name: category.name,

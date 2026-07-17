@@ -54,11 +54,11 @@ describe("App", () => {
       navigationQueries.getByRole("link", { name: "المشاريع" }),
     ).toBeInTheDocument();
     expect(
-      navigationQueries.getByRole("link", { name: "المحافظ" }),
-    ).toBeInTheDocument();
-    expect(
       navigationQueries.getByRole("link", { name: "أموالي" }),
     ).toHaveAttribute("href", "/debts");
+    expect(
+      navigationQueries.getByRole("button", { name: "المزيد" }),
+    ).toBeInTheDocument();
   });
 
   it("renders the personal income route", async () => {

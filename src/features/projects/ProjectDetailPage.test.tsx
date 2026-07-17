@@ -345,7 +345,7 @@ describe("ProjectDetailPage", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "تقويم المستحقات" }),
+      screen.getByRole("heading", { name: "تقويم الحضور اليومي" }),
     ).toBeInTheDocument();
     await user.click(
       screen.getByRole("button", { name: "إعدادات المشروع" }),

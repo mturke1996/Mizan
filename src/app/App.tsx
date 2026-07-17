@@ -98,6 +98,21 @@ const ClientsPage = lazy(() =>
     default: module.ClientsPage,
   })),
 );
+const ClientDetailPage = lazy(() =>
+  import("@/features/clients/ClientDetailPage").then((module) => ({
+    default: module.ClientDetailPage,
+  })),
+);
+const ReportsPage = lazy(() =>
+  import("@/features/reports/ReportsPage").then((module) => ({
+    default: module.ReportsPage,
+  })),
+);
+const BudgetsPage = lazy(() =>
+  import("@/features/analytics/BudgetsPage").then((module) => ({
+    default: module.BudgetsPage,
+  })),
+);
 const InvoicesPage = lazy(() =>
   import("@/features/invoices/InvoicesPage").then((module) => ({
     default: module.InvoicesPage,
@@ -341,6 +356,14 @@ export function App() {
             }
           />
           <Route
+            path="clients/:clientId"
+            element={
+              <DeferredPage>
+                <ClientDetailPage />
+              </DeferredPage>
+            }
+          />
+          <Route
             path="invoices"
             element={
               <DeferredPage>
@@ -377,6 +400,22 @@ export function App() {
             element={
               <DeferredPage>
                 <AnalyticsPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <DeferredPage>
+                <ReportsPage />
+              </DeferredPage>
+            }
+          />
+          <Route
+            path="budgets"
+            element={
+              <DeferredPage>
+                <BudgetsPage />
               </DeferredPage>
             }
           />

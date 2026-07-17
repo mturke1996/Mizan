@@ -69,7 +69,7 @@ export function QuickActions({
     return (
       <section
         aria-labelledby="quick-actions-mobile-title"
-        className="mb-5 lg:hidden"
+        className="mb-5 md:hidden"
       >
         <div className="mb-2.5 flex items-end justify-between gap-3 px-0.5">
           <h2
@@ -108,7 +108,7 @@ export function QuickActions({
   return (
     <section
       aria-labelledby="quick-actions-desktop-title"
-      className="mb-5 hidden rounded-[16px] border border-line bg-surface p-5 shadow-[0_2px_18px_rgb(27_30_60/4%)] lg:flex lg:items-center lg:justify-between lg:gap-8"
+      className="mb-5 hidden rounded-[16px] border border-line bg-surface p-5 shadow-[0_2px_18px_rgb(27_30_60/4%)] md:flex md:items-center md:justify-between md:gap-8"
     >
       <div className="flex items-center gap-3">
         <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-primary-soft text-primary ring-1 ring-inset ring-primary/10">

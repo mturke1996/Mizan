@@ -13,9 +13,9 @@ import {
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { useAuth } from "@/features/auth/use-auth";
 import { AppCard } from "@/shared/ui/AppCard";
+import { controlClassName } from "@/shared/ui/form-field";
 
-const inputClass =
-  "min-h-11 rounded-md border border-line-strong bg-surface px-3 text-sm text-ink focus:border-primary focus:outline-none";
+const inputClass = controlClassName;
 
 function parseMajorToMinor(value: string, scale: number): bigint | null {
   const trimmed = value.trim();

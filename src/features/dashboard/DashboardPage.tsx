@@ -30,6 +30,7 @@ import { toast } from "sonner";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { getUserErrorMessage } from "@/lib/user-error";
 import { BalanceOverview } from "./BalanceOverview";
+import { BudgetAlertsBanner } from "./BudgetAlertsBanner";
 import { EconomicPositionCard } from "./EconomicPositionCard";
 import { GoalEditorDialog } from "./GoalEditorDialog";
 import { CashFlowChart } from "./CashFlowChart";
@@ -155,17 +156,17 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="bg-canvas lg:bg-transparent">
+    <div className="bg-canvas md:bg-transparent">
       <DashboardHeader now={now} />
 
-      <div className="px-4 pt-4 sm:px-6 sm:pt-5 lg:px-8 lg:pt-7 xl:px-10">
+      <div className="px-4 pt-4 sm:px-6 sm:pt-5 md:px-6 lg:px-8 md:pt-6 lg:pt-7 xl:px-10">
         <QuickActions variant="desktop" />
 
         {isLoading || financeLoading || projectsLoading || debtsLoading ? (
           <div aria-busy="true" className="space-y-4" role="status">
-            <div className="h-52 animate-pulse rounded-[22px] bg-surface-subtle lg:hidden" />
-            <div className="h-24 animate-pulse rounded-2xl bg-surface-subtle lg:hidden" />
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="h-52 animate-pulse rounded-[22px] bg-surface-subtle md:hidden" />
+            <div className="h-24 animate-pulse rounded-2xl bg-surface-subtle md:hidden" />
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {[0, 1, 2, 3].map((item) => (
                 <div
                   key={item}
@@ -173,9 +174,9 @@ export function DashboardPage() {
                 />
               ))}
             </div>
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+            <div className="grid gap-5 md:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
               <div className="h-72 animate-pulse rounded-[16px] bg-surface-subtle" />
-              <div className="hidden h-72 animate-pulse rounded-[16px] bg-surface-subtle lg:block" />
+              <div className="hidden h-72 animate-pulse rounded-[16px] bg-surface-subtle md:block" />
             </div>
             <span className="sr-only">جاري تحميل الملخص المالي</span>
           </div>
@@ -210,6 +211,8 @@ export function DashboardPage() {
               position={economicPosition}
               currency={currency}
             />
+
+            <BudgetAlertsBanner />
 
             <GoalEditorDialog
               open={goalDialogOpen}
@@ -278,7 +281,7 @@ export function DashboardPage() {
 
             <section
               aria-label="المؤشرات المالية الأساسية"
-              className="mb-4 hidden grid-cols-2 gap-3 lg:mb-5 lg:grid lg:grid-cols-4"
+              className="mb-4 hidden grid-cols-2 gap-3 md:mb-5 md:grid md:grid-cols-4"
             >
               <DashboardMetricCard
                 label="إجمالي الرصيد"
@@ -327,7 +330,7 @@ export function DashboardPage() {
               />
             </section>
 
-            <section className="mb-5 grid gap-4 lg:mb-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] lg:gap-5">
+            <section className="mb-5 grid gap-4 md:mb-6 md:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] md:gap-5">
               <CashFlowChart
                 data={overview.monthlyTrend}
                 currency={currency}
@@ -335,12 +338,12 @@ export function DashboardPage() {
               <FinancialHealthPanel analytics={overview} />
             </section>
 
-            <section className="grid items-start gap-4 pb-2 lg:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] lg:gap-5">
+            <section className="grid items-start gap-4 pb-2 md:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] md:gap-5">
               <RecentTransactions
                 transactions={transactions}
                 wallets={wallets}
               />
-              <aside className="space-y-4 lg:space-y-0">
+              <aside className="space-y-4 md:space-y-0">
                 <IncomeOutstandingSummary currency={currency} />
                 <DebtSummary
                   currency={currency}

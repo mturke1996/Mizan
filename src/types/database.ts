@@ -838,6 +838,83 @@ export type Database = {
           is_active?: boolean;
         }
       >;
+      budgets: Table<
+        {
+          id: string;
+          workspace_id: string;
+          category_id: string;
+          currency_code: string;
+          limit_minor: number;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          category_id: string;
+          currency_code: string;
+          limit_minor: number;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          limit_minor?: number;
+        }
+      >;
+      recurring_transactions: Table<
+        {
+          id: string;
+          workspace_id: string;
+          title: string;
+          kind: Database["public"]["Enums"]["transaction_kind"];
+          amount_minor: number;
+          currency_code: string;
+          wallet_id: string;
+          category_id: string | null;
+          project_id: string | null;
+          frequency: Database["public"]["Enums"]["recurring_frequency"];
+          interval_steps: number;
+          next_date: string;
+          last_posted_at: string | null;
+          is_active: boolean;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        },
+        {
+          id?: string;
+          workspace_id: string;
+          title: string;
+          kind: Database["public"]["Enums"]["transaction_kind"];
+          amount_minor: number;
+          currency_code: string;
+          wallet_id: string;
+          category_id?: string | null;
+          project_id?: string | null;
+          frequency?: Database["public"]["Enums"]["recurring_frequency"];
+          interval_steps?: number;
+          next_date: string;
+          last_posted_at?: string | null;
+          is_active?: boolean;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        },
+        {
+          title?: string;
+          amount_minor?: number;
+          currency_code?: string;
+          wallet_id?: string;
+          category_id?: string | null;
+          project_id?: string | null;
+          frequency?: Database["public"]["Enums"]["recurring_frequency"];
+          interval_steps?: number;
+          next_date?: string;
+          is_active?: boolean;
+        }
+      >;
       ledger_accounts: Table<
         {
           id: string;
@@ -1761,6 +1838,78 @@ export type Database = {
         };
         Returns: Database["public"]["Tables"]["project_workers"]["Row"];
       };
+      update_project_worker: {
+        Args: {
+          p_workspace_id: string;
+          p_project_id: string;
+          p_worker_id: string;
+          p_name?: string | null;
+          p_phone?: string | null;
+          p_daily_wage_minor?: number | null;
+          p_status?: Database["public"]["Enums"]["worker_status"] | null;
+          p_clear_phone?: boolean;
+        };
+        Returns: Database["public"]["Tables"]["project_workers"]["Row"];
+      };
+      upsert_category: {
+        Args: {
+          p_workspace_id: string;
+          p_name: string;
+          p_kind: Database["public"]["Enums"]["category_kind"];
+          p_category_id?: string | null;
+          p_is_active?: boolean;
+        };
+        Returns: Database["public"]["Tables"]["categories"]["Row"];
+      };
+      upsert_budget: {
+        Args: {
+          p_workspace_id: string;
+          p_category_id: string;
+          p_currency_code: string;
+          p_limit_minor: number;
+          p_budget_id?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["budgets"]["Row"];
+      };
+      delete_budget: {
+        Args: {
+          p_workspace_id: string;
+          p_budget_id: string;
+        };
+        Returns: undefined;
+      };
+      upsert_recurring: {
+        Args: {
+          p_workspace_id: string;
+          p_title: string;
+          p_kind: Database["public"]["Enums"]["transaction_kind"];
+          p_amount_minor: number;
+          p_currency_code: string;
+          p_wallet_id: string;
+          p_next_date: string;
+          p_recurring_id?: string | null;
+          p_category_id?: string | null;
+          p_project_id?: string | null;
+          p_frequency?: Database["public"]["Enums"]["recurring_frequency"];
+          p_interval_steps?: number;
+          p_is_active?: boolean;
+        };
+        Returns: Database["public"]["Tables"]["recurring_transactions"]["Row"];
+      };
+      delete_recurring: {
+        Args: {
+          p_workspace_id: string;
+          p_recurring_id: string;
+        };
+        Returns: undefined;
+      };
+      post_all_recurring_due: {
+        Args: {
+          p_workspace_id: string;
+          p_now?: string;
+        };
+        Returns: number;
+      };
       record_daily_work: {
         Args: {
           p_workspace_id: string;
@@ -2533,6 +2682,8 @@ export type Database = {
           p_method?: string;
           p_notes?: string | null;
           p_paid_on?: string | null;
+          p_category_id?: string | null;
+          p_project_id?: string | null;
         };
         Returns: Database["public"]["Tables"]["invoice_payments"]["Row"];
       };
@@ -2561,10 +2712,12 @@ export type Database = {
       account_status: "active" | "suspended" | "disabled";
       billing_interval: "none" | "monthly" | "yearly";
       category_kind: "income" | "expense";
+      recurring_frequency: "daily" | "weekly" | "monthly" | "yearly";
       debt_direction: "receivable" | "payable";
       debt_entry_type: "open" | "payment" | "adjustment" | "write_off";
       debt_status: "open" | "partial" | "settled" | "written_off";
       invoice_status:
+        | "estimate"
         | "draft"
         | "sent"
         | "paid"
@@ -2625,6 +2778,7 @@ export type Database = {
       system_role: "user" | "supervisor";
       transaction_kind: "income" | "expense";
       wallet_status: "active" | "inactive" | "archived";
+      worker_status: "active" | "inactive";
       workspace_member_status: "active" | "inactive";
       workspace_role: "owner" | "admin" | "member" | "viewer";
       workspace_status: "active" | "suspended" | "archived";

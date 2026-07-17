@@ -117,17 +117,28 @@ export interface DemoRecordDailyWorkInput {
   readonly clientId: string;
   readonly amountMinor?: bigint;
   readonly currencyCode: string;
+  readonly note?: string | null;
 }
 
 export interface DemoWageMovementInput {
   readonly projectId: string;
   readonly workerId: string;
-  readonly entryType: "bonus" | "deduction" | "withdrawal";
+  readonly entryType: "bonus" | "deduction" | "withdrawal" | "adjustment";
   readonly amountMinor: bigint;
   readonly workDate: string;
   readonly clientId: string;
   readonly currencyCode: string;
   readonly walletId?: string;
+  readonly note?: string | null;
+}
+
+export interface DemoUpdateWorkerInput {
+  readonly projectId: string;
+  readonly workerId: string;
+  readonly name?: string;
+  readonly phone?: string | null;
+  readonly dailyWageMinor?: bigint;
+  readonly status?: "active" | "inactive";
 }
 
 interface ProjectStore {
@@ -165,6 +176,7 @@ interface ProjectStore {
   ) => LivestockBatch;
   postLivestockEvent: (input: DemoPostLivestockEventInput) => LivestockEvent;
   createWorker: (input: DemoCreateWorkerInput) => WorkerBalance;
+  updateWorker: (input: DemoUpdateWorkerInput) => WorkerBalance;
   recordDailyWork: (input: DemoRecordDailyWorkInput) => WorkLogEntry;
   postWageMovement: (input: DemoWageMovementInput) => WorkLogEntry;
   replaceProjects: (projects: ProjectStoreProjectInput[]) => void;
@@ -768,6 +780,57 @@ export function createProjectStore(
       });
       return worker;
     },
+    updateWorker: (input) => {
+      const workers = get().workersByProject[input.projectId] ?? [];
+      const existing = workers.find(
+        (candidate) => candidate.workerId === input.workerId,
+      );
+      if (!existing) {
+        throw new Error("العامل غير موجود");
+      }
+      if (input.name !== undefined) {
+        const name = input.name.trim();
+        if (name.length < 2) {
+          throw new Error("اكتب اسمًا واضحًا للعامل");
+        }
+      }
+      if (input.dailyWageMinor !== undefined && input.dailyWageMinor < 0n) {
+        throw new Error("الأجر اليومي غير صالح");
+      }
+      const updated: WorkerBalance = {
+        ...existing,
+        name: input.name?.trim() ?? existing.name,
+        phone:
+          input.phone === undefined
+            ? existing.phone
+            : input.phone?.trim() || null,
+        dailyWageMinor: input.dailyWageMinor ?? existing.dailyWageMinor,
+        status: input.status ?? existing.status,
+      };
+      set((state) => {
+        const nextWorkers = (
+          state.workersByProject[input.projectId] ?? []
+        ).map((candidate) =>
+          candidate.workerId === input.workerId ? updated : candidate,
+        );
+        const totals = recomputeWorkerTotals(nextWorkers);
+        return {
+          workersByProject: {
+            ...state.workersByProject,
+            [input.projectId]: nextWorkers,
+          },
+          projects: state.projects.map((candidate) =>
+            candidate.id === input.projectId
+              ? normalizeStoredProject({
+                  ...candidate,
+                  ...totals,
+                })
+              : candidate,
+          ),
+        };
+      });
+      return updated;
+    },
     recordDailyWork: (input) => {
       const state = get();
       const project = requireProject(state.projects, input.projectId);
@@ -803,7 +866,7 @@ export function createProjectStore(
         workDate: input.workDate,
         amountMinor,
         currencyCode: input.currencyCode,
-        note: null,
+        note: input.note?.trim() || null,
         createdAt: new Date().toISOString(),
       };
       set((current) => {
@@ -864,7 +927,7 @@ export function createProjectStore(
         throw new Error("العامل غير موجود");
       }
       const signedAmount =
-        input.entryType === "bonus"
+        input.entryType === "bonus" || input.entryType === "adjustment"
           ? input.amountMinor
           : -input.amountMinor;
       const log: WorkLogEntry = {
@@ -876,7 +939,7 @@ export function createProjectStore(
         workDate: input.workDate,
         amountMinor: signedAmount,
         currencyCode: input.currencyCode,
-        note: null,
+        note: input.note?.trim() || null,
         createdAt: new Date().toISOString(),
       };
       set((current) => {
@@ -884,7 +947,7 @@ export function createProjectStore(
           current.workersByProject[input.projectId] ?? []
         ).map((candidate) => {
           if (candidate.workerId !== input.workerId) return candidate;
-          if (input.entryType === "bonus") {
+          if (input.entryType === "bonus" || input.entryType === "adjustment") {
             return {
               ...candidate,
               balanceMinor: candidate.balanceMinor + input.amountMinor,
