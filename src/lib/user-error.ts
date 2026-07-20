@@ -62,7 +62,8 @@ const DATABASE_MESSAGES: Record<string, string> = {
     "اختر محفظتين مختلفتين",
   "transfer wallets must use the same currency":
     "يجب أن تستخدم المحفظتان العملة نفسها",
-  "insufficient wallet funds": "الرصيد غير كافٍ لإتمام المعاملة",
+  "insufficient wallet funds":
+    "الرصيد غير كافٍ. لمصروف مشروع اربط المعاملة بمشروع أولًا",
   "insufficient source wallet funds": "رصيد محفظة المصدر غير كافٍ",
   "transaction amount must be positive": "أدخل مبلغًا أكبر من صفر",
   "transfer amount must be positive": "أدخل مبلغ تحويل أكبر من صفر",

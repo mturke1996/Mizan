@@ -673,6 +673,12 @@ export function TransactionFormPage() {
                     تبقى الأرباح ومستحقات العمال قابلة للمقارنة.
                   </p>
                 ) : null}
+                {canAttachProject && selectedProjectId ? (
+                  <p className="mt-2 text-xs leading-5 text-muted">
+                    مصروف المشروع يمكن تسجيله حتى لو رصيد المحفظة غير كافٍ؛ يصبح
+                    الرصيد سالبًا ويغطيه الإيراد لاحقًا.
+                  </p>
+                ) : null}
               </div>
 
               <div>
