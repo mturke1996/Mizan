@@ -37,11 +37,14 @@ describe("WalletDetailPage", () => {
       screen.getByRole("link", { name: "تحويل من هذه المحفظة" }),
     ).toHaveAttribute("href", "/transfer?from=cash");
     expect(
-      screen.getByRole("button", { name: "تعديل الرصيد" }),
+      screen.getByRole("button", { name: "تمويل الخزينة" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "سحب من الخزينة" }),
     ).toBeInTheDocument();
   });
 
-  it("updates the wallet balance from the edit control", async () => {
+  it("funds the treasury and records a movement", async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/wallets/cash"]}>
@@ -56,12 +59,17 @@ describe("WalletDetailPage", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("button", { name: "تعديل الرصيد" }));
-    const input = screen.getByLabelText("الرصيد المستهدف بعملة LYD");
+    await user.click(screen.getByRole("button", { name: "تمويل الخزينة" }));
+    const input = screen.getByLabelText("مبلغ التمويل بعملة LYD");
     await user.clear(input);
-    await user.type(input, "3000");
-    await user.click(screen.getByRole("button", { name: "حفظ الرصيد" }));
+    await user.type(input, "550");
+    await user.click(screen.getByRole("button", { name: "تأكيد التمويل" }));
 
     expect(financeStore.getState().wallets[0]?.balanceMinor).toBe(3_000_000n);
+    expect(financeStore.getState().transactions[0]).toMatchObject({
+      kind: "opening_balance",
+      flow: "in",
+      amountMinor: 550_000n,
+    });
   });
 });

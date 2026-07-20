@@ -35,13 +35,13 @@ export function AppShell() {
       <DesktopSidebar />
       <div
         dir="rtl"
-        className="app-shell-safe min-w-0 bg-surface md:bg-canvas md:pt-0 md:ps-0 md:pe-0"
+        className="app-shell-safe min-w-0 bg-canvas md:bg-canvas md:pt-0 md:ps-0 md:pe-0"
       >
         <OfflineStatusBanner />
         <main
           ref={mainRef}
           id="main-content"
-          className="app-scroll-padding mx-auto min-h-dvh w-full max-w-384"
+          className="app-scroll-padding mx-auto min-h-dvh w-full max-w-384 bg-surface md:bg-transparent"
         >
           <Outlet />
         </main>

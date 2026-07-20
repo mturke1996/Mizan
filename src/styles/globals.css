@@ -155,14 +155,58 @@
   }
 
   .app-scroll-padding {
-    /* Compact bottom nav (~3.5rem) + system gesture inset */
-    padding-bottom: calc(3.75rem + var(--safe-bottom));
+    /* Bottom tab row + system gesture / 3-button nav inset */
+    padding-bottom: calc(3.5rem + var(--safe-bottom));
+  }
+
+  .app-bottom-nav {
+    padding-bottom: max(8px, var(--safe-bottom));
   }
 
   html.is-native-app,
   html.is-native-app body {
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Native (Android edge-to-edge): WebView draws under system bars.
+   * Always keep a real inset so content never sits under battery/clock
+   * or the system navigation gesture area — even if Cap injects 0.
+   */
+  html.is-native-app {
+    --safe-top: max(
+      var(--safe-area-inset-top, env(safe-area-inset-top, 0px)),
+      28px
+    );
+    --safe-bottom: max(
+      var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)),
+      24px
+    );
+  }
+
+  html.is-native-app .app-shell-safe {
+    padding-top: var(--safe-top);
+    padding-right: var(--safe-right);
+    padding-left: var(--safe-left);
+  }
+
+  html.is-native-app .app-scroll-padding {
+    padding-bottom: calc(3.75rem + var(--safe-bottom));
+  }
+
+  /*
+   * Dashboard only: pull header into the status-bar band so the canvas
+   * fills under wifi/battery, while controls sit clearly below it.
+   * Other screens keep the shared .app-shell-safe inset unchanged.
+   */
+  html.is-native-app .dashboard-header-safe {
+    margin-top: calc(-1 * var(--safe-top));
+    padding-top: calc(var(--safe-top) + 0.5rem);
+  }
+
+  html.is-native-app .app-bottom-nav {
+    padding-bottom: var(--safe-bottom);
   }
 
   .subtle-scrollbar {

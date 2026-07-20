@@ -12,15 +12,19 @@ const config: CapacitorConfig = {
     backgroundColor: "#F7F8FC",
   },
   plugins: {
+    /**
+     * Keep splash until JS is ready (capacitor-best-practices).
+     * Hide from initCapacitorNative after SystemBars + first paint.
+     */
     SplashScreen: {
-      launchShowDuration: 900,
-      launchAutoHide: true,
+      launchShowDuration: 0,
+      launchAutoHide: false,
       backgroundColor: "#F7F8FC",
       showSpinner: false,
     },
     /**
-     * Modern Android (15+) is edge-to-edge. SystemBars injects
-     * --safe-area-inset-* CSS variables used by the app shell.
+     * Capacitor 8 SystemBars: edge-to-edge + inject --safe-area-inset-*.
+     * App shell uses those vars for padding.
      */
     SystemBars: {
       insetsHandling: "css",
@@ -29,7 +33,8 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: "LIGHT",
       backgroundColor: "#F7F8FC",
-      overlaysWebView: false,
+      // Overlay + CSS safe-area insets (required on Android 15 edge-to-edge).
+      overlaysWebView: true,
     },
     LocalNotifications: {
       iconColor: "#4338CA",

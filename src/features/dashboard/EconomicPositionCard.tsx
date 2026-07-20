@@ -51,7 +51,7 @@ export function EconomicPositionCard({
   const netPositive = position.netPositionMinor >= 0n;
 
   return (
-    <AppCard className="mb-4 overflow-hidden rounded-[18px] p-0 sm:mb-5">
+    <AppCard className="mb-4 overflow-hidden rounded-[20px] p-0 sm:mb-5">
       <div className="border-b border-line bg-[linear-gradient(135deg,rgb(67_56_202/8%),rgb(99_102_241/3%))] px-4 py-4 sm:px-5">
         <p className="text-[11px] font-semibold text-muted">الموقف المالي الموحّد</p>
         <p className="mt-1 text-xs text-muted">

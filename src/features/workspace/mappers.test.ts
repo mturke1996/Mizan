@@ -67,6 +67,52 @@ describe("mapFinancialEvent", () => {
       expect(transaction).toMatchObject(expected);
     },
   );
+
+  it("maps treasury fund and withdraw opening-balance events", () => {
+    expect(
+      mapFinancialEvent({
+        id: "treasury-fund",
+        event_type: "opening_balance",
+        effective_event_type: "opening_balance",
+        is_reversal: false,
+        currency_code: "LYD",
+        occurred_at: "2026-07-17T12:00:00.000Z",
+        description: "تمويل الخزينة — النقدية",
+        category_id: null,
+        project_id: null,
+        source_wallet_id: null,
+        destination_wallet_id: "cash",
+        amount_minor: "500000",
+      }),
+    ).toMatchObject({
+      kind: "opening_balance",
+      flow: "in",
+      walletId: "cash",
+      amountMinor: 500000n,
+    });
+
+    expect(
+      mapFinancialEvent({
+        id: "treasury-withdraw",
+        event_type: "opening_balance",
+        effective_event_type: "opening_balance",
+        is_reversal: false,
+        currency_code: "LYD",
+        occurred_at: "2026-07-17T12:00:00.000Z",
+        description: "سحب من الخزينة — النقدية",
+        category_id: null,
+        project_id: null,
+        source_wallet_id: "cash",
+        destination_wallet_id: null,
+        amount_minor: "200000",
+      }),
+    ).toMatchObject({
+      kind: "opening_balance",
+      flow: "out",
+      walletId: "cash",
+      amountMinor: 200000n,
+    });
+  });
 });
 
 describe("mapProjectSummary", () => {

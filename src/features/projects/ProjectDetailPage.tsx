@@ -296,7 +296,7 @@ export function ProjectDetailPage() {
   })();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6" dir="rtl">
+    <div className="page-enter mx-auto max-w-3xl px-4 pb-8 sm:px-6" dir="rtl">
       <ProjectHero
         analytics={analytics}
         currency={currency}
@@ -325,18 +325,20 @@ export function ProjectDetailPage() {
         />
       ) : null}
 
-      <SectionTabs
-        activeId={resolvedTab}
-        ariaLabel="أقسام المشروع"
-        className="mb-5"
-        id={PROJECT_DETAIL_TABS_ID}
-        items={tabs}
-        onChange={changeTab}
-      />
+      <div className="sticky top-0 z-10 -mx-4 mb-5 border-b border-line bg-canvas/92 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
+        <SectionTabs
+          activeId={resolvedTab}
+          ariaLabel="أقسام المشروع"
+          className="border-b-0"
+          id={PROJECT_DETAIL_TABS_ID}
+          items={tabs}
+          onChange={changeTab}
+        />
+      </div>
 
       <div
         aria-labelledby={tabId}
-        className="pb-6"
+        className="pb-4"
         id={panelId}
         role="tabpanel"
         tabIndex={0}

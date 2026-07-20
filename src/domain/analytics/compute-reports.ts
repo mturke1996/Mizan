@@ -71,14 +71,14 @@ export function computePeriodPnL(input: {
 
   for (const tx of input.transactions) {
     if (tx.currency !== input.currency) continue;
-    if (tx.kind === "transfer") continue;
+    if (tx.kind === "transfer" || tx.kind === "opening_balance") continue;
     if (!inRange(tx.occurredAt, input.from, input.to)) continue;
     const key = tx.categoryId ?? "__none__";
     const row = map.get(key) ?? { incomeMinor: 0n, expenseMinor: 0n };
     if (tx.kind === "income") {
       incomeMinor += tx.amountMinor;
       row.incomeMinor += tx.amountMinor;
-    } else {
+    } else if (tx.kind === "expense") {
       expenseMinor += tx.amountMinor;
       row.expenseMinor += tx.amountMinor;
     }
@@ -133,12 +133,12 @@ export function computeCashFlowMonths(input: {
 
   for (const tx of input.transactions) {
     if (tx.currency !== input.currency) continue;
-    if (tx.kind === "transfer") continue;
+    if (tx.kind === "transfer" || tx.kind === "opening_balance") continue;
     const key = monthKey(new Date(tx.occurredAt), timeZone);
     const bucket = buckets.get(key);
     if (!bucket) continue;
     if (tx.kind === "income") bucket.incomeMinor += tx.amountMinor;
-    else bucket.expenseMinor += tx.amountMinor;
+    else if (tx.kind === "expense") bucket.expenseMinor += tx.amountMinor;
   }
 
   return keys.map((monthKeyValue) => {

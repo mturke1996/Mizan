@@ -1,19 +1,27 @@
-import { ArrowLeftRight, Pencil, Plus, Trash2, WalletCards } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowLeftRight,
+  ArrowUpFromLine,
+  Pencil,
+  Plus,
+  Trash2,
+  WalletCards,
+} from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  formatMajorInputAmount,
   formatMinorAmount,
   getCurrencyScale,
   parseMajorAmount,
   toSafeMinorNumber,
 } from "@/domain/money/money";
+import type { TreasuryDirection } from "@/domain/finance/finance-state";
 import { useFinanceStore } from "@/features/finance/finance-store";
 import { TransactionList } from "@/features/transactions/TransactionList";
 import {
-  useAdjustWalletBalanceMutation,
   useArchiveWalletMutation,
+  usePostTreasuryMovementMutation,
   useRenameWalletMutation,
 } from "@/features/workspace/use-finance-data";
 import { useFinanceView } from "@/features/workspace/use-finance-view";
@@ -29,10 +37,12 @@ export function WalletDetailPage() {
   const confirm = useConfirm();
   const { isDemo = false } = useWorkspace();
   const { wallets, transactions: allTransactions } = useFinanceView();
-  const setWalletBalance = useFinanceStore((state) => state.setWalletBalance);
+  const applyTreasuryMovement = useFinanceStore(
+    (state) => state.applyTreasuryMovement,
+  );
   const renameDemoWallet = useFinanceStore((state) => state.renameWallet);
   const archiveDemoWallet = useFinanceStore((state) => state.archiveWallet);
-  const adjustBalance = useAdjustWalletBalanceMutation();
+  const postTreasury = usePostTreasuryMovementMutation();
   const renameWallet = useRenameWalletMutation();
   const archiveWallet = useArchiveWalletMutation();
   const wallet = wallets.find((item) => item.id === walletId);
@@ -42,9 +52,12 @@ export function WalletDetailPage() {
       (transaction.kind === "transfer" &&
         transaction.destinationWalletId === walletId),
   );
-  const [editingBalance, setEditingBalance] = useState(false);
+  const [treasuryOpen, setTreasuryOpen] = useState(false);
+  const [treasuryDirection, setTreasuryDirection] =
+    useState<TreasuryDirection>("fund");
   const [editingName, setEditingName] = useState(false);
-  const [balanceInput, setBalanceInput] = useState("");
+  const [amountInput, setAmountInput] = useState("");
+  const [noteInput, setNoteInput] = useState("");
   const [nameInput, setNameInput] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -62,9 +75,11 @@ export function WalletDetailPage() {
 
   const scale = getCurrencyScale(wallet.currency);
 
-  const openBalanceEditor = () => {
-    setBalanceInput(formatMajorInputAmount(wallet.balanceMinor, scale));
-    setEditingBalance(true);
+  const openTreasuryEditor = (direction: TreasuryDirection) => {
+    setTreasuryDirection(direction);
+    setAmountInput("");
+    setNoteInput("");
+    setTreasuryOpen(true);
   };
 
   const openNameEditor = () => {
@@ -72,41 +87,56 @@ export function WalletDetailPage() {
     setEditingName(true);
   };
 
-  const saveBalance = async () => {
-    if (busy || adjustBalance.isPending) return;
-    let targetMinor: bigint;
+  const saveTreasuryMovement = async () => {
+    if (busy || postTreasury.isPending) return;
+    let amountMinor: bigint;
     try {
-      targetMinor = parseMajorAmount(balanceInput || "0", scale);
+      amountMinor = parseMajorAmount(amountInput || "0", scale);
     } catch {
-      toast.error("أدخل رصيدًا صحيحًا");
+      toast.error("أدخل مبلغًا صحيحًا");
       return;
     }
-    if (targetMinor < 0n) {
-      toast.error("لا يمكن أن يكون الرصيد سالبًا");
+    if (amountMinor <= 0n) {
+      toast.error("أدخل مبلغًا أكبر من صفر");
       return;
     }
-    if (targetMinor === wallet.balanceMinor) {
-      setEditingBalance(false);
-      toast.message("الرصيد لم يتغير");
+    if (
+      treasuryDirection === "withdraw" &&
+      amountMinor > wallet.balanceMinor
+    ) {
+      toast.error("الرصيد غير كافٍ لإتمام المعاملة");
       return;
     }
 
+    const note = noteInput.trim() || undefined;
     setBusy(true);
     try {
       if (isDemo) {
-        setWalletBalance(wallet.id, targetMinor);
-      } else {
-        await adjustBalance.mutateAsync({
+        applyTreasuryMovement({
+          id: crypto.randomUUID(),
           walletId: wallet.id,
-          targetBalanceMinor: toSafeMinorNumber(targetMinor),
+          amountMinor,
+          direction: treasuryDirection,
+          occurredAt: new Date().toISOString(),
+          note,
+        });
+      } else {
+        await postTreasury.mutateAsync({
+          walletId: wallet.id,
+          amountMinor: toSafeMinorNumber(amountMinor),
+          direction: treasuryDirection,
           clientId: crypto.randomUUID(),
-          note: "تعديل رصيد المحفظة",
+          note,
         });
       }
-      setEditingBalance(false);
-      toast.success("تم تعديل رصيد المحفظة");
+      setTreasuryOpen(false);
+      toast.success(
+        treasuryDirection === "fund"
+          ? "تم تمويل الخزينة"
+          : "تم السحب من الخزينة",
+      );
     } catch (error) {
-      toast.error(getUserErrorMessage(error, "تعذر تعديل رصيد المحفظة"));
+      toast.error(getUserErrorMessage(error, "تعذر تسجيل حركة الخزينة"));
     } finally {
       setBusy(false);
     }
@@ -146,7 +176,7 @@ export function WalletDetailPage() {
       description: "ستُخفى من القائمة. يجب أن يكون الرصيد صفرًا أولًا.",
       warning:
         wallet.balanceMinor !== 0n
-          ? "الرصيد الحالي ليس صفرًا — صفّر الرصيد أو انقله قبل الحذف."
+          ? "الرصيد الحالي ليس صفرًا — اسحب من الخزينة أو حوّل الرصيد قبل الحذف."
           : undefined,
       tone: "danger",
       confirmLabel: "حذف المحفظة",
@@ -252,37 +282,88 @@ export function WalletDetailPage() {
         </AppCard>
       ) : null}
 
-      {editingBalance ? (
+      {treasuryOpen ? (
         <AppCard className="mb-4 space-y-3 p-4 sm:p-5">
-          <h3 className="flex items-center gap-2 text-sm font-bold text-ink">
-            <Pencil aria-hidden="true" size={16} />
-            تعديل الرصيد
+          <h3 className="text-sm font-bold text-ink">
+            {treasuryDirection === "fund"
+              ? "تمويل الخزينة"
+              : "سحب من الخزينة"}
           </h3>
+          <p className="text-xs text-muted">
+            {treasuryDirection === "fund"
+              ? "سجّل ضخ فلوس إلى هذه المحفظة (رأس مال أو دعم)."
+              : "سجّل سحب فلوس من هذه المحفظة إلى خارج النظام."}
+          </p>
+          <div
+            className="grid grid-cols-2 gap-2"
+            role="group"
+            aria-label="نوع حركة الخزينة"
+          >
+            <button
+              className={[
+                "pressable flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm font-bold",
+                treasuryDirection === "fund"
+                  ? "border-success/40 bg-success-soft text-success"
+                  : "border-line bg-surface text-ink",
+              ].join(" ")}
+              disabled={busy}
+              onClick={() => setTreasuryDirection("fund")}
+              type="button"
+            >
+              <ArrowDownToLine aria-hidden="true" size={16} />
+              تمويل
+            </button>
+            <button
+              className={[
+                "pressable flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm font-bold",
+                treasuryDirection === "withdraw"
+                  ? "border-danger/40 bg-danger-soft text-danger"
+                  : "border-line bg-surface text-ink",
+              ].join(" ")}
+              disabled={busy}
+              onClick={() => setTreasuryDirection("withdraw")}
+              type="button"
+            >
+              <ArrowUpFromLine aria-hidden="true" size={16} />
+              سحب
+            </button>
+          </div>
           <input
-            aria-label={`الرصيد المستهدف بعملة ${wallet.currency}`}
+            aria-label={`مبلغ ${treasuryDirection === "fund" ? "التمويل" : "السحب"} بعملة ${wallet.currency}`}
             className="numeric min-h-11 w-full rounded-xl border border-control-border bg-surface px-3 text-left text-sm"
             dir="ltr"
             inputMode="decimal"
-            onChange={(event) => setBalanceInput(event.target.value)}
-            placeholder="الرصيد الجديد"
-            value={balanceInput}
+            onChange={(event) => setAmountInput(event.target.value)}
+            placeholder="0.00"
+            value={amountInput}
+          />
+          <input
+            aria-label="ملاحظة اختيارية"
+            className="min-h-11 w-full rounded-xl border border-control-border bg-surface px-3 text-sm"
+            onChange={(event) => setNoteInput(event.target.value)}
+            placeholder="ملاحظة (اختياري)"
+            value={noteInput}
           />
           <div className="grid grid-cols-2 gap-2">
             <button
               className="pressable flex min-h-11 items-center justify-center rounded-xl border border-line bg-surface text-sm font-bold text-ink"
               disabled={busy}
-              onClick={() => setEditingBalance(false)}
+              onClick={() => setTreasuryOpen(false)}
               type="button"
             >
               إلغاء
             </button>
             <button
               className="pressable flex min-h-11 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-on disabled:opacity-60"
-              disabled={busy || adjustBalance.isPending}
-              onClick={() => void saveBalance()}
+              disabled={busy || postTreasury.isPending}
+              onClick={() => void saveTreasuryMovement()}
               type="button"
             >
-              {busy ? "جارٍ الحفظ…" : "حفظ الرصيد"}
+              {busy
+                ? "جارٍ الحفظ…"
+                : treasuryDirection === "fund"
+                  ? "تأكيد التمويل"
+                  : "تأكيد السحب"}
             </button>
           </div>
         </AppCard>
@@ -298,14 +379,25 @@ export function WalletDetailPage() {
           </button>
           <button
             className="pressable flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-5 text-sm font-bold text-ink hover:bg-surface-subtle"
-            onClick={openBalanceEditor}
+            onClick={() => openTreasuryEditor("fund")}
             type="button"
           >
-            <Pencil aria-hidden="true" size={18} />
-            تعديل الرصيد
+            <ArrowDownToLine aria-hidden="true" size={18} />
+            تمويل الخزينة
           </button>
         </div>
       )}
+
+      {!treasuryOpen ? (
+        <button
+          className="pressable mb-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-line bg-surface px-5 text-sm font-bold text-ink hover:bg-surface-subtle"
+          onClick={() => openTreasuryEditor("withdraw")}
+          type="button"
+        >
+          <ArrowUpFromLine aria-hidden="true" size={18} />
+          سحب من الخزينة
+        </button>
+      ) : null}
 
       <Link
         to={`/transfer?from=${wallet.id}`}

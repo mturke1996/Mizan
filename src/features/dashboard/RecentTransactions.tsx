@@ -2,6 +2,7 @@ import {
   ArrowDownLeft,
   ArrowLeft,
   ArrowUpRight,
+  Landmark,
   Repeat2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -9,6 +10,7 @@ import type {
   FinanceTransaction,
   Wallet,
 } from "@/domain/finance/finance-state";
+import { signedTransactionAmount } from "@/domain/finance/finance-state";
 import { formatMinorAmount } from "@/domain/money/money";
 import { TransactionList } from "@/features/transactions/TransactionList";
 
@@ -46,6 +48,11 @@ export function RecentTransactions({
       icon: Repeat2,
       tone: "bg-info-soft text-info",
     },
+    opening_balance: {
+      label: "خزينة",
+      icon: Landmark,
+      tone: "bg-primary-soft text-primary",
+    },
   } as const;
 
   return (
@@ -67,7 +74,7 @@ export function RecentTransactions({
       </div>
 
       <div className="px-1 md:hidden">
-        <TransactionList transactions={recent.slice(0, 4)} wallets={wallets} />
+        <TransactionList transactions={recent.slice(0, 5)} wallets={wallets} />
       </div>
 
       <div className="hidden overflow-x-auto md:block">
@@ -105,16 +112,14 @@ export function RecentTransactions({
               {recent.map((transaction) => {
                 const item = presentation[transaction.kind];
                 const Icon = item.icon;
-                const amount =
-                  transaction.kind === "expense"
-                    ? -transaction.amountMinor
-                    : transaction.amountMinor;
-                const amountPrefix =
-                  transaction.kind === "income"
-                    ? "+"
-                    : transaction.kind === "expense"
-                      ? ""
-                      : "";
+                const amount = signedTransactionAmount(transaction);
+                const kindLabel =
+                  transaction.kind === "opening_balance"
+                    ? transaction.flow === "in"
+                      ? "تمويل خزينة"
+                      : "سحب خزينة"
+                    : item.label;
+                const amountPrefix = amount > 0n ? "+" : "";
                 const walletLabel =
                   transaction.kind === "transfer"
                     ? `${walletNames.get(transaction.walletId) ?? "محفظة"} ← ${
@@ -143,7 +148,7 @@ export function RecentTransactions({
                         </span>
                       </Link>
                     </td>
-                    <td className="px-4 py-3.5 text-muted">{item.label}</td>
+                    <td className="px-4 py-3.5 text-muted">{kindLabel}</td>
                     <td className="max-w-48 truncate px-4 py-3.5 text-muted">
                       {walletLabel}
                     </td>
@@ -157,9 +162,11 @@ export function RecentTransactions({
                     <td className="px-5 py-3.5 text-left">
                       <span
                         className={`numeric block font-bold ${
-                          transaction.kind === "income"
+                          amount > 0n
                             ? "text-success"
-                            : transaction.kind === "expense"
+                            : transaction.kind === "expense" ||
+                                (transaction.kind === "opening_balance" &&
+                                  transaction.flow === "out")
                               ? "text-danger"
                               : "text-info"
                         }`}

@@ -77,18 +77,27 @@ function transaction(overrides: TransactionOverrides): FinanceTransaction {
     ...(overrides.categoryId ? { categoryId: overrides.categoryId } : {}),
   };
 
-  return kind === "transfer"
-    ? {
-        ...base,
-        kind,
-        walletId: "cash",
-        destinationWalletId: "bank",
-      }
-    : {
-        ...base,
-        kind,
-        walletId: "cash",
-      };
+  if (kind === "transfer") {
+    return {
+      ...base,
+      kind,
+      walletId: "cash",
+      destinationWalletId: "bank",
+    };
+  }
+  if (kind === "opening_balance") {
+    return {
+      ...base,
+      kind: "opening_balance",
+      walletId: "cash",
+      flow: "in",
+    };
+  }
+  return {
+    ...base,
+    kind: kind === "expense" ? "expense" : "income",
+    walletId: "cash",
+  };
 }
 
 function datedTransactions(

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowDownLeft, ArrowUpRight, Save } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, Save } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useConfirm } from "@/shared/ui/confirm-dialog";
 import {
@@ -107,12 +107,18 @@ export function TransactionFormPage() {
     ? transactions.find((item) => item.id === transactionId)
     : undefined;
   const requestedType = searchParams.get("type");
-  const initialKind =
-    existing && existing.kind !== "transfer"
+  const existingLedgerKind =
+    existing?.kind === "income" || existing?.kind === "expense"
       ? existing.kind
-      : requestedType === "expense"
-        ? "expense"
-        : "income";
+      : undefined;
+  const initialKind: "income" | "expense" =
+    existingLedgerKind ??
+    (requestedType === "expense" ? "expense" : "income");
+  const fastMode =
+    !isEdit && (requestedType === "income" || requestedType === "expense");
+  const [showMoreFields, setShowMoreFields] = useState(
+    () => Boolean(searchParams.get("project") || searchParams.get("client")),
+  );
   const requestedWallet = wallets.find(
     (wallet) => wallet.id === searchParams.get("wallet"),
   );
@@ -163,10 +169,10 @@ export function TransactionFormPage() {
   );
 
   useEffect(() => {
-    if (!existing || existing.kind === "transfer") return;
+    if (!existing || !existingLedgerKind) return;
     const parts = splitTitleAndNote(existing.title);
     reset({
-      kind: existing.kind,
+      kind: existingLedgerKind,
       amount: formatMajorInputAmount(
         existing.amountMinor,
         getCurrencyScale(existing.currency),
@@ -178,7 +184,7 @@ export function TransactionFormPage() {
       businessClientId: "",
       note: existing.note ?? parts.note,
     });
-  }, [existing, reset]);
+  }, [existing, existingLedgerKind, reset]);
 
   useEffect(() => {
     if (isEdit) return;
@@ -246,8 +252,8 @@ export function TransactionFormPage() {
 
     try {
       if (isEdit) {
-        if (!existing || existing.kind === "transfer" || !transactionId) {
-          throw new Error("تعديل التحويلات غير مدعوم من هذه الشاشة");
+        if (!existing || !existingLedgerKind || !transactionId) {
+          throw new Error("تعديل هذا النوع من الحركات غير مدعوم من هذه الشاشة");
         }
 
         if (workspaceId) {
@@ -284,7 +290,7 @@ export function TransactionFormPage() {
           if (existing.projectId) {
             adjustProjectTransaction({
               projectId: existing.projectId,
-              kind: existing.kind,
+              kind: existingLedgerKind,
               deltaMinor: -existing.amountMinor,
             });
           }
@@ -362,13 +368,22 @@ export function TransactionFormPage() {
 
   const inputClassName = `${controlClassName} min-h-12 px-4`;
   const formError = walletsError ?? projectsError;
-  const pageTitle = isEdit ? "تعديل المعاملة" : "معاملة جديدة";
+  const pageTitle = isEdit
+    ? "تعديل المعاملة"
+    : fastMode
+      ? initialKind === "expense"
+        ? "مصروف سريع"
+        : "دخل سريع"
+      : "معاملة جديدة";
   const pageSubtitle = isEdit
     ? "عدّل المحفظة أو المبلغ أو المشروع ثم احفظ."
-    : "تُحفظ مباشرة في دفترك المالي.";
+    : fastMode
+      ? "المبلغ والبيان والمحفظة — والباقي اختياري خلف المزيد."
+      : "تُحفظ مباشرة في دفترك المالي.";
   const backTo = isEdit
     ? `/transactions/${transactionId}`
     : "/transactions";
+  const showOptionalFields = !fastMode || showMoreFields;
 
   if (financeLoading || projectsLoading) {
     return (
@@ -417,12 +432,16 @@ export function TransactionFormPage() {
     );
   }
 
-  if (isEdit && existing?.kind === "transfer") {
+  if (isEdit && existing && !existingLedgerKind) {
     return (
       <div className="px-4 sm:px-6">
         <PageHeader
-          title="تعديل التحويل غير متاح"
-          subtitle="يمكن حذف التحويل وإعادة إنشائه من شاشة التحويل."
+          title="تعديل هذه الحركة غير متاح"
+          subtitle={
+            existing.kind === "transfer"
+              ? "يمكن حذف التحويل وإعادة إنشائه من شاشة التحويل."
+              : "رصيد الافتتاح يُعدَّل من إعدادات المحفظة."
+          }
           backTo={`/transactions/${transactionId}`}
         />
       </div>
@@ -462,39 +481,43 @@ export function TransactionFormPage() {
       />
 
       <form noValidate onSubmit={handleSubmit(onSubmit)}>
-        <AppCard className="mb-4 p-4 sm:p-5">
-          <fieldset>
-            <legend className="mb-3 text-sm font-bold text-ink">
-              نوع المعاملة
-            </legend>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="relative">
-                <input
-                  type="radio"
-                  value="income"
-                  className="peer sr-only"
-                  {...register("kind")}
-                />
-                <span className="pressable flex min-h-14 items-center justify-center gap-2 rounded-md border border-line-strong bg-surface text-sm font-bold text-muted peer-checked:border-success peer-checked:bg-success-soft peer-checked:text-success peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
-                  <ArrowDownLeft aria-hidden="true" size={19} />
-                  دخل
-                </span>
-              </label>
-              <label className="relative">
-                <input
-                  type="radio"
-                  value="expense"
-                  className="peer sr-only"
-                  {...register("kind")}
-                />
-                <span className="pressable flex min-h-14 items-center justify-center gap-2 rounded-md border border-line-strong bg-surface text-sm font-bold text-muted peer-checked:border-danger peer-checked:bg-danger-soft peer-checked:text-danger peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
-                  <ArrowUpRight aria-hidden="true" size={19} />
-                  مصروف
-                </span>
-              </label>
-            </div>
-          </fieldset>
-        </AppCard>
+        {fastMode ? (
+          <input type="hidden" {...register("kind")} />
+        ) : (
+          <AppCard className="mb-4 p-4 sm:p-5">
+            <fieldset>
+              <legend className="mb-3 text-sm font-bold text-ink">
+                نوع المعاملة
+              </legend>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="relative">
+                  <input
+                    type="radio"
+                    value="income"
+                    className="peer sr-only"
+                    {...register("kind")}
+                  />
+                  <span className="pressable flex min-h-14 items-center justify-center gap-2 rounded-md border border-line-strong bg-surface text-sm font-bold text-muted peer-checked:border-success peer-checked:bg-success-soft peer-checked:text-success peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                    <ArrowDownLeft aria-hidden="true" size={19} />
+                    دخل
+                  </span>
+                </label>
+                <label className="relative">
+                  <input
+                    type="radio"
+                    value="expense"
+                    className="peer sr-only"
+                    {...register("kind")}
+                  />
+                  <span className="pressable flex min-h-14 items-center justify-center gap-2 rounded-md border border-line-strong bg-surface text-sm font-bold text-muted peer-checked:border-danger peer-checked:bg-danger-soft peer-checked:text-danger peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                    <ArrowUpRight aria-hidden="true" size={19} />
+                    مصروف
+                  </span>
+                </label>
+              </div>
+            </fieldset>
+          </AppCard>
+        )}
 
         {!isEdit && templates.length > 0 ? (
           <AppCard className="mb-4 p-4 sm:p-5">
@@ -539,6 +562,7 @@ export function TransactionFormPage() {
                 type="text"
                 inputMode="decimal"
                 dir="ltr"
+                autoFocus={fastMode}
                 placeholder={`0.${"0".repeat(
                   getCurrencyScale(selectedWallet?.currency ?? currency),
                 )}`}
@@ -610,98 +634,116 @@ export function TransactionFormPage() {
             </select>
           </div>
 
-          <div>
-            <label htmlFor="transaction-project" className="text-sm font-bold">
-              المشروع
-              <span className="mr-1 font-normal text-muted">(اختياري)</span>
-            </label>
-            <select
-              id="transaction-project"
-              disabled={!canAttachProject}
-              className={`mt-2 ${inputClassName}`}
-              {...register("projectId")}
+          {fastMode && !showMoreFields ? (
+            <button
+              type="button"
+              className="pressable flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-line bg-surface-subtle text-sm font-bold text-ink"
+              onClick={() => setShowMoreFields(true)}
             >
-              <option value="">بدون مشروع</option>
-              {projects
-                .filter((project) => project.status === "active")
-                .map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-            </select>
-            {!canAttachProject ? (
-              <p className="mt-2 text-xs leading-5 text-warning">
-                ربط المشاريع متاح فقط لمحافظ العملة الأساسية {currency} حتى
-                تبقى الأرباح ومستحقات العمال قابلة للمقارنة.
-              </p>
-            ) : null}
-          </div>
+              <ChevronDown aria-hidden="true" size={17} />
+              المزيد (مشروع، عميل، فئة، ملاحظة)
+            </button>
+          ) : null}
 
-          <div>
-            <label htmlFor="transaction-client" className="text-sm font-bold">
-              العميل
-              <span className="mr-1 font-normal text-muted">(اختياري)</span>
-            </label>
-            <select
-              id="transaction-client"
-              className={`mt-2 ${inputClassName}`}
-              {...register("businessClientId")}
-            >
-              <option value="">بدون عميل</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                  {client.phone ? ` • ${client.phone}` : ""}
-                </option>
-              ))}
-            </select>
-            {workspaceId && clientsQuery.isLoading ? (
-              <p className="mt-2 text-xs text-muted">جارٍ تحميل العملاء…</p>
-            ) : clients.length === 0 && workspaceId ? (
-              <p className="mt-2 text-xs text-muted">
-                لا يوجد عملاء بعد — يمكنك إضافتهم من{" "}
-                <Link to="/clients" className="font-semibold text-primary">
-                  العملاء
-                </Link>
-              </p>
-            ) : null}
-          </div>
+          {showOptionalFields ? (
+            <>
+              <div>
+                <label htmlFor="transaction-project" className="text-sm font-bold">
+                  المشروع
+                  <span className="mr-1 font-normal text-muted">(اختياري)</span>
+                </label>
+                <select
+                  id="transaction-project"
+                  disabled={!canAttachProject}
+                  className={`mt-2 ${inputClassName}`}
+                  {...register("projectId")}
+                >
+                  <option value="">بدون مشروع</option>
+                  {projects
+                    .filter((project) => project.status === "active")
+                    .map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                </select>
+                {!canAttachProject ? (
+                  <p className="mt-2 text-xs leading-5 text-warning">
+                    ربط المشاريع متاح فقط لمحافظ العملة الأساسية {currency} حتى
+                    تبقى الأرباح ومستحقات العمال قابلة للمقارنة.
+                  </p>
+                ) : null}
+              </div>
 
-          <div>
-            <label htmlFor="transaction-category" className="text-sm font-bold">
-              الفئة
-              <span className="mr-1 font-normal text-muted">(اختياري)</span>
-            </label>
-            <select
-              id="transaction-category"
-              className={`mt-2 ${inputClassName}`}
-              {...register("categoryId")}
-            >
-              <option value="">بدون فئة</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            {workspaceId && categoriesQuery.isLoading ? (
-              <p className="mt-2 text-xs text-muted">جارٍ تحميل الفئات…</p>
-            ) : null}
-          </div>
+              <div>
+                <label htmlFor="transaction-client" className="text-sm font-bold">
+                  العميل
+                  <span className="mr-1 font-normal text-muted">(اختياري)</span>
+                </label>
+                <select
+                  id="transaction-client"
+                  className={`mt-2 ${inputClassName}`}
+                  {...register("businessClientId")}
+                >
+                  <option value="">بدون عميل</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                      {client.phone ? ` • ${client.phone}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {workspaceId && clientsQuery.isLoading ? (
+                  <p className="mt-2 text-xs text-muted">جارٍ تحميل العملاء…</p>
+                ) : clients.length === 0 && workspaceId ? (
+                  <p className="mt-2 text-xs text-muted">
+                    لا يوجد عملاء بعد — يمكنك إضافتهم من{" "}
+                    <Link to="/clients" className="font-semibold text-primary">
+                      العملاء
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
 
-          <div>
-            <label htmlFor="transaction-note" className="text-sm font-bold">
-              ملاحظة
-              <span className="mr-1 font-normal text-muted">(اختياري)</span>
-            </label>
-            <textarea
-              id="transaction-note"
-              rows={3}
-              className={`mt-2 resize-none py-3 ${inputClassName}`}
-              {...register("note")}
-            />
-          </div>
+              <div>
+                <label
+                  htmlFor="transaction-category"
+                  className="text-sm font-bold"
+                >
+                  الفئة
+                  <span className="mr-1 font-normal text-muted">(اختياري)</span>
+                </label>
+                <select
+                  id="transaction-category"
+                  className={`mt-2 ${inputClassName}`}
+                  {...register("categoryId")}
+                >
+                  <option value="">بدون فئة</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                {workspaceId && categoriesQuery.isLoading ? (
+                  <p className="mt-2 text-xs text-muted">جارٍ تحميل الفئات…</p>
+                ) : null}
+              </div>
+
+              <div>
+                <label htmlFor="transaction-note" className="text-sm font-bold">
+                  ملاحظة
+                  <span className="mr-1 font-normal text-muted">(اختياري)</span>
+                </label>
+                <textarea
+                  id="transaction-note"
+                  rows={3}
+                  className={`mt-2 resize-none py-3 ${inputClassName}`}
+                  {...register("note")}
+                />
+              </div>
+            </>
+          ) : null}
         </AppCard>
 
         <button

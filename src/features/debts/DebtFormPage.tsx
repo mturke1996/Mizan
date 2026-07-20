@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowDownLeft, ArrowUpRight, Save } from "lucide-react";
 import { useRef } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -63,6 +63,7 @@ function FieldError({
 
 export function DebtFormPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     workspaceId,
     currency,
@@ -80,6 +81,10 @@ export function DebtFormPage() {
   const createDemoDebt = useDebtStore((state) => state.createDebt);
   const createDebt = useCreateDebtMutation();
   const submitIntentRef = useRef<SubmitIntent | null>(null);
+  const requestedDirection = searchParams.get("direction");
+  const initialDirection =
+    requestedDirection === "payable" ? "payable" : "receivable";
+  const requestedProject = searchParams.get("project")?.trim() ?? "";
   const {
     register,
     handleSubmit,
@@ -88,12 +93,12 @@ export function DebtFormPage() {
   } = useForm<DebtFormValues>({
     resolver: zodResolver(debtFormSchema),
     defaultValues: {
-      direction: "receivable",
+      direction: initialDirection,
       partyName: "",
       partyPhone: "",
       amount: "",
       dueOn: "",
-      projectId: "",
+      projectId: requestedProject,
       note: "",
     },
   });
@@ -219,7 +224,13 @@ export function DebtFormPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6" dir="rtl">
       <PageHeader
-        title="دين جديد"
+        title={
+          initialDirection === "payable" && requestedDirection === "payable"
+            ? "دين عليّ"
+            : requestedDirection === "receivable"
+              ? "مستحق لي"
+              : "دين جديد"
+        }
         subtitle="سجّل أصل الدين والطرف وتاريخ الاستحقاق."
         backTo="/debts"
       />

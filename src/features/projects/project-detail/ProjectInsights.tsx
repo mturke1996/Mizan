@@ -56,7 +56,11 @@ export function ProjectInsights({
         analytics.achievements.length > 0 ? "lg:grid-cols-2" : ""
       }`}
     >
-      <AppCard aria-labelledby="project-insights-title" className="p-4 sm:p-5">
+      <AppCard
+        aria-labelledby="project-insights-title"
+        className="rounded-[22px] p-4 sm:p-5"
+        elevated
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <Lightbulb aria-hidden="true" className="text-primary" size={18} />
@@ -74,7 +78,7 @@ export function ProjectInsights({
           <ul className="mt-4 space-y-2">
             {insights.map((insight) => (
               <li
-                className="rounded-md bg-surface-subtle px-3 py-2.5 text-sm leading-relaxed text-ink"
+                className="rounded-2xl bg-surface-subtle px-3 py-2.5 text-sm leading-relaxed text-ink"
                 key={insight}
               >
                 {insight}
@@ -87,7 +91,8 @@ export function ProjectInsights({
       {analytics.achievements.length > 0 ? (
         <AppCard
           aria-labelledby="project-achievements-title"
-          className="overflow-hidden"
+          className="overflow-hidden rounded-[22px]"
+          elevated
         >
           <div className="flex items-center gap-2 border-b border-line p-4 sm:px-5">
             <Trophy aria-hidden="true" className="text-success" size={18} />

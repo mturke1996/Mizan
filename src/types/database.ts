@@ -2459,6 +2459,17 @@ export type Database = {
         };
         Returns: string | null;
       };
+      post_treasury_movement: {
+        Args: {
+          p_workspace_id: string;
+          p_client_id: string;
+          p_wallet_id: string;
+          p_amount_minor: number;
+          p_direction: string;
+          p_note?: string | null;
+        };
+        Returns: string;
+      };
       replace_transaction: {
         Args: {
           p_workspace_id: string;

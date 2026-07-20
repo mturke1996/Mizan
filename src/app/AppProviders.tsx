@@ -14,6 +14,7 @@ import {
 } from "@/features/workspace/WorkspaceProvider";
 import { DeviceNotificationsBridge } from "@/features/notifications/DeviceNotificationsBridge";
 import { RecurringDuePoster } from "@/features/workspace/RecurringDuePoster";
+import { AndroidBackButton } from "@/shared/native/AndroidBackButton";
 import { ConfirmDialogProvider } from "@/shared/ui/confirm-dialog";
 
 const SEVEN_DAYS_MS = 1000 * 60 * 60 * 24 * 7;
@@ -103,6 +104,7 @@ export function AppProviders({
           {children}
           {!isTestHarness ? <RecurringDuePoster /> : null}
           {!isTestHarness ? <DeviceNotificationsBridge /> : null}
+          {!isTestHarness ? <AndroidBackButton /> : null}
           <Toaster
             position="top-center"
             dir="rtl"

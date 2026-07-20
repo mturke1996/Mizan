@@ -87,6 +87,18 @@ describe("getUserErrorMessage", () => {
     ).toBe("حدد مستلمًا صالحًا للإشعار");
   });
 
+  it("translates project cash overdraft transfer errors", () => {
+    expect(
+      getUserErrorMessage(
+        { message: "insufficient_project_cash" },
+        "تعذر التحويل",
+      ),
+    ).toBe("رصيد خزينة المشروع لا يكفي للتحويل إلى المحفظة");
+    expect(
+      getUserErrorMessage({ message: "project_cash_disabled" }, "تعذر التسجيل"),
+    ).toBe("خزينة المشروع معطّلة. فعّلها من إعدادات المشروع");
+  });
+
   it("translates supervisor onboarding and subscription control-plane errors", () => {
     expect(
       getUserErrorMessage({ message: "forbidden" }, "تعذر التنفيذ"),

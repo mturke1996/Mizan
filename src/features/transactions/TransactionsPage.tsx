@@ -17,7 +17,7 @@ import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import { TransactionList } from "./TransactionList";
 
-type TransactionFilter = "all" | FinanceTransaction["kind"];
+type TransactionFilter = "all" | "income" | "expense" | "transfer";
 
 const kindFilters: Array<{ value: TransactionFilter; label: string }> = [
   { value: "all", label: "الكل" },

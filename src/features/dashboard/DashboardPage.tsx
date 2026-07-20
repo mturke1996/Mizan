@@ -143,6 +143,22 @@ export function DashboardPage() {
     ],
   );
 
+  const workerProjectId = useMemo(() => {
+    const withWorkers = projects.filter(
+      (project) => project.status === "active" && project.modules.workers,
+    );
+    if (withWorkers.length === 0) return null;
+    return (
+      [...withWorkers].sort((a, b) => {
+        if (b.activeWorkers !== a.activeWorkers) {
+          return b.activeWorkers - a.activeWorkers;
+        }
+        if (b.outstandingLaborMinor === a.outstandingLaborMinor) return 0;
+        return b.outstandingLaborMinor > a.outstandingLaborMinor ? 1 : -1;
+      })[0]?.id ?? null
+    );
+  }, [projects]);
+
   const saveGoalMinor = (minor: bigint) => {
     void upsertGoal
       .mutateAsync({
@@ -156,11 +172,14 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="bg-canvas md:bg-transparent">
+    <div className="page-enter bg-canvas md:bg-transparent">
       <DashboardHeader now={now} />
 
-      <div className="px-4 pt-4 sm:px-6 sm:pt-5 md:px-6 lg:px-8 md:pt-6 lg:pt-7 xl:px-10">
-        <QuickActions variant="desktop" />
+      <div className="px-4 pt-3 pb-4 sm:px-6 sm:pt-5 md:px-6 lg:px-8 md:pt-6 lg:pt-7 xl:px-10">
+        <QuickActions
+          variant="desktop"
+          workerProjectId={workerProjectId}
+        />
 
         {isLoading || financeLoading || projectsLoading || debtsLoading ? (
           <div aria-busy="true" className="space-y-4" role="status">
@@ -207,9 +226,9 @@ export function DashboardPage() {
               netMinor={overview.netMinor}
             />
 
-            <EconomicPositionCard
-              position={economicPosition}
-              currency={currency}
+            <QuickActions
+              variant="mobile"
+              workerProjectId={workerProjectId}
             />
 
             <BudgetAlertsBanner />
@@ -221,8 +240,6 @@ export function DashboardPage() {
               onOpenChange={setGoalDialogOpen}
               onSave={saveGoalMinor}
             />
-
-            <QuickActions variant="mobile" />
 
             {workspaceId ? (
               <section className="mb-4 overflow-hidden rounded-[18px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:mb-5 sm:p-5">
@@ -257,14 +274,20 @@ export function DashboardPage() {
                     <div className="mb-2 flex items-center justify-between text-[11px] text-muted">
                       <span>
                         الدخل الحالي{" "}
-                        <bdi className="numeric font-semibold text-ink" dir="ltr">
+                        <bdi
+                          className="numeric font-semibold text-ink"
+                          dir="ltr"
+                        >
                           {formatMinorAmount(overview.incomeMinor, {
                             currency,
                             locale: "en-US",
                           })}
                         </bdi>
                       </span>
-                      <span className="numeric font-bold text-primary" dir="ltr">
+                      <span
+                        className="numeric font-bold text-primary"
+                        dir="ltr"
+                      >
                         {goalProgress}%
                       </span>
                     </div>
@@ -278,6 +301,11 @@ export function DashboardPage() {
                 ) : null}
               </section>
             ) : null}
+
+            <EconomicPositionCard
+              position={economicPosition}
+              currency={currency}
+            />
 
             <section
               aria-label="المؤشرات المالية الأساسية"

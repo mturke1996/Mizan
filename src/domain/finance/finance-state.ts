@@ -33,9 +33,34 @@ export interface TransferTransaction extends BaseTransaction {
   destinationWalletId: string;
 }
 
+/** Opening balance, treasury fund, or treasury withdraw (equity — not P&L). */
+export interface OpeningBalanceTransaction extends BaseTransaction {
+  kind: "opening_balance";
+  walletId: string;
+  /** in = تمويل/افتتاحي, out = سحب من الخزينة */
+  flow: "in" | "out";
+}
+
 export type FinanceTransaction =
   | WalletTransaction
-  | TransferTransaction;
+  | TransferTransaction
+  | OpeningBalanceTransaction;
+
+export type TreasuryDirection = "fund" | "withdraw";
+
+/** Signed effect on the primary wallet (transfer uses source perspective). */
+export function signedTransactionAmount(
+  transaction: FinanceTransaction,
+): bigint {
+  if (transaction.kind === "income") return transaction.amountMinor;
+  if (transaction.kind === "expense") return -transaction.amountMinor;
+  if (transaction.kind === "opening_balance") {
+    return transaction.flow === "in"
+      ? transaction.amountMinor
+      : -transaction.amountMinor;
+  }
+  return -transaction.amountMinor;
+}
 
 export interface FinanceState {
   wallets: Wallet[];
@@ -142,6 +167,61 @@ export function setWalletBalance(
   };
 }
 
+export function applyTreasuryMovement(
+  state: FinanceState,
+  input: {
+    id: string;
+    walletId: string;
+    amountMinor: bigint;
+    direction: TreasuryDirection;
+    occurredAt: string;
+    note?: string;
+  },
+): FinanceState {
+  if (input.amountMinor <= 0n) {
+    throw new Error("أدخل مبلغًا أكبر من صفر");
+  }
+
+  const wallet = getWallet(state, input.walletId);
+  const flow: OpeningBalanceTransaction["flow"] =
+    input.direction === "fund" ? "in" : "out";
+
+  if (flow === "out" && wallet.balanceMinor < input.amountMinor) {
+    throw new Error("الرصيد غير كافٍ لإتمام المعاملة");
+  }
+
+  const nextBalance =
+    flow === "in"
+      ? wallet.balanceMinor + input.amountMinor
+      : wallet.balanceMinor - input.amountMinor;
+
+  const title =
+    input.note?.trim() ||
+    (flow === "in"
+      ? `تمويل الخزينة — ${wallet.name}`
+      : `سحب من الخزينة — ${wallet.name}`);
+
+  const transaction: OpeningBalanceTransaction = {
+    id: input.id,
+    kind: "opening_balance",
+    walletId: wallet.id,
+    flow,
+    amountMinor: input.amountMinor,
+    currency: wallet.currency,
+    title,
+    occurredAt: input.occurredAt,
+  };
+
+  return {
+    wallets: state.wallets.map((candidate) =>
+      candidate.id === wallet.id
+        ? { ...candidate, balanceMinor: nextBalance }
+        : candidate,
+    ),
+    transactions: [transaction, ...state.transactions],
+  };
+}
+
 export function renameWallet(
   state: FinanceState,
   walletId: string,
@@ -230,11 +310,8 @@ export function deleteTransaction(
   }
 
   const wallet = getWallet(state, transaction.walletId);
-  const signedAmount =
-    transaction.kind === "income"
-      ? -transaction.amountMinor
-      : transaction.amountMinor;
-  const nextBalance = wallet.balanceMinor + signedAmount;
+  const reversalDelta = -signedTransactionAmount(transaction);
+  const nextBalance = wallet.balanceMinor + reversalDelta;
 
   if (nextBalance < 0n) {
     throw new Error("لا يمكن حذف المعاملة لأن الرصيد سيصبح سالبًا");
@@ -270,8 +347,8 @@ export function updateTransaction(
   if (!existing) {
     throw new Error("المعاملة غير موجودة");
   }
-  if (existing.kind === "transfer") {
-    throw new Error("تعديل التحويلات غير مدعوم من هذه الشاشة");
+  if (existing.kind === "transfer" || existing.kind === "opening_balance") {
+    throw new Error("تعديل هذه الحركة غير مدعوم من هذه الشاشة");
   }
 
   const without = deleteTransaction(state, transactionId);

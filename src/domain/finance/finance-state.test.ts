@@ -1,6 +1,7 @@
 import {
   addWallet,
   addWalletTransaction,
+  applyTreasuryMovement,
   transferBetweenWallets,
   type FinanceState,
 } from "./finance-state";
@@ -92,6 +93,37 @@ describe("addWallet", () => {
         balanceMinor: 0n,
       }),
     ).toThrow("المحفظة موجودة بالفعل");
+  });
+});
+
+describe("applyTreasuryMovement", () => {
+  it("funds a wallet without treating it as income", () => {
+    const next = applyTreasuryMovement(createState(), {
+      id: "treasury-1",
+      walletId: "cash",
+      amountMinor: 250_000n,
+      direction: "fund",
+      occurredAt: "2026-07-17T10:00:00.000Z",
+    });
+
+    expect(next.wallets[0]?.balanceMinor).toBe(1_250_000n);
+    expect(next.transactions[0]).toMatchObject({
+      kind: "opening_balance",
+      flow: "in",
+      amountMinor: 250_000n,
+    });
+  });
+
+  it("rejects a withdraw larger than the wallet balance", () => {
+    expect(() =>
+      applyTreasuryMovement(createState(), {
+        id: "treasury-2",
+        walletId: "cash",
+        amountMinor: 1_500_000n,
+        direction: "withdraw",
+        occurredAt: "2026-07-17T10:00:00.000Z",
+      }),
+    ).toThrow("الرصيد غير كافٍ لإتمام المعاملة");
   });
 });
 

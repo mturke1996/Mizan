@@ -20,6 +20,7 @@ import type {
   ProjectCashMode,
   ProjectSummary,
 } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 interface ProjectCashTabProps {
   currency: CurrencyCode;
@@ -68,12 +69,12 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
       await postEntry.mutateAsync({
         entryType,
         amountMinor: minor,
-        title: title.trim() || undefined,
+        title: title.trim() || (entryType === "expense" ? "مصروف" : "إيراد"),
       });
       setTitle("");
       setAmount("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر التسجيل");
+      setError(getUserErrorMessage(err, "تعذر التسجيل"));
     }
   };
 
@@ -89,7 +90,7 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
       });
       setTransferAmount("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر التحويل");
+      setError(getUserErrorMessage(err, "تعذر التحويل"));
     }
   };
 
@@ -143,12 +144,25 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted">رصيد الخزينة</p>
-            <p className="numeric mt-1 text-2xl font-black text-ink" dir="ltr">
+            <p
+              className={`numeric mt-1 text-2xl font-black ${
+                balance < 0n ? "text-danger" : "text-ink"
+              }`}
+              dir="ltr"
+            >
               {formatMinorAmount(balance, money)}
               <span className="ms-1 text-sm font-bold text-muted">{currency}</span>
             </p>
+            {balance < 0n ? (
+              <p className="mt-1.5 text-[11px] leading-5 text-danger">
+                عجز في الخزينة — سيغطيه الإيراد عند إضافته
+              </p>
+            ) : null}
           </div>
-          <Banknote className="text-primary" size={28} />
+          <Banknote
+            className={balance < 0n ? "text-danger" : "text-primary"}
+            size={28}
+          />
         </div>
         {!project.linkedWalletId ? (
           <button
@@ -214,6 +228,12 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
               required
               className={`numeric ${inputClass}`}
             />
+            {entryType === "expense" ? (
+              <p className="text-[11px] leading-5 text-muted">
+                يمكن تسجيل المصروف حتى لو الرصيد غير كافٍ؛ يصبح الرصيد سالبًا
+                ويغطيه الإيراد لاحقًا. التحويل إلى المحفظة يحتاج رصيدًا كافيًا.
+              </p>
+            ) : null}
             <button
               type="submit"
               disabled={postEntry.isPending}

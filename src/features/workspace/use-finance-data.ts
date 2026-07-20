@@ -80,6 +80,7 @@ import {
   postProjectCashEntryRpc,
   postTransactionRpc,
   postTransferRpc,
+  postTreasuryMovementRpc,
   postWageMovementRpc,
   recordDailyWorkRpc,
   replaceTransactionRpc,
@@ -1027,6 +1028,26 @@ export function useAdjustWalletBalanceMutation() {
       note?: string;
     }) =>
       adjustWalletBalanceRpc({
+        workspaceId: requireLiveWorkspace(workspaceId),
+        ...input,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function usePostTreasuryMovementMutation() {
+  const { workspaceId } = useWorkspace();
+  const invalidate = useInvalidateFinance();
+
+  return useMutation({
+    mutationFn: (input: {
+      walletId: string;
+      amountMinor: number;
+      direction: "fund" | "withdraw";
+      clientId: string;
+      note?: string;
+    }) =>
+      postTreasuryMovementRpc({
         workspaceId: requireLiveWorkspace(workspaceId),
         ...input,
       }),

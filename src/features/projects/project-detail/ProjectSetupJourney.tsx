@@ -41,9 +41,9 @@ export function ProjectSetupJourney({
     return (
       <AppCard
         aria-labelledby="project-setup-complete-title"
-        className="flex items-start gap-3 bg-success-soft p-4 sm:p-5"
+        className="flex items-start gap-3 rounded-[22px] border-success/20 bg-success-soft p-4 sm:p-5"
       >
-        <span className="grid size-10 shrink-0 place-items-center rounded-sm bg-surface text-success">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-surface text-success">
           <CheckCircle2 aria-hidden="true" size={20} />
         </span>
         <div>
@@ -65,7 +65,8 @@ export function ProjectSetupJourney({
   return (
     <AppCard
       aria-labelledby="project-setup-title"
-      className="overflow-hidden"
+      className="overflow-hidden rounded-[22px]"
+      elevated
     >
       <div className="grid gap-5 p-4 sm:p-5 md:grid-cols-[9rem_minmax(0,1fr)] md:items-center">
         <div className="flex justify-center">

@@ -309,17 +309,27 @@ export function WalletsPage() {
                             ? "دخل"
                             : tx.kind === "expense"
                               ? "مصروف"
-                              : "تحويل"}
+                              : tx.kind === "opening_balance"
+                                ? tx.flow === "in"
+                                  ? "تمويل خزينة"
+                                  : "سحب خزينة"
+                                : "تحويل"}
                         </p>
                       </div>
                       <p
                         className={[
                           "numeric shrink-0 text-sm font-black",
-                          tx.kind === "expense" ? "text-danger" : "text-success",
+                          tx.kind === "expense" ||
+                          (tx.kind === "opening_balance" && tx.flow === "out")
+                            ? "text-danger"
+                            : "text-success",
                         ].join(" ")}
                         dir="ltr"
                       >
-                        {tx.kind === "expense" ? "-" : "+"}
+                        {tx.kind === "expense" ||
+                        (tx.kind === "opening_balance" && tx.flow === "out")
+                          ? "-"
+                          : "+"}
                         {formatMinorAmount(tx.amountMinor, {
                           currency: tx.currency,
                           locale: "en-US",

@@ -3,6 +3,7 @@ import { useStore } from "zustand";
 import {
   addWallet as addWalletToState,
   addWalletTransaction,
+  applyTreasuryMovement as applyTreasuryMovementInState,
   archiveWallet as archiveWalletInState,
   deleteTransaction as deleteTransactionFromState,
   renameWallet as renameWalletInState,
@@ -12,6 +13,7 @@ import {
   type AddWalletTransactionInput,
   type FinanceState,
   type TransferBetweenWalletsInput,
+  type TreasuryDirection,
   type Wallet,
 } from "@/domain/finance/finance-state";
 
@@ -20,6 +22,14 @@ interface FinanceActions {
   addTransaction: (input: AddWalletTransactionInput) => void;
   transfer: (input: TransferBetweenWalletsInput) => void;
   setWalletBalance: (walletId: string, balanceMinor: bigint) => void;
+  applyTreasuryMovement: (input: {
+    id: string;
+    walletId: string;
+    amountMinor: bigint;
+    direction: TreasuryDirection;
+    occurredAt: string;
+    note?: string;
+  }) => void;
   renameWallet: (walletId: string, name: string) => void;
   archiveWallet: (walletId: string) => void;
   deleteTransaction: (transactionId: string) => void;
@@ -165,6 +175,16 @@ export function createFinanceStore(
           },
           walletId,
           balanceMinor,
+        ),
+      ),
+    applyTreasuryMovement: (input) =>
+      set((current) =>
+        applyTreasuryMovementInState(
+          {
+            wallets: current.wallets,
+            transactions: current.transactions,
+          },
+          input,
         ),
       ),
     renameWallet: (walletId, name) =>

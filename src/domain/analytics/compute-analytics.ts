@@ -338,7 +338,7 @@ export function computeAnalytics(input: {
   // proper category report and a base for budgets.
   const breakdownMap = new Map<string, { income: bigint; expense: bigint }>();
   for (const tx of periodTx) {
-    if (tx.kind === "transfer") continue;
+    if (tx.kind === "transfer" || tx.kind === "opening_balance") continue;
     const name =
       (tx.categoryId && input.categoryNames?.get(tx.categoryId)) ||
       (tx.projectId ? projectNames.get(tx.projectId) : null) ||
@@ -413,8 +413,11 @@ export function computeAnalytics(input: {
     )
     .slice(0, 5);
 
-  const dataPoints = periodTx.filter((transaction) => transaction.kind !== "transfer")
-    .length;
+  const dataPoints = periodTx.filter(
+    (transaction) =>
+      transaction.kind !== "transfer" &&
+      transaction.kind !== "opening_balance",
+  ).length;
   const activeMonths = bucketValues.filter(
     (bucket) => bucket.income > 0n || bucket.expense > 0n,
   ).length;

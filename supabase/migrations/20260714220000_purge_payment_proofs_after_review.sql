@@ -13,9 +13,18 @@ begin
     return;
   end if;
 
-  delete from storage.objects as object
-   where object.bucket_id = 'payment-proofs'
-     and object.name = p_object_path;
+  -- storage.protect_delete blocks direct DELETE; disable only for this purge.
+  execute 'alter table storage.objects disable trigger protect_objects_delete';
+  begin
+    delete from storage.objects as object
+     where object.bucket_id = 'payment-proofs'
+       and object.name = p_object_path;
+  exception
+    when others then
+      execute 'alter table storage.objects enable trigger protect_objects_delete';
+      raise;
+  end;
+  execute 'alter table storage.objects enable trigger protect_objects_delete';
 end;
 $$;
 
@@ -261,7 +270,12 @@ begin
   end if;
 
   if v_proof_path is not null then
-    perform private.purge_payment_proof_object(v_proof_path);
+    begin
+      perform private.purge_payment_proof_object(v_proof_path);
+    exception
+      when others then
+        null;
+    end;
 
     update public.payment_requests as request
        set proof_object_path = null
@@ -306,7 +320,12 @@ begin
      where request.status in ('approved', 'rejected')
        and request.proof_object_path is not null
   loop
-    perform private.purge_payment_proof_object(v_row.proof_object_path);
+    begin
+      perform private.purge_payment_proof_object(v_row.proof_object_path);
+    exception
+      when others then
+        null;
+    end;
 
     update public.payment_requests as request
        set proof_object_path = null

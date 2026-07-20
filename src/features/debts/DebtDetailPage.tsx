@@ -2,6 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarClock,
   CircleCheck,
+  MessageCircle,
   Pencil,
   ReceiptText,
   Save,
@@ -35,6 +36,10 @@ import type {
   DebtStatus,
 } from "@/features/workspace/workspace-types";
 import { getUserErrorMessage } from "@/lib/user-error";
+import {
+  buildDebtWhatsAppReminderText,
+  openWhatsApp,
+} from "@/lib/whatsapp";
 import { AppCard } from "@/shared/ui/AppCard";
 import { Badge, type BadgeTone } from "@/shared/ui/Badge";
 import { useConfirm } from "@/shared/ui/confirm-dialog";
@@ -430,6 +435,23 @@ export function DebtDetailPage() {
     }
   };
 
+  const handleWhatsAppRemind = () => {
+    if (!debt || debt.balanceMinor <= 0n) return;
+    const balanceLabel = formatMinorAmount(debt.balanceMinor, {
+      currency: debt.currencyCode,
+      locale: "en-US",
+    });
+    const text = buildDebtWhatsAppReminderText({
+      partyName: debt.partyName,
+      partyPhone: debt.partyPhone,
+      direction: debt.direction,
+      balanceLabel,
+      currencyCode: debt.currencyCode,
+      dueOnLabel: debt.dueOn ? formatDate(debt.dueOn) : null,
+    });
+    openWhatsApp(text, debt.partyPhone);
+  };
+
   const handleArchive = async () => {
     if (!debt || !debtId || metaBusy || archiveDebt.isPending) return;
     const ok = await confirm({
@@ -651,6 +673,19 @@ export function DebtDetailPage() {
         <p className="mb-5 rounded-xl bg-surface-subtle px-4 py-3 text-sm leading-6 text-muted">
           {debt.note}
         </p>
+      ) : null}
+
+      {!closed && debt.balanceMinor > 0n ? (
+        <button
+          type="button"
+          className="pressable mb-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-success-soft text-sm font-bold text-success"
+          onClick={handleWhatsAppRemind}
+        >
+          <MessageCircle aria-hidden="true" size={18} />
+          {debt.direction === "receivable"
+            ? "تذكير الطرف عبر واتساب"
+            : "تذكير عبر واتساب"}
+        </button>
       ) : null}
 
       {editingMeta ? (

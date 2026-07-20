@@ -54,6 +54,7 @@ const KIND_LABELS: Record<string, string> = {
   income: "دخل",
   expense: "مصروف",
   transfer: "تحويل",
+  opening_balance: "خزينة",
 };
 
 /** Rich register export with wallet, category, and signed amount columns. */
@@ -68,6 +69,7 @@ export function exportRegisterCsv(
     destinationWalletId?: string;
     categoryId?: string;
     projectId?: string;
+    flow?: "in" | "out";
   }>,
   names: {
     wallet: (id: string) => string;
@@ -92,10 +94,20 @@ export function exportRegisterCsv(
           ? row.amountMinor
           : row.kind === "expense"
             ? -row.amountMinor
-            : 0n;
+            : row.kind === "opening_balance"
+              ? row.flow === "out"
+                ? -row.amountMinor
+                : row.amountMinor
+              : 0n;
+      const kindLabel =
+        row.kind === "opening_balance"
+          ? row.flow === "out"
+            ? "سحب خزينة"
+            : "تمويل خزينة"
+          : (KIND_LABELS[row.kind] ?? row.kind);
       return [
         row.occurredAt,
-        KIND_LABELS[row.kind] ?? row.kind,
+        kindLabel,
         row.title,
         row.walletId ? names.wallet(row.walletId) : "",
         row.categoryId ? names.category(row.categoryId) : "",

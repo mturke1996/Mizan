@@ -203,6 +203,10 @@ export function WalletFormPage() {
             <label htmlFor="wallet-balance" className="text-sm font-bold">
               الرصيد الافتتاحي
             </label>
+            <p className="mt-1 text-xs text-muted">
+              المبلغ الموجود أصلًا عند بدء استخدام هذه المحفظة. لاحقًا استخدم
+              تمويل أو سحب الخزينة.
+            </p>
             <input
               id="wallet-balance"
               type="text"

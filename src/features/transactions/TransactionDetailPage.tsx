@@ -1,7 +1,16 @@
-import { ArrowDownLeft, ArrowUpRight, Paperclip, Pencil, Repeat2, Trash2 } from "lucide-react";
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Landmark,
+  Paperclip,
+  Pencil,
+  Repeat2,
+  Trash2,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { signedTransactionAmount } from "@/domain/finance/finance-state";
 import { formatMinorAmount } from "@/domain/money/money";
 import { useFinanceStore } from "@/features/finance/finance-store";
 import {
@@ -31,6 +40,11 @@ const typePresentation = {
     label: "تحويل",
     icon: Repeat2,
     tone: "bg-info-soft text-info",
+  },
+  opening_balance: {
+    label: "خزينة",
+    icon: Landmark,
+    tone: "bg-primary-soft text-primary",
   },
 } as const;
 
@@ -74,6 +88,12 @@ export function TransactionDetailPage() {
 
   const presentation = typePresentation[transaction.kind];
   const Icon = presentation.icon;
+  const kindLabel =
+    transaction.kind === "opening_balance"
+      ? transaction.flow === "in"
+        ? "تمويل خزينة"
+        : "سحب خزينة"
+      : presentation.label;
   const wallet = wallets.find(
     (item) => item.id === transaction.walletId,
   );
@@ -83,11 +103,9 @@ export function TransactionDetailPage() {
           (item) => item.id === transaction.destinationWalletId,
         )
       : undefined;
-  const signedAmount =
-    transaction.kind === "income"
-      ? transaction.amountMinor
-      : -transaction.amountMinor;
-  const canEdit = transaction.kind !== "transfer";
+  const signedAmount = signedTransactionAmount(transaction);
+  const canEdit =
+    transaction.kind === "income" || transaction.kind === "expense";
 
   const handleDelete = async () => {
     if (busy || reverseEvent.isPending) return;
@@ -123,7 +141,7 @@ export function TransactionDetailPage() {
     <div className="px-4 sm:px-6">
       <PageHeader
         title={transaction.title}
-        subtitle={presentation.label}
+        subtitle={kindLabel}
         backTo="/transactions"
       />
 
@@ -138,7 +156,7 @@ export function TransactionDetailPage() {
         </span>
         <p
           className={`numeric mt-5 text-3xl font-bold tracking-[-0.035em] ${
-            transaction.kind === "income" ? "text-success" : "text-ink"
+            signedAmount > 0n ? "text-success" : "text-ink"
           }`}
         >
           {signedAmount > 0n ? "+" : ""}
@@ -156,9 +174,7 @@ export function TransactionDetailPage() {
         <dl className="divide-y divide-line">
           <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
             <dt className="text-sm text-muted">النوع</dt>
-            <dd className="text-sm font-bold text-ink">
-              {presentation.label}
-            </dd>
+            <dd className="text-sm font-bold text-ink">{kindLabel}</dd>
           </div>
           <div className="flex min-h-14 items-center justify-between gap-4 px-4 py-3">
             <dt className="text-sm text-muted">

@@ -285,6 +285,26 @@ export function mapFinancialEvent(row: {
     };
   }
 
+  if (eventType === "opening_balance") {
+    if (row.destination_wallet_id) {
+      return {
+        ...base,
+        kind: "opening_balance",
+        walletId: row.destination_wallet_id,
+        flow: "in",
+      };
+    }
+    if (row.source_wallet_id) {
+      return {
+        ...base,
+        kind: "opening_balance",
+        walletId: row.source_wallet_id,
+        flow: "out",
+      };
+    }
+    return null;
+  }
+
   return null;
 }
 

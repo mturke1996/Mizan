@@ -50,7 +50,7 @@ export function BottomNavigation() {
     <nav
       dir="rtl"
       aria-label="التنقل الرئيسي"
-      className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-384 border-t border-line bg-surface/96 px-1.5 pt-1 pb-[max(6px,var(--safe-bottom))] [box-shadow:var(--shadow-nav)] backdrop-blur-xl md:hidden"
+      className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-384 border-t border-line bg-surface px-1.5 pt-1 [box-shadow:var(--shadow-nav)] md:hidden"
     >
       <ul className="grid grid-cols-5">
         {navigationItems.map((item) => {

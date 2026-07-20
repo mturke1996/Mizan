@@ -1,6 +1,7 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  Landmark,
   Repeat2,
   SearchX,
 } from "lucide-react";
@@ -9,6 +10,7 @@ import type {
   FinanceTransaction,
   Wallet,
 } from "@/domain/finance/finance-state";
+import { signedTransactionAmount } from "@/domain/finance/finance-state";
 import { formatMinorAmount } from "@/domain/money/money";
 import { AppCard } from "@/shared/ui/AppCard";
 
@@ -38,6 +40,11 @@ const transactionPresentation = {
     icon: Repeat2,
     tone: "bg-info-soft text-info",
     label: "تحويل",
+  },
+  opening_balance: {
+    icon: Landmark,
+    tone: "bg-primary-soft text-primary",
+    label: "خزينة",
   },
 } as const;
 
@@ -73,10 +80,21 @@ export function TransactionList({
         {transactions.map((transaction) => {
           const presentation = transactionPresentation[transaction.kind];
           const Icon = presentation.icon;
-          const signedAmount =
-            transaction.kind === "income"
-              ? transaction.amountMinor
-              : -transaction.amountMinor;
+          const signedAmount = signedTransactionAmount(transaction);
+          const kindLabel =
+            transaction.kind === "opening_balance"
+              ? transaction.flow === "in"
+                ? "تمويل خزينة"
+                : "سحب خزينة"
+              : presentation.label;
+          const amountTone =
+            signedAmount > 0n
+              ? "text-success"
+              : transaction.kind === "expense" ||
+                  (transaction.kind === "opening_balance" &&
+                    transaction.flow === "out")
+                ? "text-danger"
+                : "text-ink";
 
           return (
             <li key={transaction.id}>
@@ -94,7 +112,7 @@ export function TransactionList({
                     {transaction.title}
                   </span>
                   <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                    <span>{presentation.label}</span>
+                    <span>{kindLabel}</span>
                     <span aria-hidden="true">•</span>
                     <span>
                       {walletNames.get(transaction.walletId) ?? "محفظة"}
@@ -106,13 +124,7 @@ export function TransactionList({
                   </span>
                 </span>
                 <span className="shrink-0 text-left">
-                  <strong
-                    className={`numeric block text-sm ${
-                      transaction.kind === "income"
-                        ? "text-success"
-                        : "text-ink"
-                    }`}
-                  >
+                  <strong className={`numeric block text-sm ${amountTone}`}>
                     {signedAmount > 0n ? "+" : ""}
                     {formatMinorAmount(signedAmount, {
                       currency: transaction.currency,

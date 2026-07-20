@@ -38,6 +38,11 @@ const DATABASE_MESSAGES: Record<string, string> = {
     "تعارضت حالة العملية. حدّث الصفحة ثم أعد المحاولة",
   invalid_entry_type: "نوع حركة العامل غير مدعوم",
   insufficient_worker_balance: "رصيد العامل لا يكفي لهذه الحركة",
+  insufficient_project_cash:
+    "رصيد خزينة المشروع لا يكفي للتحويل إلى المحفظة",
+  project_cash_disabled: "خزينة المشروع معطّلة. فعّلها من إعدادات المشروع",
+  use_project_wallet: "هذا المشروع يستخدم المحفظة فقط وليس خزينة نقدية",
+  invalid_title: "اكتب وصفًا واضحًا للحركة",
   wallet_required: "اختر محفظة السحب",
   "authentication required": "انتهت جلسة الدخول. سجّل الدخول مجددًا",
   "active workspace writer role required":
@@ -65,6 +70,8 @@ const DATABASE_MESSAGES: Record<string, string> = {
     "يجب ألا يكون الرصيد الافتتاحي سالبًا",
   "target balance must be zero or positive":
     "يجب ألا يكون الرصيد المستهدف سالبًا",
+  "treasury direction must be fund or withdraw":
+    "اختر تمويل الخزينة أو السحب منها",
   "financial event not found in workspace": "المعاملة غير موجودة",
   "reversal events cannot be reversed": "لا يمكن حذف معاملة ملغاة",
   "financial event was already reversed": "تم حذف هذه المعاملة مسبقًا",

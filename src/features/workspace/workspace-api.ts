@@ -99,7 +99,7 @@ const DEBT_ENTRY_PAGE_SIZE = 500;
 export const TRANSACTION_PAGE_SIZE = 60;
 
 export interface TransactionFilters {
-  kind?: "income" | "expense" | "transfer";
+  kind?: "income" | "expense" | "transfer" | "opening_balance";
   walletId?: string;
   categoryId?: string;
   projectId?: string;
@@ -1168,6 +1168,27 @@ export async function adjustWalletBalanceRpc(input: {
   });
   if (error) throwArabic(error, "تعذر تعديل رصيد المحفظة");
   return (data as string | null) ?? null;
+}
+
+export async function postTreasuryMovementRpc(input: {
+  workspaceId: string;
+  walletId: string;
+  amountMinor: number;
+  direction: "fund" | "withdraw";
+  clientId: string;
+  note?: string;
+}): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("post_treasury_movement", {
+    p_workspace_id: input.workspaceId,
+    p_client_id: requireClientId(input.clientId),
+    p_wallet_id: input.walletId,
+    p_amount_minor: input.amountMinor,
+    p_direction: input.direction,
+    p_note: input.note ?? null,
+  });
+  if (error) throwArabic(error, "تعذر تسجيل حركة الخزينة");
+  return data as string;
 }
 
 export interface ProjectCreateRpcInput {
