@@ -54,7 +54,7 @@ describe("App", () => {
       navigationQueries.getByRole("link", { name: "المشاريع" }),
     ).toBeInTheDocument();
     expect(
-      navigationQueries.getByRole("link", { name: "أموالي" }),
+      navigationQueries.getByRole("link", { name: "المستحقات" }),
     ).toHaveAttribute("href", "/debts");
     expect(
       navigationQueries.getByRole("link", { name: "المحافظ" }),
@@ -68,7 +68,7 @@ describe("App", () => {
       await screen.findByRole("heading", { name: "دخلي" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("navigation", { name: "أقسام أموالي" }),
+      screen.getByRole("navigation", { name: "أقسام المستحقات" }),
     ).toBeInTheDocument();
   });
 
@@ -78,7 +78,7 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "الديون" }),
     ).toBeInTheDocument();
-    const moneyNav = screen.getByRole("navigation", { name: "أقسام أموالي" });
+    const moneyNav = screen.getByRole("navigation", { name: "أقسام المستحقات" });
     expect(moneyNav).toBeInTheDocument();
     expect(within(moneyNav).getByRole("link", { name: "فواتير" })).toHaveAttribute(
       "href",

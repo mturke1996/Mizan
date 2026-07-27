@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight } from "lucide-react";
-import { useRef, type FormEvent } from "react";
+import { useEffect, useRef, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { getCurrencyScale } from "@/domain/money/money";
+import { parseProjectType } from "@/features/projects/project-blueprints";
 import {
   ProjectAmountValidationError,
   PROJECT_FORM_DEFAULT_VALUES,
@@ -44,9 +45,17 @@ export function ProjectFormPage() {
   } = useWorkspace();
   const addProject = useProjectStore((state) => state.addProject);
   const createProject = useCreateProjectMutation();
+  const [searchParams] = useSearchParams();
   const wizard = useProjectWizard();
   const submitLockRef = useRef(false);
   const liveSubmitIntentRef = useRef<LiveProjectSubmitIntent | null>(null);
+
+  useEffect(() => {
+    const paramType = parseProjectType(searchParams.get("type"));
+    if (paramType && !wizard.selectedType) {
+      wizard.chooseBlueprint(paramType);
+    }
+  }, [searchParams, wizard]);
   const {
     clearErrors,
     control,

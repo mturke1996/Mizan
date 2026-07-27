@@ -38,6 +38,7 @@ import type {
   ProjectSummary,
   ProjectType,
 } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 import {
   getSectionTabId,
   getSectionTabPanelId,
@@ -106,7 +107,7 @@ function resolveActiveModuleOverride(
 }
 
 function queryErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+  return getUserErrorMessage(error, fallback);
 }
 
 export function ProjectDetailPage() {

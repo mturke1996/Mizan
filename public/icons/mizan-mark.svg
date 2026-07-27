@@ -1,6 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="49'1 EJ2'F">
-  <rect width="512" height="512" rx="116" fill="#4B52C7"/>
-  <path d="M256 130v238M164 182h184" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
-  <path d="M166 184l-50 112h100L166 184Zm180 0-50 112h100L346 184Z" fill="none" stroke="#fff" stroke-width="22" stroke-linejoin="round"/>
-  <path d="M188 382h136" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="شعار ميزان">
+  <defs>
+    <linearGradient id="bg" x1="18%" y1="0%" x2="82%" y2="100%">
+      <stop offset="0%" stop-color="#5a61d4"/>
+      <stop offset="55%" stop-color="#4b52c7"/>
+      <stop offset="100%" stop-color="#3a41a8"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f4f5ff"/>
+      <stop offset="100%" stop-color="#e8eaff"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0d56a"/>
+      <stop offset="100%" stop-color="#d4a82a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="98" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+
+  <!-- pillar -->
+  <path d="M256 128v214" fill="none" stroke="url(#beam)" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="256" cy="128" r="16" fill="url(#gold)"/>
+
+  <!-- beam -->
+  <path d="M138 196 L256 152 L374 196" fill="none" stroke="url(#beam)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- hangers -->
+  <path d="M138 196 L108 286 L168 286" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M374 196 L344 286 L404 286" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linejoin="round"/>
+
+  <!-- pans -->
+  <path d="M96 286 C96 322 180 322 180 286 Z" fill="#eef0ff"/>
+  <path d="M332 286 C332 322 416 322 416 286 Z" fill="#eef0ff"/>
+  <path d="M96 286h84M332 286h84" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- base -->
+  <path d="M196 360h120M168 392h176" fill="none" stroke="url(#gold)" stroke-width="14" stroke-linecap="round"/>
 </svg>

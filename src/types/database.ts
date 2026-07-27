@@ -2582,6 +2582,14 @@ export type Database = {
         Args: { p_workspace_id: string };
         Returns: number;
       };
+      dismiss_operational_notification: {
+        Args: { p_notification_id: string; p_snooze_hours?: number };
+        Returns: undefined;
+      };
+      dismiss_all_own_notifications: {
+        Args: { p_snooze_hours?: number };
+        Returns: number;
+      };
       upsert_workspace_goal: {
         Args: {
           p_workspace_id: string;

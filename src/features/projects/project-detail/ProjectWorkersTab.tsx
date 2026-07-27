@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { getUserErrorMessage } from "@/lib/user-error";
 import type { Wallet } from "@/domain/finance/finance-state";
 import {
   formatMajorInputAmount,
@@ -1096,7 +1097,7 @@ function LiveProjectWorkersTab({
       form.setPhone("");
       toast.success("تمت إضافة العامل");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل الإضافة");
+      toast.error(getUserErrorMessage(error, "فشل الإضافة"));
     } finally {
       form.setBusy(false);
     }
@@ -1130,7 +1131,7 @@ function LiveProjectWorkersTab({
       form.setEditingWorkerId("");
       toast.success("تم تحديث العامل");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل التحديث");
+      toast.error(getUserErrorMessage(error, "فشل التحديث"));
     } finally {
       form.setBusy(false);
     }
@@ -1159,9 +1160,7 @@ function LiveProjectWorkersTab({
       try {
         movementAmountMinor = parsePositiveAmount(form.movementAmount, scale);
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "أدخل مبلغًا صحيحًا",
-        );
+        toast.error(getUserErrorMessage(error, "أدخل مبلغًا صحيحًا"));
         return;
       }
     }
@@ -1215,7 +1214,7 @@ function LiveProjectWorkersTab({
       form.setMovementAmount("");
       form.setMovementNote("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل التسجيل");
+      toast.error(getUserErrorMessage(error, "فشل التسجيل"));
     } finally {
       form.setBusy(false);
     }
@@ -1259,7 +1258,7 @@ function LiveProjectWorkersTab({
     } catch (error) {
       toast.error(
         success > 0
-          ? `تم ${success} وفشل الباقي: ${error instanceof Error ? error.message : "خطأ"}`
+          ? `تم ${success} وفشل الباقي: ${getUserErrorMessage(error, "خطأ")}`
           : error instanceof Error
             ? error.message
             : "فشل التسجيل الجماعي",
@@ -1405,7 +1404,7 @@ function DemoProjectWorkersTab({
       form.setPhone("");
       toast.success("تمت إضافة العامل");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل الإضافة");
+      toast.error(getUserErrorMessage(error, "فشل الإضافة"));
     } finally {
       form.setBusy(false);
     }
@@ -1437,7 +1436,7 @@ function DemoProjectWorkersTab({
       form.setEditingWorkerId("");
       toast.success("تم تحديث العامل");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل التحديث");
+      toast.error(getUserErrorMessage(error, "فشل التحديث"));
     } finally {
       form.setBusy(false);
     }
@@ -1466,9 +1465,7 @@ function DemoProjectWorkersTab({
       try {
         movementAmountMinor = parsePositiveAmount(form.movementAmount, scale);
       } catch (error) {
-        toast.error(
-          error instanceof Error ? error.message : "أدخل مبلغًا صحيحًا",
-        );
+        toast.error(getUserErrorMessage(error, "أدخل مبلغًا صحيحًا"));
         return;
       }
     }
@@ -1526,7 +1523,7 @@ function DemoProjectWorkersTab({
       form.setMovementAmount("");
       form.setMovementNote("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل التسجيل");
+      toast.error(getUserErrorMessage(error, "فشل التسجيل"));
     } finally {
       form.setBusy(false);
     }
@@ -1568,7 +1565,7 @@ function DemoProjectWorkersTab({
       toast.success(`تم تسجيل حضور ${pending.length} عامل`);
       form.setWorkDate(today);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل التسجيل");
+      toast.error(getUserErrorMessage(error, "فشل التسجيل"));
     } finally {
       form.setBusy(false);
     }

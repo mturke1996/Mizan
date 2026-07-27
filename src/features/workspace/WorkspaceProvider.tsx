@@ -10,6 +10,7 @@ import {
   cacheOfflineMembership,
   readOfflineMembership,
 } from "@/lib/offline-bootstrap";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { fetchUserWorkspace } from "./workspace-api";
 import type { WorkspaceMembership } from "./workspace-types";
 import {
@@ -69,9 +70,7 @@ export function WorkspaceProvider({
         setOfflineCached(true);
       } else {
         setMembership(null);
-        setError(
-          err instanceof Error ? err.message : "تعذر تحميل مساحة العمل",
-        );
+        setError(getUserErrorMessage(err, "تعذر تحميل مساحة العمل"));
         setOfflineCached(false);
       }
     } finally {

@@ -81,7 +81,7 @@ const settingsLinks: MoreLink[] = [
 const moneyLinks: MoreLink[] = [
   {
     to: "/wallets",
-    label: "أموالي",
+    label: "المحافظ",
     description: "الأرصدة والتحويلات",
     icon: WalletCards,
   },
@@ -164,17 +164,24 @@ export function MoreNavSheet({ open, onOpenChange }: MoreNavSheetProps) {
           className="fixed inset-x-0 bottom-0 z-50 max-h-[85dvh] overflow-y-auto rounded-t-3xl border border-line bg-surface p-5 shadow-[0_-12px_40px_rgb(27_30_60/16%)] outline-none sm:inset-x-auto sm:start-1/2 sm:bottom-[12%] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:rounded-3xl"
         >
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-line-strong sm:hidden" />
-          <div className="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <Dialog.Title className="text-base font-bold text-ink">
-                المزيد
-              </Dialog.Title>
-              <Dialog.Description
-                className="mt-1 text-sm text-muted"
-                id="more-nav-description"
-              >
-                اختصارات للتحليلات والعملاء والإعدادات
-              </Dialog.Description>
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-line/60 pb-3">
+            <div className="flex items-center gap-3">
+              <img
+                src="/icons/mizan-mark.svg"
+                alt="ميزان"
+                className="size-10 rounded-xl shadow-md"
+              />
+              <div>
+                <Dialog.Title className="text-base font-bold text-ink">
+                  تطبيق ميزان التنفيذي
+                </Dialog.Title>
+                <Dialog.Description
+                  className="mt-0.5 text-xs text-muted"
+                  id="more-nav-description"
+                >
+                  اختصارات للتحليلات والعملاء والإعدادات
+                </Dialog.Description>
+              </div>
             </div>
             <Dialog.Close asChild>
               <button
@@ -193,7 +200,7 @@ export function MoreNavSheet({ open, onOpenChange }: MoreNavSheetProps) {
               items={primaryLinks}
               onNavigate={close}
             />
-            <LinkGroup title="أموالي" items={moneyLinks} onNavigate={close} />
+            <LinkGroup title="المحافظ والمال" items={moneyLinks} onNavigate={close} />
             <LinkGroup
               title="الإعداد والتنظيم"
               items={settingsLinks}

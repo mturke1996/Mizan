@@ -51,7 +51,7 @@ export function GoalEditorDialog({
         <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/40" />
         <Dialog.Content
           aria-labelledby={titleId}
-          className="fixed inset-x-4 top-[15%] z-50 mx-auto w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_20px_60px_rgb(27_30_60/18%)] sm:inset-x-auto sm:start-1/2 sm:-translate-x-1/2"
+          className="fixed inset-x-4 top-1/2 z-50 mx-auto w-full max-w-sm -translate-y-1/2 rounded-2xl border border-line bg-surface p-5 shadow-[0_20px_60px_rgb(27_30_60/18%)] sm:inset-x-auto sm:start-1/2 sm:-translate-x-1/2"
         >
           <Dialog.Title className="text-base font-bold text-ink" id={titleId}>
             هدف الدخل الشهري

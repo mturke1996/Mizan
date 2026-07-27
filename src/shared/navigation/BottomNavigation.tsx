@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
+import { hapticSelection } from "@/lib/capacitor-native";
 
 interface NavigationItem {
   label: string;
@@ -20,7 +21,7 @@ const navigationItems: NavigationItem[] = [
   { label: "الرئيسية", to: "/", icon: House, end: true },
   { label: "المعاملات", to: "/transactions", icon: ReceiptText },
   {
-    label: "أموالي",
+    label: "المستحقات",
     to: "/debts",
     icon: Scale,
     matchPrefixes: ["/income", "/debts", "/invoices"],
@@ -50,9 +51,9 @@ export function BottomNavigation() {
     <nav
       dir="rtl"
       aria-label="التنقل الرئيسي"
-      className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-384 border-t border-line bg-surface px-1.5 pt-1 [box-shadow:var(--shadow-nav)] md:hidden"
+      className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-384 border-t border-line bg-surface/95 backdrop-blur-md px-1 pt-1.5 [box-shadow:var(--shadow-nav)] md:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-5 items-center">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -61,11 +62,14 @@ export function BottomNavigation() {
                 to={item.to}
                 end={item.end}
                 aria-label={item.label}
+                onClick={() => {
+                  void hapticSelection();
+                }}
                 className={({ isActive }) => {
                   const active = isItemActive(pathname, item, isActive);
                   return [
-                    "pressable flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10px] font-bold transition-colors",
-                    active ? "text-primary" : "text-muted",
+                    "pressable relative flex min-h-13 flex-col items-center justify-center gap-1 rounded-xl px-0.5 text-[11px] font-semibold transition-colors duration-200",
+                    active ? "text-primary font-bold" : "text-muted hover:text-ink",
                   ].join(" ");
                 }}
               >
@@ -75,17 +79,19 @@ export function BottomNavigation() {
                     <>
                       <span
                         className={[
-                          "grid size-8 place-items-center rounded-lg transition-[background-color,transform] duration-200",
-                          active ? "bg-primary-soft scale-105" : "bg-transparent",
+                          "relative grid h-8 w-12 place-items-center rounded-full transition-all duration-200",
+                          active
+                            ? "bg-primary-soft text-primary shadow-xs scale-102"
+                            : "bg-transparent text-muted",
                         ].join(" ")}
                       >
                         <Icon
                           aria-hidden="true"
-                          size={18}
-                          strokeWidth={active ? 2.15 : 1.75}
+                          size={19}
+                          strokeWidth={active ? 2.2 : 1.7}
                         />
                       </span>
-                      <span className="leading-none">{item.label}</span>
+                      <span className="leading-tight">{item.label}</span>
                     </>
                   );
                 }}

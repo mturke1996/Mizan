@@ -480,9 +480,7 @@ function DemoProjectCapitalTab({
       setNote("");
       toast.success("تم تسجيل حركة رأس المال");
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "تعذر تسجيل حركة رأس المال",
-      );
+      toast.error(getUserErrorMessage(error, "تعذر تسجيل حركة رأس المال"));
     } finally {
       setBusy(false);
     }

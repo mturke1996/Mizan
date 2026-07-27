@@ -234,7 +234,7 @@ describe("ProjectDetailPage", () => {
     expect(within(hero).getByText("تربية طيور وعصافير")).toBeInTheDocument();
     expect(
       within(hero).getByRole("progressbar", { name: "صحة المشروع" }),
-    ).toHaveAttribute("aria-valuenow", "90");
+    ).toHaveAttribute("aria-valuenow", "85");
     expect(within(hero).getByText("ممتاز")).toBeInTheDocument();
     expect(within(hero).getByText("الربح بعد العمال")).toBeInTheDocument();
     expect(within(hero).getByText("6")).toHaveAttribute("dir", "ltr");

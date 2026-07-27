@@ -18,7 +18,7 @@ describe("BottomNavigation", () => {
       "href",
       "/projects",
     );
-    expect(screen.getByRole("link", { name: "أموالي" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "المستحقات" })).toHaveAttribute(
       "href",
       "/debts",
     );

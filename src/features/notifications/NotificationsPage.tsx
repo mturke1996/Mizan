@@ -14,8 +14,13 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/use-auth";
 import { EmptyBlock, LoadingBlock } from "@/features/supervisor/SupervisorUi";
+import { markNotificationAsDismissed } from "@/lib/local-notifications";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getUserErrorMessage } from "@/lib/user-error";
+import {
+  dismissAllOwnNotificationsRpc,
+  dismissOperationalNotificationRpc,
+} from "@/features/workspace/workspace-api";
 import { AppCard } from "@/shared/ui/AppCard";
 import { useConfirm } from "@/shared/ui/confirm-dialog";
 import { ErrorState } from "@/shared/ui/ErrorState";
@@ -144,38 +149,63 @@ export function NotificationsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", notificationId)
-        .eq("user_id", user!.id);
-      if (error) throw error;
+      await dismissOperationalNotificationRpc(notificationId, 72);
+    },
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.list(user?.id),
+      });
+      const previous = queryClient.getQueryData<NotificationRow[]>(
+        notificationKeys.list(user?.id),
+      );
+      queryClient.setQueryData<NotificationRow[]>(
+        notificationKeys.list(user?.id),
+        (current) => (current ?? []).filter((row) => row.id !== notificationId),
+      );
+      return { previous };
+    },
+    onError: (error: Error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          notificationKeys.list(user?.id),
+          context.previous,
+        );
+      }
+      toast.error(getUserErrorMessage(error, "تعذر حذف الإشعار"));
     },
     onSuccess: async () => {
-      toast.success("تم حذف الإشعار");
+      toast.success("تم إخفاء الإشعار — لن يعود فورًا");
       await invalidateNotificationQueries(queryClient, user?.id);
-    },
-    onError: (error: Error) => {
-      toast.error(getUserErrorMessage(error, "تعذر حذف الإشعار"));
     },
   });
 
   const deleteAllMutation = useMutation({
-    mutationFn: async () => {
-      const supabase = getSupabaseClient();
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("user_id", user!.id);
-      if (error) throw error;
+    mutationFn: async () => dismissAllOwnNotificationsRpc(72),
+    onMutate: async () => {
+      await queryClient.cancelQueries({
+        queryKey: notificationKeys.list(user?.id),
+      });
+      const previous = queryClient.getQueryData<NotificationRow[]>(
+        notificationKeys.list(user?.id),
+      );
+      queryClient.setQueryData<NotificationRow[]>(
+        notificationKeys.list(user?.id),
+        [],
+      );
+      return { previous };
+    },
+    onError: (error: Error, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          notificationKeys.list(user?.id),
+          context.previous,
+        );
+      }
+      toast.error(getUserErrorMessage(error, "تعذر تفريغ الإشعارات"));
     },
     onSuccess: async () => {
-      toast.success("تم تفريغ صندوق الإشعارات");
+      toast.success("تم تفريغ الصندوق وإيقاف التنبيهات المكررة مؤقتًا");
       await invalidateNotificationQueries(queryClient, user?.id);
-    },
-    onError: (error: Error) => {
-      toast.error(getUserErrorMessage(error, "تعذر تفريغ الإشعارات"));
     },
   });
 
@@ -189,6 +219,7 @@ export function NotificationsPage() {
 
   async function handleMarkRead(id: string) {
     setPendingId(id);
+    markNotificationAsDismissed(id);
     try {
       await markReadMutation.mutateAsync(id);
     } finally {
@@ -197,16 +228,20 @@ export function NotificationsPage() {
   }
 
   async function handleDelete(notification: NotificationRow) {
+    const isOperational = notification.kind === "operational";
     const ok = await confirm({
-      title: "حذف الإشعار؟",
+      title: isOperational ? "إخفاء هذا التنبيه؟" : "حذف الإشعار؟",
       description: notification.title,
-      confirmLabel: "حذف",
+      confirmLabel: isOperational ? "إخفاء" : "حذف",
       cancelLabel: "إلغاء",
       tone: "danger",
-      warning: "سيُحذف نهائيًا من صندوقك ولن يمكن استرجاعه.",
+      warning: isOperational
+        ? "لن يعود هذا التنبيه التشغيلي لمدة 3 أيام حتى لو بقي السبب قائمًا."
+        : "سيُحذف من صندوقك.",
     });
     if (!ok) return;
     setPendingId(notification.id);
+    markNotificationAsDismissed(notification.id);
     try {
       await deleteMutation.mutateAsync(notification.id);
     } finally {
@@ -217,13 +252,14 @@ export function NotificationsPage() {
   async function handleClearAll() {
     const ok = await confirm({
       title: "تفريغ كل الإشعارات؟",
-      description: "سيتم حذف جميع الرسائل من صندوقك.",
+      description: "سيتم إخفاء التنبيهات التشغيلية مؤقتًا وتفريغ الصندوق.",
       confirmLabel: "تفريغ الكل",
       cancelLabel: "إلغاء",
       tone: "danger",
-      warning: "هذا الإجراء نهائي ولا يمكن التراجع عنه.",
+      warning: "التنبيهات التشغيلية لن تُعاد فورًا (إخفاء لـ 3 أيام).",
     });
     if (!ok) return;
+    notifications.forEach((item) => markNotificationAsDismissed(item.id));
     await deleteAllMutation.mutateAsync();
   }
 

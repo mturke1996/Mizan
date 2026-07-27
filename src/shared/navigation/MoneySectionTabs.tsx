@@ -38,7 +38,7 @@ export function MoneySectionTabs({
 
   return (
     <nav
-      aria-label="أقسام أموالي"
+      aria-label="أقسام المستحقات"
       className="money-section-tabs relative mb-3 grid grid-cols-3 gap-0.5 rounded-xl border border-line/70 bg-surface-subtle/70 p-0.5"
     >
       <span

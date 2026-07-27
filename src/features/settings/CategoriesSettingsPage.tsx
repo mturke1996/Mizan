@@ -19,6 +19,7 @@ import type {
   CategoryKind,
   CategoryRecord,
 } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { controlClassName } from "@/shared/ui/form-field";
@@ -58,7 +59,8 @@ function AddCategoryForm({ kind }: { kind: CategoryKind }) {
           setName("");
           toast.success("أُضيف التصنيف");
         },
-        onError: (error) => toast.error(error.message),
+        onError: (error) =>
+          toast.error(getUserErrorMessage(error, "تعذر إضافة التصنيف")),
       },
     );
   }
@@ -123,7 +125,7 @@ function CategoryRow({
           toast.success("تم تحديث التصنيف");
         },
         onError: (error) => {
-          toast.error(error.message);
+          toast.error(getUserErrorMessage(error, "تعذر تحديث التصنيف"));
           reset();
         },
       },
@@ -141,7 +143,8 @@ function CategoryRow({
       {
         onSuccess: () =>
           toast.success(category.isActive ? "أُرشف التصنيف" : "أُعيد تفعيل التصنيف"),
-        onError: (error) => toast.error(error.message),
+        onError: (error) =>
+          toast.error(getUserErrorMessage(error, "تعذر تحديث التصنيف")),
       },
     );
   }
@@ -330,7 +333,10 @@ export function CategoriesSettingsPage() {
           <span className="sr-only">جاري تحميل التصنيفات</span>
         </div>
       ) : error ? (
-        <ErrorState message={error.message} onRetry={() => void refetch()} />
+        <ErrorState
+          message={getUserErrorMessage(error, "تعذر تحميل التصنيفات")}
+          onRetry={() => void refetch()}
+        />
       ) : (
         <div className="space-y-6">
           <CategorySection kind="income" categories={income} />

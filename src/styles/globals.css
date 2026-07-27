@@ -155,8 +155,8 @@
   }
 
   .app-scroll-padding {
-    /* Bottom tab row + system gesture / 3-button nav inset */
-    padding-bottom: calc(3.5rem + var(--safe-bottom));
+    /* Tab row (~4.5rem with labels) + system gesture / 3-button nav inset */
+    padding-bottom: calc(4.75rem + var(--safe-bottom));
   }
 
   .app-bottom-nav {
@@ -171,17 +171,19 @@
 
   /*
    * Native (Android edge-to-edge): WebView draws under system bars.
-   * Always keep a real inset so content never sits under battery/clock
-   * or the system navigation gesture area — even if Cap injects 0.
+   * Floor insets high enough for status-bar / cutout even when Cap
+   * injects 0px for --safe-area-inset-*.
    */
   html.is-native-app {
     --safe-top: max(
-      var(--safe-area-inset-top, env(safe-area-inset-top, 0px)),
-      28px
+      48px,
+      env(safe-area-inset-top, 0px),
+      var(--safe-area-inset-top, 0px)
     );
     --safe-bottom: max(
-      var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)),
-      24px
+      24px,
+      env(safe-area-inset-bottom, 0px),
+      var(--safe-area-inset-bottom, 0px)
     );
   }
 
@@ -192,17 +194,23 @@
   }
 
   html.is-native-app .app-scroll-padding {
-    padding-bottom: calc(3.75rem + var(--safe-bottom));
+    padding-bottom: calc(5rem + var(--safe-bottom));
   }
 
   /*
-   * Dashboard only: pull header into the status-bar band so the canvas
-   * fills under wifi/battery, while controls sit clearly below it.
-   * Other screens keep the shared .app-shell-safe inset unchanged.
+   * Dashboard header (phone): extend solid background into the status-bar
+   * zone, while keeping controls below battery / Wi‑Fi / clock.
    */
-  html.is-native-app .dashboard-header-safe {
-    margin-top: calc(-1 * var(--safe-top));
-    padding-top: calc(var(--safe-top) + 0.5rem);
+  @media (max-width: 767px) {
+    html.is-native-app .dashboard-header-safe {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      margin-top: calc(-1 * var(--safe-top));
+      padding-top: calc(var(--safe-top) + 0.5rem);
+      padding-bottom: 0.625rem;
+      background-color: var(--mizan-canvas);
+    }
   }
 
   html.is-native-app .app-bottom-nav {

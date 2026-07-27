@@ -7,6 +7,7 @@ import { NotificationsPage } from "./NotificationsPage";
 
 const updateEq = vi.fn();
 const deleteEq = vi.fn();
+const rpcMock = vi.fn().mockResolvedValue({ error: null });
 const confirm = vi.fn();
 
 vi.mock("@/features/auth/use-auth", () => ({
@@ -62,6 +63,7 @@ vi.mock("@/lib/supabase", () => ({
         }),
       }),
     }),
+    rpc: rpcMock,
   }),
 }));
 
@@ -80,8 +82,10 @@ function renderPage() {
 
 describe("NotificationsPage", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     updateEq.mockResolvedValue({ error: null });
     deleteEq.mockResolvedValue({ error: null });
+    rpcMock.mockResolvedValue({ error: null });
     confirm.mockResolvedValue(true);
   });
 
@@ -106,7 +110,12 @@ describe("NotificationsPage", () => {
 
     await waitFor(() => {
       expect(confirm).toHaveBeenCalled();
-      expect(deleteEq).toHaveBeenCalled();
+      expect(rpcMock).toHaveBeenCalledWith(
+        "dismiss_operational_notification",
+        expect.objectContaining({
+          p_notification_id: "n1",
+        }),
+      );
     });
   });
 });

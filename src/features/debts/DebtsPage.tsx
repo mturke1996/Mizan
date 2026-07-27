@@ -2,12 +2,14 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   CalendarClock,
+  FileText,
   Plus,
   Scale,
   Search,
   Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { CustomerLedgerModal } from "./CustomerLedgerModal";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { computeDebtAnalytics } from "@/domain/debts/compute-debt-analytics";
@@ -307,19 +309,31 @@ export function DebtsPage() {
     }
   };
 
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+
   const header = (
     <PageHeader
       title="الديون"
-      subtitle="ما لك وما عليك — حتى الإغلاق الكامل"
+      subtitle="تتبّع ما لك وما عليك — سدّد بأمان وحافظ على توازنك."
       action={
-        <Link
-          to="/debts/new"
-          aria-label="إضافة دين"
-          className="pressable inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-on hover:bg-primary-hover"
-        >
-          <Plus aria-hidden="true" size={18} />
-          إضافة
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsLedgerOpen(true)}
+            className="pressable flex min-h-11 items-center gap-1.5 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-ink hover:bg-surface-subtle"
+          >
+            <FileText aria-hidden="true" size={16} />
+            كشف حساب
+          </button>
+          <Link
+            to="/debts/new"
+            aria-label="إضافة دين"
+            className="pressable flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-primary-on hover:bg-primary-hover"
+          >
+            <Plus aria-hidden="true" size={18} />
+            إضافة
+          </Link>
+        </div>
       }
     />
   );
@@ -526,6 +540,12 @@ export function DebtsPage() {
           </ul>
         )}
       </section>
+
+      <CustomerLedgerModal
+        isOpen={isLedgerOpen}
+        onClose={() => setIsLedgerOpen(false)}
+        debts={debts}
+      />
     </div>
   );
 }

@@ -15,7 +15,13 @@ export type ProjectType =
   | "maintenance"
   | "education"
   | "ecommerce"
-  | "personal";
+  | "personal"
+  | "auto"
+  | "salon"
+  | "pharmacy"
+  | "tech"
+  | "events"
+  | "realestate";
 export interface ProjectModules {
   readonly transactions: boolean;
   readonly goal: boolean;

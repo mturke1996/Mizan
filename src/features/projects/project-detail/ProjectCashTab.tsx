@@ -49,6 +49,17 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
   const [transferAmount, setTransferAmount] = useState("");
   const [transferWalletId, setTransferWalletId] = useState(wallets[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [showAdvancedModes, setShowAdvancedModes] = useState(
+    () =>
+      project.cashMode === "project_cash" || project.cashMode === "off",
+  );
+
+  const simpleModeOptions = CASH_MODE_OPTIONS.filter(
+    (opt) => opt.value === "hybrid" || opt.value === "project_wallet",
+  );
+  const advancedModeOptions = CASH_MODE_OPTIONS.filter(
+    (opt) => opt.value === "project_cash" || opt.value === "off",
+  );
 
   const balance = balanceQuery.data?.balanceMinor ?? 0n;
   const entries = entriesQuery.data ?? [];
@@ -120,9 +131,23 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
   return (
     <div className="space-y-5">
       <section className="rounded-[18px] border border-line bg-surface p-4">
-        <h3 className="mb-3 text-sm font-bold text-ink">وضع خزينة المشروع</h3>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-bold text-ink">كيف تتحرك فلوس المشروع؟</h3>
+            <p className="mt-0.5 text-[11px] leading-5 text-muted">
+              المختلط يكفي لمعظم الأعمال — خزينة داخل المشروع ومحفظة مرتبطة
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdvancedModes((open) => !open)}
+            className="shrink-0 text-[11px] font-bold text-primary hover:underline"
+          >
+            {showAdvancedModes ? "إخفاء المتقدمة" : "خيارات متقدمة"}
+          </button>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {CASH_MODE_OPTIONS.map((opt) => (
+          {simpleModeOptions.map((opt) => (
             <button
               key={opt.value}
               type="button"
@@ -137,6 +162,23 @@ export function ProjectCashTab({ currency, project, wallets }: ProjectCashTabPro
               {opt.label}
             </button>
           ))}
+          {showAdvancedModes
+            ? advancedModeOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCashMode.mutate(opt.value)}
+                  className={[
+                    "rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors",
+                    project.cashMode === opt.value
+                      ? "bg-primary text-primary-on"
+                      : "bg-surface-subtle text-muted hover:bg-primary-soft hover:text-primary",
+                  ].join(" ")}
+                >
+                  {opt.label}
+                </button>
+              ))
+            : null}
         </div>
       </section>
 

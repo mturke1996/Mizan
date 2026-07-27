@@ -340,7 +340,7 @@ function DemoProjectLivestockTab({ projectId }: { projectId: string }) {
       setHeadCount("0");
       toast.success("أُضيفت الدفعة محليًا");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر إضافة الدفعة");
+      toast.error(getUserErrorMessage(error, "تعذر إضافة الدفعة"));
     } finally {
       setBusy(false);
     }
@@ -359,7 +359,7 @@ function DemoProjectLivestockTab({ projectId }: { projectId: string }) {
       });
       toast.success("تم تسجيل الحدث محليًا");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر تسجيل الحدث");
+      toast.error(getUserErrorMessage(error, "تعذر تسجيل الحدث"));
     } finally {
       setBusy(false);
     }

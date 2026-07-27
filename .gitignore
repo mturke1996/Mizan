@@ -24,6 +24,7 @@ Thumbs.db
 .agents/
 .claude/
 .impeccable/
+.idea/
 .tmp*
 .tmp-*/
 promt.txt

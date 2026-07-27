@@ -5,6 +5,7 @@ import {
 } from "./use-finance-data";
 import { useFinanceStore } from "@/features/finance/finance-store";
 import { useProjectStore } from "@/features/projects/project-store";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { useWorkspace } from "./use-workspace";
 import type { ProjectSummary } from "./workspace-types";
 import type {
@@ -49,14 +50,10 @@ export function useFinanceView(): {
   }
 
   const walletsError = walletsQuery.isError
-    ? walletsQuery.error instanceof Error
-      ? walletsQuery.error.message
-      : "تعذر تحميل المحافظ"
+    ? getUserErrorMessage(walletsQuery.error, "تعذر تحميل المحافظ")
     : null;
   const transactionsError = transactionsQuery.isError
-    ? transactionsQuery.error instanceof Error
-      ? transactionsQuery.error.message
-      : "تعذر تحميل الحركات"
+    ? getUserErrorMessage(transactionsQuery.error, "تعذر تحميل الحركات")
     : null;
   return {
     wallets: walletsQuery.data ?? [],
@@ -94,7 +91,7 @@ export function useProjectsView(): {
 
   if (!workspaceId) {
     return {
-      projects: isDemo ? storeProjects : [],
+      projects: isDemo ? storeProjects.filter((p) => p.status !== "archived") : [],
       isLoading: workspaceLoading,
       isLive: false,
       error: isDemo ? null : workspaceError,
@@ -102,16 +99,15 @@ export function useProjectsView(): {
     };
   }
 
+  const activeProjects = (projectsQuery.data ?? []).filter((p) => p.status !== "archived");
+
   return {
-    projects: projectsQuery.data ?? [],
+    projects: activeProjects,
     isLoading: workspaceLoading || projectsQuery.isLoading,
     isLive: true,
-    error:
-      projectsQuery.error instanceof Error
-        ? projectsQuery.error.message
-        : projectsQuery.error
-          ? "تعذر تحميل المشاريع"
-          : null,
+    error: projectsQuery.isError
+      ? getUserErrorMessage(projectsQuery.error, "تعذر تحميل المشاريع")
+      : null,
     refresh: async () => {
       await projectsQuery.refetch();
     },

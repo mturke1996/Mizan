@@ -1,6 +1,8 @@
-import { Boxes, Pencil, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, Boxes, Camera, FileSpreadsheet, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { CameraBarcodeScanner } from "@/shared/ui/CameraBarcodeScanner";
+import { CsvImporterModal, type CsvImportRow } from "@/shared/ui/CsvImporterModal";
 import {
   formatMinorAmount,
   getCurrencyScale,
@@ -76,7 +78,14 @@ function InventoryList({
           key={item.id}
         >
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-ink">{item.name}</p>
+            <div className="flex items-center gap-2">
+              <p className="font-bold text-ink">{item.name}</p>
+              {item.quantity <= 3 ? (
+                <span className="inline-flex items-center gap-1 rounded-sm bg-warning-soft px-2 py-0.5 text-[10px] font-bold text-warning-ink">
+                  <AlertTriangle size={12} /> كمية منخفضة
+                </span>
+              ) : null}
+            </div>
             <p className="mt-1 text-xs text-muted">
               <bdi className="numeric" dir="ltr">
                 {item.quantity}
@@ -182,6 +191,7 @@ function InventoryForm({
   unitCost: string;
   unitLabel: string;
 }) {
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   return (
     <AppCard className="space-y-3 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
@@ -240,13 +250,29 @@ function InventoryForm({
         placeholder={`تكلفة الوحدة (اختياري)`}
         value={unitCost}
       />
-      <input
-        aria-label="الباركود"
-        className="numeric min-h-11 w-full rounded-md border border-control-border bg-surface px-3 text-left text-sm"
-        dir="ltr"
-        onChange={(event) => onBarcodeChange(event.target.value)}
-        placeholder="باركود (اختياري)"
-        value={barcode}
+      <div className="flex gap-2">
+        <input
+          aria-label="الباركود"
+          className="numeric min-h-11 flex-1 rounded-md border border-control-border bg-surface px-3 text-left text-sm"
+          dir="ltr"
+          onChange={(event) => onBarcodeChange(event.target.value)}
+          placeholder="باركود (اختياري)"
+          value={barcode}
+        />
+        <button
+          type="button"
+          onClick={() => setIsScannerOpen(true)}
+          className="pressable flex min-h-11 items-center gap-1.5 rounded-md border border-line bg-surface-subtle px-3 text-xs font-bold text-ink hover:bg-surface"
+        >
+          <Camera size={16} />
+          مسح
+        </button>
+      </div>
+
+      <CameraBarcodeScanner
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScan={(scannedCode) => onBarcodeChange(scannedCode)}
       />
       <select
         aria-label="موقع التخزين"
@@ -400,7 +426,7 @@ function LiveProjectInventoryTab({
     try {
       parsed = form.parseForm();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "بيانات غير صحيحة");
+      toast.error(getUserErrorMessage(error, "بيانات غير صحيحة"));
       return;
     }
 
@@ -467,18 +493,46 @@ function LiveProjectInventoryTab({
     );
   }
 
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+
+  const handleCsvImport = async (rows: CsvImportRow[]) => {
+    for (const r of rows) {
+      try {
+        await upsertItem.mutateAsync({
+          name: r.name,
+          quantity: r.quantity ?? 1,
+          unitLabel: r.unitLabel ?? "قطعة",
+          currencyCode: currency,
+          barcode: r.barcode || undefined,
+        });
+      } catch {
+        // ignore individual item errors
+      }
+    }
+  };
+
   return (
     <section aria-labelledby="project-inventory-title" className="space-y-5">
-      <div>
-        <h2
-          className="text-lg font-bold text-ink"
-          id="project-inventory-title"
+      <div className="flex items-center justify-between">
+        <div>
+          <h2
+            className="text-lg font-bold text-ink"
+            id="project-inventory-title"
+          >
+            المخزون
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            تابع الكميات والمواقع والباركود وخط الحركات.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCsvModalOpen(true)}
+          className="pressable flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-2 text-xs font-bold text-ink hover:bg-surface-subtle"
         >
-          المخزون
-        </h2>
-        <p className="mt-1 text-xs leading-5 text-muted">
-          تابع الكميات والمواقع والباركود وخط الحركات.
-        </p>
+          <FileSpreadsheet size={16} />
+          استيراد Excel / CSV
+        </button>
       </div>
 
       <AppCard className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
@@ -655,6 +709,12 @@ function LiveProjectInventoryTab({
           onEdit={form.startEdit}
         />
       </div>
+
+      <CsvImporterModal
+        isOpen={isCsvModalOpen}
+        onClose={() => setIsCsvModalOpen(false)}
+        onImport={(rows) => void handleCsvImport(rows)}
+      />
     </section>
   );
 }
@@ -684,7 +744,7 @@ function DemoProjectInventoryTab({
     try {
       parsed = form.parseForm();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "بيانات غير صحيحة");
+      toast.error(getUserErrorMessage(error, "بيانات غير صحيحة"));
       return;
     }
     setBusy(true);
@@ -703,7 +763,7 @@ function DemoProjectInventoryTab({
       form.resetForm();
       toast.success(form.editingId ? "تم تحديث الصنف" : "تم حفظ الصنف");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر حفظ الصنف");
+      toast.error(getUserErrorMessage(error, "تعذر حفظ الصنف"));
     } finally {
       setBusy(false);
     }

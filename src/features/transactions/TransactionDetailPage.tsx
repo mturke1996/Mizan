@@ -119,6 +119,8 @@ export function TransactionDetailPage() {
 
     setBusy(true);
     try {
+      toast.success("تم حذف المعاملة");
+      navigate("/transactions", { replace: true });
       if (isDemo) {
         deleteTransaction(transaction.id);
       } else {
@@ -128,8 +130,6 @@ export function TransactionDetailPage() {
           reason: "حذف المعاملة",
         });
       }
-      toast.success("تم حذف المعاملة");
-      navigate("/transactions", { replace: true });
     } catch (error) {
       toast.error(getUserErrorMessage(error, "تعذر حذف المعاملة"));
     } finally {

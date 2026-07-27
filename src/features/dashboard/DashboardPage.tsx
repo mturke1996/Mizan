@@ -3,50 +3,31 @@ import {
   ArrowUpRight,
   HandCoins,
   Landmark,
-  Target,
+  Plus,
+  FileText,
+  Scale,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { computeAnalytics } from "@/domain/analytics/compute-analytics";
-import { computeEconomicPosition } from "@/domain/analytics/compute-economic-position";
-import {
-  formatMinorAmount,
-  toSafeMinorNumber,
-} from "@/domain/money/money";
+import { formatMinorAmount } from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
 import { useDebtsView } from "@/features/debts/use-debts-view";
 import {
   useFinanceView,
   useProjectsView,
 } from "@/features/workspace/use-finance-view";
-import {
-  useUpsertWorkspaceGoalMutation,
-  useWorkspaceGoalQuery,
-  useInvoicesQuery,
-  useDebtWorkspaceSummaryQuery,
-  useIncomeSourceBalancesQuery,
-} from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
-import { toast } from "sonner";
 import { ErrorState } from "@/shared/ui/ErrorState";
-import { getUserErrorMessage } from "@/lib/user-error";
-import { BalanceOverview } from "./BalanceOverview";
-import { BudgetAlertsBanner } from "./BudgetAlertsBanner";
-import { EconomicPositionCard } from "./EconomicPositionCard";
-import { GoalEditorDialog } from "./GoalEditorDialog";
-import { CashFlowChart } from "./CashFlowChart";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 import { DashboardHeader } from "./DashboardHeader";
-import { DebtSummary } from "./DebtSummary";
-import { IncomeOutstandingSummary } from "./IncomeOutstandingSummary";
-import { FinancialHealthPanel } from "./FinancialHealthPanel";
-import { ProjectSpotlight } from "./ProjectSpotlight";
-import { QuickActions } from "./QuickActions";
+import { DashboardGettingStarted } from "./DashboardGettingStarted";
 import { RecentTransactions } from "./RecentTransactions";
-import { WalletSummary } from "./WalletSummary";
+import { DebtRecoveryTimeline } from "./DebtRecoveryTimeline";
+import { ProjectProfitabilityMatrix } from "./ProjectProfitabilityMatrix";
 
 export function DashboardPage() {
   const [now] = useState(() => new Date());
-  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const { profile } = useAuth();
   const { currency, isLoading, error, workspaceId, refresh } = useWorkspace();
   const {
@@ -71,6 +52,16 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!workspaceId) return;
+    const gateKey = `mizan.opsNotifyRefresh.${workspaceId}`;
+    const lastRaw =
+      typeof sessionStorage !== "undefined"
+        ? sessionStorage.getItem(gateKey)
+        : null;
+    const lastAt = lastRaw ? Number(lastRaw) : 0;
+    // At most once per 30 minutes per workspace in this session
+    if (Number.isFinite(lastAt) && Date.now() - lastAt < 30 * 60 * 1000) {
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
@@ -79,8 +70,13 @@ export function DashboardPage() {
         );
         if (cancelled) return;
         await refreshOperationalNotificationsRpc(workspaceId);
+        try {
+          sessionStorage.setItem(gateKey, String(Date.now()));
+        } catch {
+          // ignore quota / private mode
+        }
       } catch {
-        // Best-effort operational sync; dashboard should still render.
+        // Best-effort operational sync
       }
     })();
     return () => {
@@ -104,100 +100,74 @@ export function DashboardPage() {
     currency,
     timeZone: profile?.timezone ?? "Africa/Tripoli",
   });
-  const monthKey = useMemo(() => {
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    return `${year}-${month}`;
-  }, [now]);
-  const goalQuery = useWorkspaceGoalQuery(
-    workspaceId && !isLoading ? monthKey : undefined,
-  );
-  const invoicesQuery = useInvoicesQuery();
-  const debtSummaryQuery = useDebtWorkspaceSummaryQuery();
-  const incomeBalancesQuery = useIncomeSourceBalancesQuery();
-  const upsertGoal = useUpsertWorkspaceGoalMutation();
-  const goalMinor = goalQuery.data?.incomeGoalMinor ?? null;
-  const goalProgress =
-    goalMinor && goalMinor > 0n
-      ? Math.min(100, Number((overview.incomeMinor * 100n) / goalMinor))
-      : 0;
 
-  const economicPosition = useMemo(
-    () =>
-      computeEconomicPosition({
-        cashMinor: totalBalance,
-        invoices: invoicesQuery.data ?? [],
-        debtSummary: debtSummaryQuery.data ?? null,
-        incomeOutstandingMinor: (incomeBalancesQuery.data ?? []).reduce(
-          (sum, row) => sum + row.balanceMinor,
-          0n,
-        ),
-        currency,
-      }),
-    [
-      totalBalance,
-      invoicesQuery.data,
-      debtSummaryQuery.data,
-      incomeBalancesQuery.data,
-      currency,
-    ],
-  );
-
-  const workerProjectId = useMemo(() => {
-    const withWorkers = projects.filter(
-      (project) => project.status === "active" && project.modules.workers,
-    );
-    if (withWorkers.length === 0) return null;
-    return (
-      [...withWorkers].sort((a, b) => {
-        if (b.activeWorkers !== a.activeWorkers) {
-          return b.activeWorkers - a.activeWorkers;
-        }
-        if (b.outstandingLaborMinor === a.outstandingLaborMinor) return 0;
-        return b.outstandingLaborMinor > a.outstandingLaborMinor ? 1 : -1;
-      })[0]?.id ?? null
-    );
-  }, [projects]);
-
-  const saveGoalMinor = (minor: bigint) => {
-    void upsertGoal
-      .mutateAsync({
-        monthKey,
-        incomeGoalMinor: toSafeMinorNumber(minor),
-      })
-      .then(() => toast.success("تم حفظ الهدف الشهري"))
-      .catch((saveError) =>
-        toast.error(getUserErrorMessage(saveError, "تعذر حفظ الهدف")),
-      );
-  };
+  const hasWallets = activeWallets.length > 0;
+  const hasTransactions = transactions.length > 0;
+  const hasDebts = debts.length > 0;
+  const showGettingStarted = !hasWallets || !hasTransactions;
+  const showAdvancedPanels =
+    hasTransactions && (debts.length > 0 || projects.length > 0);
 
   return (
-    <div className="page-enter bg-canvas md:bg-transparent">
+    <div className="page-enter min-h-dvh bg-canvas">
       <DashboardHeader now={now} />
 
-      <div className="px-4 pt-3 pb-4 sm:px-6 sm:pt-5 md:px-6 lg:px-8 md:pt-6 lg:pt-7 xl:px-10">
-        <QuickActions
-          variant="desktop"
-          workerProjectId={workerProjectId}
-        />
+      <div className="mx-auto max-w-7xl space-y-5 px-4 pt-4 pb-8 sm:px-6 md:space-y-6 md:px-8 xl:px-10">
+        <div className="rounded-[20px] border border-line bg-surface p-3.5 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-bold tracking-tight text-ink">
+                ملخص أموالك
+              </h2>
+              <p className="mt-0.5 text-[11px] leading-5 text-muted sm:text-xs">
+                رصيدك ودخلك ومصروفك باختصار
+              </p>
+            </div>
+            <Link
+              to="/transactions/new?type=expense"
+              className="pressable flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-xs font-bold text-primary-on sm:min-h-11 sm:px-4"
+            >
+              <Plus size={16} strokeWidth={2.5} />
+              <span>مصروف</span>
+            </Link>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            <Link
+              to="/transactions/new?type=income"
+              className="pressable flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas px-2 text-[11px] font-bold text-ink sm:min-h-11 sm:flex-row sm:gap-1.5 sm:text-xs"
+            >
+              <ArrowDownLeft size={15} className="text-success" />
+              <span>دخل</span>
+            </Link>
+            <Link
+              to="/debts/new"
+              className="pressable flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas px-2 text-[11px] font-bold text-ink sm:min-h-11 sm:flex-row sm:gap-1.5 sm:text-xs"
+            >
+              <Scale size={15} className="text-warning" />
+              <span>مستحق</span>
+            </Link>
+            <Link
+              to="/invoices/new"
+              className="pressable flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas px-2 text-[11px] font-bold text-ink sm:min-h-11 sm:flex-row sm:gap-1.5 sm:text-xs"
+            >
+              <FileText size={15} className="text-primary" />
+              <span>فاتورة</span>
+            </Link>
+          </div>
+        </div>
 
         {isLoading || financeLoading || projectsLoading || debtsLoading ? (
           <div aria-busy="true" className="space-y-4" role="status">
-            <div className="h-52 animate-pulse rounded-[22px] bg-surface-subtle md:hidden" />
-            <div className="h-24 animate-pulse rounded-2xl bg-surface-subtle md:hidden" />
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {[0, 1, 2, 3].map((item) => (
                 <div
                   key={item}
-                  className="h-28 animate-pulse rounded-[16px] bg-surface-subtle sm:h-36"
+                  className="h-28 animate-pulse rounded-2xl bg-surface-subtle sm:h-36"
                 />
               ))}
             </div>
-            <div className="grid gap-5 md:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
-              <div className="h-72 animate-pulse rounded-[16px] bg-surface-subtle" />
-              <div className="hidden h-72 animate-pulse rounded-[16px] bg-surface-subtle md:block" />
-            </div>
-            <span className="sr-only">جاري تحميل الملخص المالي</span>
+            <div className="h-48 animate-pulse rounded-2xl bg-surface-subtle" />
+            <span className="sr-only">جاري تحميل البيانات المالية...</span>
           </div>
         ) : dashboardError ? (
           <ErrorState
@@ -216,109 +186,30 @@ export function DashboardPage() {
           />
         ) : (
           <>
-            <BalanceOverview
-              balanceMinor={totalBalance}
-              currency={currency}
-              walletCount={activeWallets.length}
-              monthlyTrend={overview.monthlyTrend}
-              incomeMinor={overview.incomeMinor}
-              expenseMinor={overview.expenseMinor}
-              netMinor={overview.netMinor}
-            />
-
-            <QuickActions
-              variant="mobile"
-              workerProjectId={workerProjectId}
-            />
-
-            <BudgetAlertsBanner />
-
-            <GoalEditorDialog
-              open={goalDialogOpen}
-              currency={currency}
-              currentGoalMinor={goalMinor}
-              onOpenChange={setGoalDialogOpen}
-              onSave={saveGoalMinor}
-            />
-
-            {workspaceId ? (
-              <section className="mb-4 overflow-hidden rounded-[18px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:mb-5 sm:p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="flex items-center gap-2 text-sm font-bold text-ink">
-                      <span className="grid size-8 place-items-center rounded-xl bg-primary-soft text-primary">
-                        <Target aria-hidden="true" size={15} />
-                      </span>
-                      هدف دخل الشهر
-                    </h2>
-                    <p className="mt-2 text-[11px] leading-5 text-muted">
-                      {goalMinor
-                        ? `التقدّم نحو ${formatMinorAmount(goalMinor, {
-                            currency,
-                            locale: "en-US",
-                          })} ${currency}`
-                        : "حدّد هدفًا شهريًا لمتابعة التقدّم من لوحة التحكم."}
-                    </p>
-                  </div>
-                  <button
-                    className="pressable min-h-10 shrink-0 rounded-xl border border-line bg-canvas px-3 text-xs font-bold text-ink disabled:opacity-60"
-                    disabled={upsertGoal.isPending}
-                    onClick={() => setGoalDialogOpen(true)}
-                    type="button"
-                  >
-                    {goalMinor ? "تعديل" : "تعيين"}
-                  </button>
-                </div>
-                {goalMinor ? (
-                  <div className="mt-4">
-                    <div className="mb-2 flex items-center justify-between text-[11px] text-muted">
-                      <span>
-                        الدخل الحالي{" "}
-                        <bdi
-                          className="numeric font-semibold text-ink"
-                          dir="ltr"
-                        >
-                          {formatMinorAmount(overview.incomeMinor, {
-                            currency,
-                            locale: "en-US",
-                          })}
-                        </bdi>
-                      </span>
-                      <span
-                        className="numeric font-bold text-primary"
-                        dir="ltr"
-                      >
-                        {goalProgress}%
-                      </span>
-                    </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-surface-subtle">
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)]"
-                        style={{ width: `${goalProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-              </section>
+            {showGettingStarted ? (
+              <DashboardGettingStarted
+                hasWallets={hasWallets}
+                hasTransactions={hasTransactions}
+                hasDebts={hasDebts}
+              />
             ) : null}
-
-            <EconomicPositionCard
-              position={economicPosition}
-              currency={currency}
-            />
 
             <section
               aria-label="المؤشرات المالية الأساسية"
-              className="mb-4 hidden grid-cols-2 gap-3 md:mb-5 md:grid md:grid-cols-4"
+              className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-4 md:gap-3.5"
             >
               <DashboardMetricCard
-                label="إجمالي الرصيد"
+                label="رصيدك الآن"
                 value={formatMinorAmount(totalBalance, {
                   currency,
                   locale: "en-US",
                 })}
                 suffix={currency}
-                helper={`${activeWallets.length} محافظ بالعملة الأساسية`}
+                helper={
+                  activeWallets.length === 0
+                    ? "أضف محفظة للبدء"
+                    : `${activeWallets.length} محافظ`
+                }
                 icon={Landmark}
                 tone="primary"
               />
@@ -352,37 +243,32 @@ export function DashboardPage() {
                   locale: "en-US",
                 })}
                 suffix={currency}
-                helper={`معدل الادخار ${overview.savingsRate.toFixed(1)}%`}
+                helper={`ادخار ${overview.savingsRate.toFixed(1)}%`}
                 icon={HandCoins}
                 tone={overview.netMinor >= 0n ? "success" : "warning"}
               />
             </section>
 
-            <section className="mb-5 grid gap-4 md:mb-6 md:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] md:gap-5">
-              <CashFlowChart
-                data={overview.monthlyTrend}
-                currency={currency}
-              />
-              <FinancialHealthPanel analytics={overview} />
-            </section>
-
-            <section className="grid items-start gap-4 pb-2 md:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)] md:gap-5">
+            <section className="pt-1" aria-label="أحدث الحركات">
               <RecentTransactions
                 transactions={transactions}
                 wallets={wallets}
               />
-              <aside className="space-y-4 md:space-y-0">
-                <IncomeOutstandingSummary currency={currency} />
-                <DebtSummary
-                  currency={currency}
-                  debts={debts}
-                  now={now}
-                  timeZone={profile?.timezone ?? "Africa/Tripoli"}
-                />
-                <ProjectSpotlight projects={projects} currency={currency} />
-                <WalletSummary wallets={wallets} />
-              </aside>
             </section>
+
+            {showAdvancedPanels ? (
+              <div className="grid gap-5 lg:grid-cols-2 lg:gap-6">
+                {debts.length > 0 ? (
+                  <DebtRecoveryTimeline debts={debts} currency={currency} />
+                ) : null}
+                {projects.length > 0 ? (
+                  <ProjectProfitabilityMatrix
+                    projects={projects}
+                    currency={currency}
+                  />
+                ) : null}
+              </div>
+            ) : null}
           </>
         )}
       </div>

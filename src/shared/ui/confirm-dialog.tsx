@@ -104,7 +104,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
           <Dialog.Content
             aria-describedby={pending?.description ? "confirm-description" : undefined}
             aria-labelledby="confirm-title"
-            className="fixed inset-x-4 top-[12%] z-50 mx-auto w-full max-w-sm rounded-2xl border border-line bg-surface p-5 shadow-[0_20px_60px_rgb(27_30_60/18%)] sm:inset-x-auto sm:start-1/2 sm:-translate-x-1/2"
+            className="fixed inset-x-4 top-1/2 z-50 mx-auto w-full max-w-sm -translate-y-1/2 rounded-2xl border border-line bg-surface p-5 shadow-[0_20px_60px_rgb(27_30_60/18%)] sm:inset-x-auto sm:start-1/2 sm:-translate-x-1/2"
           >
             <div className="flex items-start gap-3">
               <span

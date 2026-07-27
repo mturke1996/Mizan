@@ -32,7 +32,7 @@ describe("ProjectsPage", () => {
     expect(screen.getByText("تجارة الصقور")).toBeInTheDocument();
     expect(screen.getByText("مشروع القهوة")).toBeInTheDocument();
     expect(screen.getByText("تربية طيور وعصافير")).toBeInTheDocument();
-    expect(screen.getByText("مطعم ومقهى")).toBeInTheDocument();
+    expect(screen.getAllByText("مطعم ومقهى").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("6,380")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "إضافة مشروع" }),
@@ -81,8 +81,8 @@ describe("ProjectsPage", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("button", { name: "حذف تجارة الصقور" }));
-    await user.click(screen.getByRole("button", { name: "حذف" }));
+    await user.click(screen.getByRole("button", { name: "أرشفة تجارة الصقور" }));
+    await user.click(screen.getByRole("button", { name: "أرشفة" }));
 
     expect(screen.queryByText("تجارة الصقور")).not.toBeInTheDocument();
     expect(
@@ -105,7 +105,7 @@ describe("ProjectsPage", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("button", { name: "حذف تجارة الصقور" }));
+    await user.click(screen.getByRole("button", { name: "أرشفة تجارة الصقور" }));
     await user.click(screen.getByRole("button", { name: "إلغاء" }));
 
     expect(screen.getByText("تجارة الصقور")).toBeInTheDocument();

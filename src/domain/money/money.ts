@@ -9,10 +9,12 @@ export interface FormatMinorAmountOptions {
 
 export function getCurrencyScale(currency: string): number {
   try {
-    return new Intl.NumberFormat("en", {
-      style: "currency",
-      currency: currency.toUpperCase(),
-    }).resolvedOptions().maximumFractionDigits ?? 2;
+    return (
+      new Intl.NumberFormat("en", {
+        style: "currency",
+        currency: currency.toUpperCase(),
+      }).resolvedOptions().maximumFractionDigits ?? 2
+    );
   } catch {
     return 2;
   }

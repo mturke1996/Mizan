@@ -9,7 +9,7 @@ import {
 } from "@/lib/local-notifications";
 import { getSupabaseClient } from "@/lib/supabase";
 
-const POLL_MS = 45_000;
+const POLL_MS = 300_000;
 
 async function fetchRecentUnread(userId: string) {
   const supabase = getSupabaseClient();

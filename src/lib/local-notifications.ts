@@ -30,6 +30,13 @@ function writeShownIds(ids: Set<string>) {
   localStorage.setItem(SHOWN_KEY, JSON.stringify(list));
 }
 
+export function markNotificationAsDismissed(id: string): void {
+  if (!id) return;
+  const shown = readShownIds();
+  shown.add(id);
+  writeShownIds(shown);
+}
+
 export async function ensureNotificationPermission(): Promise<boolean> {
   if (!isNative()) {
     if (!("Notification" in window)) return false;

@@ -1,6 +1,6 @@
 import { clsx } from "clsx";
-import { Check } from "lucide-react";
-import type { Ref } from "react";
+import { Check, Search, Sparkles } from "lucide-react";
+import { useState, type Ref } from "react";
 import {
   PROJECT_BLUEPRINTS,
   PROJECT_MODULE_KEYS,
@@ -18,12 +18,48 @@ export interface ProjectTypeStepProps {
   onContinue: () => void;
 }
 
+type BlueprintFilterGroup =
+  | "all"
+  | "commerce"
+  | "services"
+  | "realestate"
+  | "farming"
+  | "general";
+
+const CATEGORY_GROUPS: { id: BlueprintFilterGroup; label: string; types: ProjectType[] }[] = [
+  { id: "all", label: "الكل", types: [] },
+  { id: "commerce", label: "تجارة وتجزئة", types: ["goods", "food", "ecommerce", "pharmacy", "auto"] },
+  { id: "services", label: "خدمات ومحترفين", types: ["services", "maintenance", "education", "tech", "events", "salon"] },
+  { id: "realestate", label: "عقارات ومقاولات", types: ["construction", "rental", "realestate", "delivery"] },
+  { id: "farming", label: "زراعة ومواشي", types: ["birds", "animals", "farming"] },
+  { id: "general", label: "عام وشخصي", types: ["general", "personal"] },
+];
+
 export function ProjectTypeStep({
   headingRef,
   selectedType,
   onSelect,
   onContinue,
 }: ProjectTypeStepProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeGroup, setActiveGroup] = useState<BlueprintFilterGroup>("all");
+
+  const filteredTypes = PROJECT_TYPES.filter((type) => {
+    const blueprint = PROJECT_BLUEPRINTS[type];
+    if (activeGroup !== "all") {
+      const group = CATEGORY_GROUPS.find((g) => g.id === activeGroup);
+      if (group && !group.types.includes(type)) return false;
+    }
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.trim().toLowerCase();
+    const matchName = blueprint.name.toLowerCase().includes(query);
+    const matchDesc = blueprint.description.toLowerCase().includes(query);
+    const matchCat = blueprint.suggestedCategories.some((c) =>
+      c.name.toLowerCase().includes(query),
+    );
+    return matchName || matchDesc || matchCat;
+  });
+
   return (
     <section aria-labelledby="blueprint-step-title">
       <AppCard className="p-4 sm:p-5">
@@ -32,19 +68,63 @@ export function ProjectTypeStep({
             ref={headingRef}
             id="blueprint-step-title"
             tabIndex={-1}
-            className="text-xl font-bold text-ink"
+            className="text-xl font-bold text-ink flex items-center gap-2"
           >
             ما نوع مشروعك؟
+            <Sparkles size={18} className="text-primary" />
           </h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            اختر الأقرب لطبيعة عملك. يمكنك تعديل الوحدات في الخطوة التالية.
+          <p className="mt-1 text-sm leading-6 text-muted">
+            اختر القالب الأقرب لطبيعة عملك للبدء مباشرة. يمكنك تخصيص الوحدات لاحقاً.
           </p>
+        </div>
+
+        {/* Search input & Category Tabs */}
+        <div className="mb-5 space-y-3">
+          <div className="relative">
+            <Search
+              size={18}
+              className="absolute top-1/2 right-3.5 -translate-y-1/2 text-muted"
+            />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ابحث عن قالب لمشروعك (مثل: ورشة، صيدلية، عقارات...)"
+              className="w-full rounded-xl border border-line bg-canvas py-2.5 pr-10 pl-4 text-xs font-semibold text-ink placeholder:text-muted focus:border-primary focus:outline-hidden"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 overflow-x-auto pb-1 subtle-scrollbar">
+            {CATEGORY_GROUPS.map((group) => {
+              const active = activeGroup === group.id;
+              return (
+                <button
+                  key={group.id}
+                  type="button"
+                  onClick={() => setActiveGroup(group.id)}
+                  className={[
+                    "pressable rounded-xl px-3 py-1.5 text-xs font-bold transition-all duration-150",
+                    active
+                      ? "bg-primary text-primary-on shadow-xs"
+                      : "bg-surface-subtle text-muted hover:text-ink",
+                  ].join(" ")}
+                >
+                  {group.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <fieldset>
           <legend className="sr-only">نوع المشروع</legend>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {PROJECT_TYPES.map((type) => {
+          {filteredTypes.length === 0 ? (
+            <div className="py-10 text-center text-sm font-semibold text-muted">
+              لا توجد قوالب تطابق بحثك. جرب البحث عن كلمة أخرى أو تصفح القوائم.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filteredTypes.map((type) => {
               const blueprint = PROJECT_BLUEPRINTS[type];
               const BlueprintIcon = blueprint.icon;
               const isSelected = selectedType === type;
@@ -118,6 +198,7 @@ export function ProjectTypeStep({
               );
             })}
           </div>
+          )}
         </fieldset>
       </AppCard>
 

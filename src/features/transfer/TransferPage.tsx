@@ -14,6 +14,7 @@ import { useFinanceStore } from "@/features/finance/finance-store";
 import { usePostTransferMutation } from "@/features/workspace/use-finance-data";
 import { useFinanceView } from "@/features/workspace/use-finance-view";
 import { useWorkspace } from "@/features/workspace/use-workspace";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { controlClassName } from "@/shared/ui/form-field";
@@ -197,10 +198,7 @@ export function TransferPage() {
       navigate("/wallets", { replace: true });
     } catch (error) {
       setError("root", {
-        message:
-          error instanceof Error
-            ? error.message
-            : "تعذر إتمام التحويل",
+        message: getUserErrorMessage(error, "تعذر إتمام التحويل"),
       });
     }
   };

@@ -53,3 +53,53 @@ export function buildDebtWhatsAppReminderText(
     `— ${who}`,
   ].join("\n");
 }
+
+export interface InvoiceWhatsAppInput {
+  invoiceNumber: string;
+  customerName: string;
+  totalFormatted: string;
+  currencyCode: string;
+  itemsCount: number;
+  issueDate?: string;
+  workspaceName?: string | null;
+}
+
+export function buildInvoiceWhatsAppText(input: InvoiceWhatsAppInput): string {
+  const who = input.workspaceName?.trim() || "ميزان";
+  return [
+    `السلام عليكم ${input.customerName}،`,
+    "",
+    `تفاصيل الفاتورة رقم: #${input.invoiceNumber}`,
+    `المبلغ الإجمالي: ${input.totalFormatted} ${input.currencyCode}`,
+    `عدد العناصر: ${input.itemsCount}`,
+    input.issueDate ? `تاريخ الإصدار: ${input.issueDate}` : "",
+    "",
+    `شكراً لتعاملكم معنا!`,
+    `— ${who}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export interface CustomerLedgerWhatsAppInput {
+  customerName: string;
+  totalDebits: string;
+  totalCredits: string;
+  netBalance: string;
+  currencyCode: string;
+  workspaceName?: string | null;
+}
+
+export function buildCustomerLedgerWhatsAppText(
+  input: CustomerLedgerWhatsAppInput,
+): string {
+  const who = input.workspaceName?.trim() || "ميزان";
+  return [
+    `كشف حساب: ${input.customerName}`,
+    `إجمالي المسحوبات/الخدمات: ${input.totalDebits} ${input.currencyCode}`,
+    `إجمالي المدفوعات: ${input.totalCredits} ${input.currencyCode}`,
+    `المتبقي المستحق: ${input.netBalance} ${input.currencyCode}`,
+    "",
+    `— صادرة من ${who}`,
+  ].join("\n");
+}

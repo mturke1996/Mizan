@@ -12,6 +12,7 @@ import {
 } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { fetchAllFilteredTransactions } from "@/features/workspace/workspace-api";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
@@ -114,11 +115,7 @@ export function TransactionsPage() {
       downloadCsv(`mizan-transactions-${today}.csv`, csv);
       toast.success(`تم تصدير ${rows.length} معاملة`);
     } catch (exportError) {
-      toast.error(
-        exportError instanceof Error
-          ? exportError.message
-          : "تعذر تصدير المعاملات",
-      );
+      toast.error(getUserErrorMessage(exportError, "تعذر تصدير المعاملات"));
     } finally {
       setIsExporting(false);
     }

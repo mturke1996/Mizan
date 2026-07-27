@@ -62,7 +62,7 @@ export function RecentTransactions({
     >
       <div className="mb-1 flex items-center justify-between border-b border-line px-4 py-3.5 sm:px-5 md:mb-0 md:py-4">
         <h2 id="transactions-title" className="text-sm font-bold text-ink sm:text-base">
-          أحدث المعاملات
+          أحدث الحركات
         </h2>
         <Link
           to="/transactions"

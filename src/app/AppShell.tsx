@@ -41,7 +41,7 @@ export function AppShell() {
         <main
           ref={mainRef}
           id="main-content"
-          className="app-scroll-padding mx-auto min-h-dvh w-full max-w-384 bg-surface md:bg-transparent"
+          className="app-scroll-padding mx-auto min-h-dvh w-full max-w-384 bg-canvas"
         >
           <Outlet />
         </main>

@@ -11,6 +11,7 @@ import {
 import { useFinanceStore } from "@/features/finance/finance-store";
 import { useCreateWalletMutation } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { PageHeader } from "@/shared/ui/PageHeader";
@@ -146,7 +147,7 @@ export function WalletFormPage() {
       }
       navigate("/wallets", { replace: true });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر الإنشاء");
+      toast.error(getUserErrorMessage(error, "تعذر إنشاء المحفظة"));
     }
   };
 

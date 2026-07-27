@@ -8,13 +8,14 @@ import type {
   DebtEntry,
   DebtSummary,
 } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { useDebtStore } from "./debt-store";
 
 const EMPTY_ENTRIES: DebtEntry[] = [];
 
 function queryMessage(error: unknown, fallback: string): string | null {
   if (!error) return null;
-  return error instanceof Error ? error.message : fallback;
+  return getUserErrorMessage(error, fallback);
 }
 
 export function useDebtsView(): {
@@ -46,8 +47,10 @@ export function useDebtsView(): {
     };
   }
 
+  const activeDebts = (query.data ?? []).filter((debt) => !debt.archivedAt);
+
   return {
-    debts: query.data ?? [],
+    debts: activeDebts,
     isLoading: workspaceLoading || query.isLoading,
     isLive: true,
     error: queryMessage(query.error, "تعذر تحميل الديون"),
@@ -84,7 +87,7 @@ export function useDebtDetailView(debtId: string | undefined): {
 
   if (!workspaceId) {
     return {
-      debt: isDemo ? demoDebt : null,
+      debt: isDemo && demoDebt && !demoDebt.archivedAt ? demoDebt : null,
       entries: isDemo ? demoEntries : [],
       isLoading: workspaceLoading,
       isLive: false,
@@ -93,8 +96,10 @@ export function useDebtDetailView(debtId: string | undefined): {
     };
   }
 
+  const liveDebt = detailQuery.data && !detailQuery.data.archivedAt ? detailQuery.data : null;
+
   return {
-    debt: detailQuery.data ?? null,
+    debt: liveDebt,
     entries: entriesQuery.data ?? [],
     isLoading:
       workspaceLoading || detailQuery.isLoading || entriesQuery.isLoading,

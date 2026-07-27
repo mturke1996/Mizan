@@ -28,6 +28,7 @@ import type {
   RecurringFrequency,
   RecurringRecord,
 } from "@/features/workspace/workspace-types";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { ErrorState } from "@/shared/ui/ErrorState";
 import { controlClassName } from "@/shared/ui/form-field";
@@ -204,7 +205,8 @@ export function RecurringSettingsPage() {
           toast.success(editingId ? "تم تحديث الحركة المتكررة" : "أُضيفت الحركة المتكررة");
           resetForm();
         },
-        onError: (error) => toast.error(error.message),
+        onError: (error) =>
+          toast.error(getUserErrorMessage(error, "تعذر حفظ الحركة المتكررة")),
       },
     );
   }
@@ -228,7 +230,8 @@ export function RecurringSettingsPage() {
       {
         onSuccess: () =>
           toast.success(record.isActive ? "تم إيقاف الحركة مؤقتًا" : "أُعيد تفعيل الحركة"),
-        onError: (error) => toast.error(error.message),
+        onError: (error) =>
+          toast.error(getUserErrorMessage(error, "تعذر حفظ الحركة المتكررة")),
       },
     );
   }
@@ -239,7 +242,8 @@ export function RecurringSettingsPage() {
         toast.success("حُذفت الحركة المتكررة");
         if (editingId === record.id) resetForm();
       },
-      onError: (error) => toast.error(error.message),
+      onError: (error) =>
+        toast.error(getUserErrorMessage(error, "تعذر حذف الحركة المتكررة")),
     });
   }
 

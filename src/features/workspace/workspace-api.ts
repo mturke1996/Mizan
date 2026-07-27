@@ -1496,6 +1496,31 @@ export async function refreshOperationalNotificationsRpc(
   return typeof data === "number" ? data : Number(data ?? 0);
 }
 
+/** Soft-dismiss operational key (72h) then hard-delete the inbox row. */
+export async function dismissOperationalNotificationRpc(
+  notificationId: string,
+  snoozeHours = 72,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc("dismiss_operational_notification", {
+    p_notification_id: notificationId,
+    p_snooze_hours: snoozeHours,
+  });
+  if (error) throwArabic(error, "تعذر حذف الإشعار");
+}
+
+/** Dismiss all operational keys then clear the user's inbox. */
+export async function dismissAllOwnNotificationsRpc(
+  snoozeHours = 72,
+): Promise<number> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("dismiss_all_own_notifications", {
+    p_snooze_hours: snoozeHours,
+  });
+  if (error) throwArabic(error, "تعذر تفريغ الإشعارات");
+  return typeof data === "number" ? data : Number(data ?? 0);
+}
+
 export async function createWorkspaceInviteRpc(input: {
   workspaceId: string;
   email: string;

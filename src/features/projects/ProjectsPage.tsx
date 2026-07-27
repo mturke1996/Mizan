@@ -4,7 +4,6 @@ import {
   Boxes,
   CircleDot,
   FolderKanban,
-  Landmark,
   Plus,
   Trash2,
   TrendingUp,
@@ -64,11 +63,8 @@ function ProjectListCard({
       : 0;
   const showWorkers =
     project.modules.workers && project.activeWorkers > 0;
-  const showGoal = project.modules.goal && project.goalMinor !== undefined;
   const showInventory =
     project.modules.inventory && project.inventoryItemCount > 0;
-  const showCapital =
-    project.modules.capital && project.capitalMinor > 0n;
 
   return (
     <div
@@ -147,58 +143,30 @@ function ProjectListCard({
                   {formatMinorAmount(project.expenseMinor, money(currency))}
                 </span>
               </span>
-              {showGoal ? (
-                <span>
-                  تقدم{" "}
-                  <strong className="numeric text-ink">{project.progress}%</strong>
-                </span>
-              ) : null}
               {showWorkers ? (
                 <span className="inline-flex items-center gap-1">
                   <Users aria-hidden="true" size={12} />
-                  {project.activeWorkers} ·{" "}
-                  <strong className="numeric text-ink" dir="ltr">
-                    {formatMinorAmount(
-                      project.outstandingLaborMinor,
-                      money(currency),
-                    )}
-                  </strong>
-                </span>
-              ) : null}
-              {showCapital ? (
-                <span className="inline-flex items-center gap-1">
-                  <Landmark aria-hidden="true" size={12} />
-                  <strong className="numeric text-ink" dir="ltr">
-                    {formatMinorAmount(project.capitalMinor, money(currency))}
-                  </strong>
+                  {project.activeWorkers} عمال
                 </span>
               ) : null}
               {showInventory ? (
                 <span className="inline-flex items-center gap-1">
                   <Boxes aria-hidden="true" size={12} />
-                  {project.inventoryItemCount}
+                  {project.inventoryItemCount} أصناف
                 </span>
               ) : null}
             </span>
-
-            {showGoal ? (
-              <progress
-                max={100}
-                value={project.progress}
-                aria-label={`تقدم ${project.name}`}
-                className="mt-3 h-1.5 w-full overflow-hidden rounded-full accent-primary"
-              />
-            ) : null}
           </span>
         </Link>
 
         <div className="flex items-center border-s border-line px-2 sm:px-3">
           <button
-            aria-label={`حذف ${project.name}`}
-            className="pressable grid size-11 shrink-0 place-items-center rounded-xl border border-line text-muted hover:border-danger/30 hover:bg-danger-soft hover:text-danger disabled:cursor-wait disabled:opacity-50"
+            aria-label={`أرشفة ${project.name}`}
+            className="pressable grid size-11 shrink-0 place-items-center rounded-xl border border-line text-muted hover:border-warning/35 hover:bg-warning-soft hover:text-warning disabled:cursor-wait disabled:opacity-50"
             disabled={busy}
             onClick={() => onDelete(project)}
             type="button"
+            title="أرشفة المشروع"
           >
             <Trash2 aria-hidden="true" size={16} />
           </button>
@@ -312,10 +280,11 @@ export function ProjectsPage() {
   const deleteProject = async (project: ProjectSummary) => {
     if (deleteLock.current || deletingId) return;
     const ok = await confirm({
-      title: `حذف مشروع «${project.name}»؟`,
-      description: "سيُزال من القائمة النشطة.",
-      tone: "danger",
-      confirmLabel: "حذف",
+      title: `أرشفة مشروع «${project.name}»؟`,
+      description:
+        "سيُخفى من القائمة النشطة. يمكنك استعادته لاحقًا من الإعدادات إن لزم.",
+      tone: "warning",
+      confirmLabel: "أرشفة",
     });
     if (!ok) return;
 
@@ -331,9 +300,9 @@ export function ProjectsPage() {
           modules: project.modules,
         });
       }
-      toast.success("تم حذف المشروع");
+      toast.success("تمت أرشفة المشروع");
     } catch (err) {
-      toast.error(getUserErrorMessage(err, "تعذر حذف المشروع"));
+      toast.error(getUserErrorMessage(err, "تعذر أرشفة المشروع"));
     } finally {
       deleteLock.current = false;
       setDeletingId(null);
@@ -431,6 +400,35 @@ export function ProjectsPage() {
           </div>
         </AppCard>
       ) : null}
+
+      <div className="mb-6">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-bold text-muted">إنشاء سريع بقوالب جاهزة</p>
+          <Link to="/projects/new" className="text-xs font-bold text-primary hover:underline">
+            عرض كل القوالب
+          </Link>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1 subtle-scrollbar">
+          {[
+            { type: "auto", name: "ورشة سيارات", emoji: "🚗" },
+            { type: "goods", name: "تجارة بضائع", emoji: "📦" },
+            { type: "food", name: "مطعم ومقهى", emoji: "☕" },
+            { type: "services", name: "خدمات حرة", emoji: "💼" },
+            { type: "tech", name: "تقنية وتطوير", emoji: "💻" },
+            { type: "salon", name: "صالون وتجميل", emoji: "✂️" },
+            { type: "realestate", name: "عقارات وتطوير", emoji: "🏢" },
+          ].map((preset) => (
+            <Link
+              key={preset.type}
+              to={`/projects/new?type=${preset.type}`}
+              className="pressable flex shrink-0 items-center gap-1.5 rounded-xl border border-line/80 bg-surface px-3 py-2 text-xs font-bold text-ink hover:border-primary hover:bg-primary-soft/30 shadow-2xs"
+            >
+              <span>{preset.emoji}</span>
+              <span>{preset.name}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
 
       <section aria-labelledby="active-projects-title">
         <div className="mb-3 flex items-end justify-between gap-3">

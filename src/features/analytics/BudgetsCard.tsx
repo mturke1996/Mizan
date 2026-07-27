@@ -12,6 +12,7 @@ import {
 } from "@/features/workspace/use-finance-data";
 import { useWorkspace } from "@/features/workspace/use-workspace";
 import { useAuth } from "@/features/auth/use-auth";
+import { getUserErrorMessage } from "@/lib/user-error";
 import { AppCard } from "@/shared/ui/AppCard";
 import { controlClassName } from "@/shared/ui/form-field";
 
@@ -80,7 +81,8 @@ export function BudgetsCard() {
           setAmount("");
           toast.success("تم تعيين الميزانية");
         },
-        onError: (error) => toast.error(error.message),
+        onError: (error) =>
+          toast.error(getUserErrorMessage(error, "تعذر تعيين الميزانية")),
       },
     );
   }
@@ -88,7 +90,8 @@ export function BudgetsCard() {
   function handleDelete(budgetId: string, name: string) {
     deleteBudget.mutate(budgetId, {
       onSuccess: () => toast.success(`حُذفت ميزانية ${name}`),
-      onError: (error) => toast.error(error.message),
+      onError: (error) =>
+        toast.error(getUserErrorMessage(error, "تعذر حذف الميزانية")),
     });
   }
 
