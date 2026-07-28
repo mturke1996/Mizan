@@ -75,71 +75,73 @@ export function TransactionList({
   );
 
   return (
-    <AppCard className="overflow-hidden">
-      <ul className="divide-y divide-line">
-        {transactions.map((transaction) => {
-          const presentation = transactionPresentation[transaction.kind];
-          const Icon = presentation.icon;
-          const signedAmount = signedTransactionAmount(transaction);
-          const kindLabel =
-            transaction.kind === "opening_balance"
-              ? transaction.flow === "in"
-                ? "تمويل خزينة"
-                : "سحب خزينة"
-              : presentation.label;
-          const amountTone =
-            signedAmount > 0n
-              ? "text-success"
-              : transaction.kind === "expense" ||
-                  (transaction.kind === "opening_balance" &&
-                    transaction.flow === "out")
-                ? "text-danger"
-                : "text-ink";
+    <div className="space-y-2.5">
+      {transactions.map((transaction) => {
+        const presentation = transactionPresentation[transaction.kind];
+        const Icon = presentation.icon;
+        const signedAmount = signedTransactionAmount(transaction);
+        const kindLabel =
+          transaction.kind === "opening_balance"
+            ? transaction.flow === "in"
+              ? "تمويل خزينة"
+              : "سحب خزينة"
+            : presentation.label;
+        const amountTone =
+          signedAmount > 0n
+            ? "text-success"
+            : transaction.kind === "expense" ||
+                (transaction.kind === "opening_balance" &&
+                  transaction.flow === "out")
+              ? "text-danger"
+              : "text-ink";
 
-          return (
-            <li key={transaction.id}>
-              <Link
-                to={`/transactions/${transaction.id}`}
-                className="pressable flex min-h-20 items-center gap-3 px-4 py-3 hover:bg-surface-subtle"
+        return (
+          <Link
+            key={transaction.id}
+            to={`/transactions/${transaction.id}`}
+            className="pressable group flex items-center justify-between gap-3.5 rounded-2xl border border-border/70 bg-surface p-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md dark:border-dark-surface-raised dark:bg-dark-surface"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div
+                className={`flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-inner ${presentation.tone}`}
               >
-                <span
-                  className={`flex size-11 shrink-0 items-center justify-center rounded-sm ${presentation.tone}`}
-                >
-                  <Icon aria-hidden="true" size={20} strokeWidth={1.8} />
+                <Icon aria-hidden="true" size={20} strokeWidth={2} />
+              </div>
+              <div className="min-w-0">
+                <span className="block truncate text-sm font-bold text-ink dark:text-dark-ink group-hover:text-primary">
+                  {transaction.title}
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold text-ink">
-                    {transaction.title}
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] font-medium text-muted dark:text-dark-muted">
+                  <span className="rounded-md bg-surface-subtle px-1.5 py-0.5 font-semibold text-ink dark:bg-dark-surface-raised dark:text-dark-ink">
+                    {kindLabel}
                   </span>
-                  <span className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                    <span>{kindLabel}</span>
-                    <span aria-hidden="true">•</span>
-                    <span>
-                      {walletNames.get(transaction.walletId) ?? "محفظة"}
-                    </span>
-                    <span aria-hidden="true">•</span>
-                    <time dateTime={transaction.occurredAt}>
-                      {dateFormatter.format(new Date(transaction.occurredAt))}
-                    </time>
+                  <span>•</span>
+                  <span>
+                    {walletNames.get(transaction.walletId) ?? "محفظة"}
                   </span>
-                </span>
-                <span className="shrink-0 text-left">
-                  <strong className={`numeric block text-sm ${amountTone}`}>
-                    {signedAmount > 0n ? "+" : ""}
-                    {formatMinorAmount(signedAmount, {
-                      currency: transaction.currency,
-                      locale: "en-US",
-                    })}
-                  </strong>
-                  <span className="text-[10px] font-semibold text-muted">
-                    {transaction.currency}
-                  </span>
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </AppCard>
+                  <span>•</span>
+                  <time dateTime={transaction.occurredAt}>
+                    {dateFormatter.format(new Date(transaction.occurredAt))}
+                  </time>
+                </div>
+              </div>
+            </div>
+
+            <div className="shrink-0 text-left" dir="ltr">
+              <strong className={`numeric block text-base font-extrabold tracking-tight ${amountTone}`}>
+                {signedAmount > 0n ? "+" : ""}
+                {formatMinorAmount(signedAmount, {
+                  currency: transaction.currency,
+                  locale: "en-US",
+                })}
+              </strong>
+              <span className="block text-[10px] font-bold text-muted dark:text-dark-muted">
+                {transaction.currency}
+              </span>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
   );
 }

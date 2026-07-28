@@ -206,49 +206,76 @@ export function WalletsPage() {
               </span>
             </div>
 
-            <ul className="space-y-3">
+            <ul className="grid gap-4 sm:grid-cols-2">
               {currencyWallets.map((wallet, index) => {
                 const pct = sharePercent(wallet.balanceMinor, totalBalance);
+                const gradients = [
+                  "from-emerald-600 to-teal-800 text-white shadow-emerald-950/20",
+                  "from-indigo-600 to-blue-800 text-white shadow-indigo-950/20",
+                  "from-amber-600 to-orange-800 text-white shadow-amber-950/20",
+                  "from-slate-800 to-slate-950 text-white shadow-slate-950/30",
+                  "from-rose-600 to-pink-800 text-white shadow-rose-950/20",
+                ];
+                const cardGradient = gradients[index % gradients.length];
+
                 return (
                   <li key={wallet.id}>
                     <Link
                       to={`/wallets/${wallet.id}`}
-                      className="pressable group block overflow-hidden rounded-[22px] border border-line bg-surface p-4 shadow-[0_8px_24px_rgb(27_30_60/4%)] transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgb(27_30_60/8%)]"
+                      className={`pressable group relative block overflow-hidden rounded-3xl bg-gradient-to-br ${cardGradient} p-5 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl`}
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-3">
-                          <span
-                            className={[
-                              "grid size-11 shrink-0 place-items-center rounded-2xl text-primary-on",
-                              WALLET_TONES[index % WALLET_TONES.length],
-                            ].join(" ")}
-                          >
-                            <WalletCards size={20} strokeWidth={1.8} />
-                          </span>
-                          <div className="min-w-0">
-                            <h3 className="truncate text-sm font-bold text-ink">
+                      {/* Abstract Card Geometric Accents */}
+                      <div className="pointer-events-none absolute -end-10 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl transition group-hover:scale-125" />
+                      <div className="pointer-events-none absolute -bottom-10 -start-10 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
+
+                      {/* Card Header */}
+                      <div className="relative flex items-start justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex size-10 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-md">
+                            <WalletCards className="size-5 text-white" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-extrabold tracking-tight text-white">
                               {wallet.name}
                             </h3>
-                            <p className="mt-0.5 text-[11px] text-muted">
-                              {pct}% من السيولة · {wallet.currency}
-                            </p>
+                            <span className="text-[11px] font-medium text-white/75">
+                              {wallet.currency} • محفظة أساسية
+                            </span>
                           </div>
                         </div>
-                        <p className="numeric text-left text-base font-black text-ink" dir="ltr">
+
+                        <span className="rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md">
+                          {pct}% من السيولة
+                        </span>
+                      </div>
+
+                      {/* Card Balance */}
+                      <div className="relative mt-6 mb-2">
+                        <span className="block text-[11px] font-medium tracking-wide text-white/70">
+                          الرصيد المتاح
+                        </span>
+                        <div
+                          className="numeric text-2xl font-black tracking-tight text-white sm:text-3xl"
+                          dir="ltr"
+                        >
                           {formatMinorAmount(wallet.balanceMinor, {
                             currency: wallet.currency,
                             locale: "en-US",
                           })}
-                        </p>
+                        </div>
                       </div>
-                      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-subtle">
-                        <div
-                          className={[
-                            "h-full rounded-full transition-[width] duration-500",
-                            WALLET_TONES[index % WALLET_TONES.length],
-                          ].join(" ")}
-                          style={{ width: `${pct}%` }}
-                        />
+
+                      {/* Card Footer / Progress Bar */}
+                      <div className="relative mt-4 flex items-center justify-between border-t border-white/15 pt-3">
+                        <span className="text-[11px] font-semibold text-white/80 transition group-hover:underline">
+                          عرض التفاصيل والحركات ←
+                        </span>
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/20">
+                          <div
+                            className="h-full rounded-full bg-white transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
                     </Link>
                   </li>
