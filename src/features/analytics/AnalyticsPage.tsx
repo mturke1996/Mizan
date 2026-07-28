@@ -26,6 +26,7 @@ import { computeAnalytics } from "@/domain/analytics/compute-analytics";
 import { formatMinorAmount } from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
 import { BudgetsCard } from "@/features/analytics/BudgetsCard";
+import { FinancialCalendarView } from "@/features/analytics/FinancialCalendarView";
 import { groupProjectsByParent } from "@/features/projects/parent-project-tree";
 import {
   useAllTransactionsQuery,
@@ -314,6 +315,13 @@ export function AnalyticsPage() {
       </section>
 
       <BudgetsCard />
+
+      <div className="mb-5">
+        <FinancialCalendarView
+          transactions={allTransactions.transactions}
+          currency={currency}
+        />
+      </div>
 
       <AppCard className="mb-5 overflow-hidden p-0">
         <div className="border-b border-line p-4 sm:p-5">

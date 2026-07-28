@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, Save } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Calculator, ChevronDown, Save } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { QuickCalculatorKeypad } from "@/shared/ui/QuickCalculatorKeypad";
 import { useForm, useWatch } from "react-hook-form";
 import { useConfirm } from "@/shared/ui/confirm-dialog";
 import {
@@ -119,6 +120,7 @@ export function TransactionFormPage() {
   const [showMoreFields, setShowMoreFields] = useState(
     () => Boolean(searchParams.get("project") || searchParams.get("client")),
   );
+  const [showCalculator, setShowCalculator] = useState(false);
   const requestedWallet = wallets.find(
     (wallet) => wallet.id === searchParams.get("wallet"),
   );
@@ -553,9 +555,19 @@ export function TransactionFormPage() {
 
         <AppCard className="space-y-5 p-4 sm:p-5">
           <div>
-            <label htmlFor="transaction-amount" className="text-sm font-bold">
-              المبلغ
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="transaction-amount" className="text-sm font-bold">
+                المبلغ
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowCalculator((prev) => !prev)}
+                className="flex items-center gap-1 text-xs font-semibold text-primary transition hover:underline"
+              >
+                <Calculator className="h-4 w-4" />
+                <span>حاسبة سريعة</span>
+              </button>
+            </div>
             <div className="relative mt-2">
               <input
                 id="transaction-amount"
@@ -577,6 +589,17 @@ export function TransactionFormPage() {
                 {selectedWallet?.currency ?? currency}
               </span>
             </div>
+            {showCalculator ? (
+              <div className="mt-3 flex justify-center">
+                <QuickCalculatorKeypad
+                  initialValue={getValues("amount")}
+                  onApply={(val) => {
+                    setValue("amount",val, { shouldValidate: true });
+                  }}
+                  onClose={() => setShowCalculator(false)}
+                />
+              </div>
+            ) : null}
             {errors.amount ? (
               <p
                 id="transaction-amount-error"
