@@ -7,6 +7,7 @@ import {
   initDeviceNotifications,
   registerNotificationTapHandler,
 } from "@/lib/local-notifications";
+import { getNotificationSettings } from "@/lib/notification-settings";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const POLL_MS = 300_000;
@@ -62,6 +63,8 @@ export function DeviceNotificationsBridge() {
 
     async function syncInbox() {
       if (cancelled || syncingRef.current) return;
+      const settings = getNotificationSettings();
+      if (!settings.deviceNotificationsEnabled) return;
       syncingRef.current = true;
       try {
         const rows = await fetchRecentUnread(user!.id);
@@ -106,6 +109,8 @@ export function DeviceNotificationsBridge() {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          const settings = getNotificationSettings();
+          if (!settings.deviceNotificationsEnabled) return;
           const row = payload.new as {
             id: string;
             title: string;

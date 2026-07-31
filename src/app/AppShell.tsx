@@ -1,13 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { BottomNavigation } from "@/shared/navigation/BottomNavigation";
+import { DesktopHeader } from "@/shared/navigation/DesktopHeader";
 import { DesktopSidebar } from "@/shared/navigation/DesktopSidebar";
+import { CommandPalette } from "@/shared/ui/CommandPalette";
 import { OfflineStatusBanner } from "@/shared/pwa/OfflineStatusBanner";
 
 export function AppShell() {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const previousPathRef = useRef(location.pathname);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
     if (previousPathRef.current === location.pathname) return;
@@ -35,8 +38,11 @@ export function AppShell() {
       <DesktopSidebar />
       <div
         dir="rtl"
-        className="app-shell-safe min-w-0 bg-canvas md:bg-canvas md:pt-0 md:ps-0 md:pe-0"
+        className="app-shell-safe flex min-w-0 flex-col bg-canvas md:bg-canvas md:pt-0 md:ps-0 md:pe-0"
       >
+        <DesktopHeader
+          onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        />
         <OfflineStatusBanner />
         <main
           ref={mainRef}
@@ -47,6 +53,10 @@ export function AppShell() {
         </main>
       </div>
       <BottomNavigation />
+      <CommandPalette
+        open={commandPaletteOpen}
+        onOpenChange={setCommandPaletteOpen}
+      />
     </div>
   );
 }

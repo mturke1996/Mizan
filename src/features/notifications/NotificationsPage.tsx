@@ -149,7 +149,7 @@ export function NotificationsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      await dismissOperationalNotificationRpc(notificationId, 72);
+      await dismissOperationalNotificationRpc(notificationId, 720);
     },
     onMutate: async (notificationId) => {
       await queryClient.cancelQueries({
@@ -174,13 +174,13 @@ export function NotificationsPage() {
       toast.error(getUserErrorMessage(error, "تعذر حذف الإشعار"));
     },
     onSuccess: async () => {
-      toast.success("تم إخفاء الإشعار — لن يعود فورًا");
+      toast.success("تم حذف الإشعار");
       await invalidateNotificationQueries(queryClient, user?.id);
     },
   });
 
   const deleteAllMutation = useMutation({
-    mutationFn: async () => dismissAllOwnNotificationsRpc(72),
+    mutationFn: async () => dismissAllOwnNotificationsRpc(720),
     onMutate: async () => {
       await queryClient.cancelQueries({
         queryKey: notificationKeys.list(user?.id),
@@ -204,7 +204,7 @@ export function NotificationsPage() {
       toast.error(getUserErrorMessage(error, "تعذر تفريغ الإشعارات"));
     },
     onSuccess: async () => {
-      toast.success("تم تفريغ الصندوق وإيقاف التنبيهات المكررة مؤقتًا");
+      toast.success("تم تفريغ الصندوق وإخفاء التنبيهات");
       await invalidateNotificationQueries(queryClient, user?.id);
     },
   });
@@ -228,18 +228,6 @@ export function NotificationsPage() {
   }
 
   async function handleDelete(notification: NotificationRow) {
-    const isOperational = notification.kind === "operational";
-    const ok = await confirm({
-      title: isOperational ? "إخفاء هذا التنبيه؟" : "حذف الإشعار؟",
-      description: notification.title,
-      confirmLabel: isOperational ? "إخفاء" : "حذف",
-      cancelLabel: "إلغاء",
-      tone: "danger",
-      warning: isOperational
-        ? "لن يعود هذا التنبيه التشغيلي لمدة 3 أيام حتى لو بقي السبب قائمًا."
-        : "سيُحذف من صندوقك.",
-    });
-    if (!ok) return;
     setPendingId(notification.id);
     markNotificationAsDismissed(notification.id);
     try {
@@ -252,11 +240,11 @@ export function NotificationsPage() {
   async function handleClearAll() {
     const ok = await confirm({
       title: "تفريغ كل الإشعارات؟",
-      description: "سيتم إخفاء التنبيهات التشغيلية مؤقتًا وتفريغ الصندوق.",
+      description: "سيتم تفريغ الصندوق وإخفاء التنبيهات التشغيلية.",
       confirmLabel: "تفريغ الكل",
       cancelLabel: "إلغاء",
       tone: "danger",
-      warning: "التنبيهات التشغيلية لن تُعاد فورًا (إخفاء لـ 3 أيام).",
+      warning: "سيتم حذف كل الإشعارات وإخفاء التنبيهات القائمة.",
     });
     if (!ok) return;
     notifications.forEach((item) => markNotificationAsDismissed(item.id));

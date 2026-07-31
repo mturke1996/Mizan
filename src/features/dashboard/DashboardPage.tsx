@@ -65,6 +65,10 @@ export function DashboardPage() {
     let cancelled = false;
     void (async () => {
       try {
+        const { getNotificationSettings } = await import(
+          "@/lib/notification-settings"
+        );
+        if (!getNotificationSettings().operationalAlertsEnabled) return;
         const { refreshOperationalNotificationsRpc } = await import(
           "@/features/workspace/workspace-api"
         );

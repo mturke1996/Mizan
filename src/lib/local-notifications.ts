@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { MOTIVATIONAL_NOTIFICATIONS } from "./motivational-notifications";
+import { getNotificationSettings } from "./notification-settings";
 
 const CHANNEL_ID = "mizan_signals";
 const SHOWN_KEY = "mizan.deviceNotifiedIds.v1";
@@ -75,22 +76,34 @@ export async function ensureAndroidChannel(): Promise<void> {
   }
 }
 
+export async function cancelMotivationalNotifications(): Promise<void> {
+  if (!isNative()) return;
+  try {
+    const { LocalNotifications } = await getLocalNotifications();
+    const ids = MOTIVATIONAL_NOTIFICATIONS.map((item) => item.id);
+    await LocalNotifications.cancel({
+      notifications: ids.map((id) => ({ id })),
+    });
+  } catch {
+    // Ignore cancel error
+  }
+}
+
 /** Schedule the 3 daily motivational notifications (fires even when app is closed). */
 export async function scheduleMotivationalNotifications(): Promise<void> {
+  const settings = getNotificationSettings();
+  if (!settings.motivationalEnabled) {
+    await cancelMotivationalNotifications();
+    return;
+  }
+
   const allowed = await ensureNotificationPermission();
   if (!allowed || !isNative()) return;
 
   await ensureAndroidChannel();
   const { LocalNotifications } = await getLocalNotifications();
 
-  const ids = MOTIVATIONAL_NOTIFICATIONS.map((item) => item.id);
-  try {
-    await LocalNotifications.cancel({
-      notifications: ids.map((id) => ({ id })),
-    });
-  } catch {
-    // Ignore cancel failures on first run.
-  }
+  await cancelMotivationalNotifications();
 
   await LocalNotifications.schedule({
     notifications: MOTIVATIONAL_NOTIFICATIONS.map((item) => ({
@@ -120,6 +133,9 @@ export async function presentDeviceNotification(input: {
   body: string;
   extra?: Record<string, unknown>;
 }): Promise<void> {
+  const settings = getNotificationSettings();
+  if (!settings.deviceNotificationsEnabled) return;
+
   const allowed = await ensureNotificationPermission();
   if (!allowed) return;
 
@@ -161,6 +177,9 @@ export async function deliverInboxToDevice(
     createdAt: string;
   }>,
 ): Promise<number> {
+  const settings = getNotificationSettings();
+  if (!settings.deviceNotificationsEnabled) return 0;
+
   const shown = readShownIds();
   const cutoff = Date.now() - 1000 * 60 * 60 * 48;
   let delivered = 0;
@@ -201,7 +220,12 @@ export async function initDeviceNotifications(): Promise<void> {
   try {
     await ensureNotificationPermission();
     await ensureAndroidChannel();
-    await scheduleMotivationalNotifications();
+    const settings = getNotificationSettings();
+    if (settings.motivationalEnabled) {
+      await scheduleMotivationalNotifications();
+    } else {
+      await cancelMotivationalNotifications();
+    }
   } catch {
     // Native plugins may be unavailable in some builds.
   }

@@ -101,7 +101,7 @@ describe("NotificationsPage", () => {
     });
   });
 
-  it("deletes a notification after confirm", async () => {
+  it("deletes a notification instantly without modal", async () => {
     const user = userEvent.setup();
     renderPage();
 
@@ -109,11 +109,12 @@ describe("NotificationsPage", () => {
     await user.click(screen.getByRole("button", { name: "حذف السلام عليكم" }));
 
     await waitFor(() => {
-      expect(confirm).toHaveBeenCalled();
+      expect(confirm).not.toHaveBeenCalled();
       expect(rpcMock).toHaveBeenCalledWith(
         "dismiss_operational_notification",
         expect.objectContaining({
           p_notification_id: "n1",
+          p_snooze_hours: 720,
         }),
       );
     });

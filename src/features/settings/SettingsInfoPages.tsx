@@ -22,10 +22,16 @@ import { AppCard } from "@/shared/ui/AppCard";
 import { PageHeader } from "@/shared/ui/PageHeader";
 
 import {
+  cancelMotivationalNotifications,
   ensureNotificationPermission,
   scheduleMotivationalNotifications,
 } from "@/lib/local-notifications";
 import { MOTIVATIONAL_NOTIFICATIONS } from "@/lib/motivational-notifications";
+import {
+  getNotificationSettings,
+  updateNotificationSettings,
+  type NotificationSettings,
+} from "@/lib/notification-settings";
 import { Capacitor } from "@capacitor/core";
 
 type DevicePermission = NotificationPermission | "unsupported" | "checking";
@@ -40,14 +46,16 @@ export function NotificationSettingsPage() {
     notificationPermission,
   );
   const [requesting, setRequesting] = useState(false);
-  const [scheduling, setScheduling] = useState(false);
+  const [settings, setSettings] = useState<NotificationSettings>(
+    getNotificationSettings,
+  );
 
   async function requestPermission() {
     setRequesting(true);
     try {
       const granted = await ensureNotificationPermission();
       setPermission(granted ? "granted" : "denied");
-      if (granted && Capacitor.isNativePlatform()) {
+      if (granted && Capacitor.isNativePlatform() && settings.motivationalEnabled) {
         await scheduleMotivationalNotifications();
       }
     } finally {
@@ -55,20 +63,42 @@ export function NotificationSettingsPage() {
     }
   }
 
-  async function rescheduleMotivational() {
-    setScheduling(true);
-    try {
+  async function toggleMotivational(enabled: boolean) {
+    const updated = updateNotificationSettings({ motivationalEnabled: enabled });
+    setSettings(updated);
+    if (enabled) {
       const granted = await ensureNotificationPermission();
       setPermission(granted ? "granted" : "denied");
-      if (!granted) {
-        toast.error("فعّل إذن الإشعارات أولًا");
-        return;
+      if (granted) {
+        await scheduleMotivationalNotifications();
+        toast.success("تم تفعيل وتأطير الإشعارات التحفيزية");
+      } else {
+        toast.error("فعّل إذن الإشعارات من الجهاز أولاً");
       }
-      await scheduleMotivationalNotifications();
-      toast.success("تم جدولة الإشعارات التحفيزية اليومية");
-    } finally {
-      setScheduling(false);
+    } else {
+      await cancelMotivationalNotifications();
+      toast.success("تم إيقاف الإشعارات التحفيزية اليومية");
     }
+  }
+
+  function toggleDeviceNotifications(enabled: boolean) {
+    const updated = updateNotificationSettings({ deviceNotificationsEnabled: enabled });
+    setSettings(updated);
+    toast.success(
+      enabled
+        ? "تم تفعيل إشعارات الجهاز والظهور"
+        : "تم كتم إشعارات الجهاز والظهور",
+    );
+  }
+
+  function toggleOperationalAlerts(enabled: boolean) {
+    const updated = updateNotificationSettings({ operationalAlertsEnabled: enabled });
+    setSettings(updated);
+    toast.success(
+      enabled
+        ? "تم تفعيل التنبيهات التشغيلية التلقائية"
+        : "تم إيقاف التنبيهات التشغيلية التلقائية",
+    );
   }
 
   const permissionCopy = {
@@ -87,20 +117,19 @@ export function NotificationSettingsPage() {
     <div className="px-4 sm:px-6">
       <PageHeader
         title="الإشعارات"
-        subtitle="تنبيهات الحساب والإشارات التحفيزية على الجهاز."
+        subtitle="تعديل تفضيلات الإشعارات والتنبيهات المباشرة."
         backTo="/settings"
       />
 
       <AppCard className="mb-4 p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-sm bg-primary-soft text-primary">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
             <Bell aria-hidden="true" size={20} />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="font-bold text-ink">مركز إشعارات ميزان</h2>
+            <h2 className="font-bold text-ink">مركز الإشعارات</h2>
             <p className="mt-1 text-sm leading-6 text-muted">
-              صندوق داخل التطبيق دائمًا، وعلى أندرويد تُعرض إشارات الإدارة
-              والتحفيز كتبيهات جهاز.
+              استعرض صندوق الوارد للرسائل السابقة أو قم بتنظيفه.
             </p>
             <Link
               to="/notifications"
@@ -112,6 +141,55 @@ export function NotificationSettingsPage() {
         </div>
       </AppCard>
 
+      <AppCard className="mb-4 p-4 sm:p-5 space-y-4">
+        <h2 className="font-bold text-ink text-base">تفضيلات الإشعارات والتنبيهات</h2>
+
+        <label className="pressable flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface-subtle p-3.5 cursor-pointer">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-ink">تنبيهات وإشعارات الجهاز</p>
+            <p className="text-xs text-muted mt-1 leading-5">
+              إظهار التنبيهات المباشرة على شاشة الهاتف والمنطقة العلويّة.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.deviceNotificationsEnabled}
+            onChange={(e) => toggleDeviceNotifications(e.target.checked)}
+            className="size-5 accent-primary cursor-pointer"
+          />
+        </label>
+
+        <label className="pressable flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface-subtle p-3.5 cursor-pointer">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-ink">التنبيهات التشغيلية التلقائية</p>
+            <p className="text-xs text-muted mt-1 leading-5">
+              إنشاء تنبيهات تلقائية عند انخفاض رصيد المحفظة أو تأخر الديون والفواتير.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.operationalAlertsEnabled}
+            onChange={(e) => toggleOperationalAlerts(e.target.checked)}
+            className="size-5 accent-primary cursor-pointer"
+          />
+        </label>
+
+        <label className="pressable flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface-subtle p-3.5 cursor-pointer">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-ink">الإشعارات التحفيزية اليومية</p>
+            <p className="text-xs text-muted mt-1 leading-5">
+              تلقي 3 رسائل تذكيرية يومية لتتبع ميزانيتك ومشاريعك.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={settings.motivationalEnabled}
+            onChange={(e) => void toggleMotivational(e.target.checked)}
+            className="size-5 accent-primary cursor-pointer"
+          />
+        </label>
+      </AppCard>
+
       <AppCard className="mb-4 p-4 sm:p-5">
         <h2 className="font-bold text-ink">إذن الجهاز</h2>
         <p className="mt-2 text-sm leading-6 text-muted">{permissionCopy}</p>
@@ -120,51 +198,43 @@ export function NotificationSettingsPage() {
             type="button"
             disabled={requesting}
             onClick={() => void requestPermission()}
-            className="pressable mt-4 min-h-11 rounded-sm bg-primary px-4 text-sm font-bold text-primary-on disabled:opacity-60"
+            className="pressable mt-4 min-h-11 rounded-xl bg-primary px-4 text-sm font-bold text-primary-on disabled:opacity-60"
           >
             {requesting ? "جاري الطلب…" : "السماح بالإشعارات"}
           </button>
         ) : null}
         {permission === "denied" ? (
-          <p className="mt-3 rounded-sm bg-warning-soft p-3 text-xs leading-5 text-warning">
+          <p className="mt-3 rounded-xl bg-warning-soft p-3 text-xs leading-5 text-warning">
             افتح إعدادات التطبيق على الهاتف وفعّل الإشعارات يدويًا.
           </p>
         ) : null}
-        {permission === "granted" ? (
-          <button
-            type="button"
-            disabled={scheduling}
-            onClick={() => void rescheduleMotivational()}
-            className="pressable mt-4 min-h-11 rounded-xl border border-line bg-surface-subtle px-4 text-sm font-bold text-ink disabled:opacity-60"
-          >
-            {scheduling ? "جاري الجدولة…" : "إعادة جدولة التحفيز اليومي"}
-          </button>
-        ) : null}
       </AppCard>
 
-      <AppCard className="p-4 sm:p-5">
-        <h2 className="font-bold text-ink">الإشعارات التحفيزية اليومية</h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          ثلاث رسائل عامة تُجدول على الجهاز وتظهر حتى والتطبيق مقفل.
-        </p>
-        <ul className="mt-4 space-y-2">
-          {MOTIVATIONAL_NOTIFICATIONS.map((item) => (
-            <li
-              key={item.id}
-              className="rounded-xl border border-line bg-canvas/70 px-3.5 py-3"
-            >
-              <p className="text-xs font-bold text-ink">
-                {item.title}
-                <span className="ms-2 font-semibold text-muted">
-                  {String(item.hour).padStart(2, "0")}:
-                  {String(item.minute).padStart(2, "0")}
-                </span>
-              </p>
-              <p className="mt-1 text-[12px] leading-5 text-muted">{item.body}</p>
-            </li>
-          ))}
-        </ul>
-      </AppCard>
+      {settings.motivationalEnabled ? (
+        <AppCard className="p-4 sm:p-5">
+          <h2 className="font-bold text-ink">الإشعارات التحفيزية المجدولة</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            رسائل مجدولة تظهر في الأوقات المحددة.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {MOTIVATIONAL_NOTIFICATIONS.map((item) => (
+              <li
+                key={item.id}
+                className="rounded-xl border border-line bg-canvas/70 px-3.5 py-3"
+              >
+                <p className="text-xs font-bold text-ink">
+                  {item.title}
+                  <span className="ms-2 font-semibold text-muted">
+                    {String(item.hour).padStart(2, "0")}:
+                    {String(item.minute).padStart(2, "0")}
+                  </span>
+                </p>
+                <p className="mt-1 text-[12px] leading-5 text-muted">{item.body}</p>
+              </li>
+            ))}
+          </ul>
+        </AppCard>
+      ) : null}
     </div>
   );
 }

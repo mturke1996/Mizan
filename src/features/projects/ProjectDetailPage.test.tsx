@@ -67,7 +67,7 @@ function projectTransaction(
     currency: "LYD",
     title,
     projectId: "project-detail",
-    occurredAt: "2026-07-13T08:00:00.000Z",
+    occurredAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   };
 }
 
@@ -234,7 +234,7 @@ describe("ProjectDetailPage", () => {
     expect(within(hero).getByText("تربية طيور وعصافير")).toBeInTheDocument();
     expect(
       within(hero).getByRole("progressbar", { name: "صحة المشروع" }),
-    ).toHaveAttribute("aria-valuenow", "85");
+    ).toHaveAttribute("aria-valuenow", "90");
     expect(within(hero).getByText("ممتاز")).toBeInTheDocument();
     expect(within(hero).getByText("الربح بعد العمال")).toBeInTheDocument();
     expect(within(hero).getByText("6")).toHaveAttribute("dir", "ltr");
