@@ -80,11 +80,18 @@ function kindMeta(kind: string): {
   };
 }
 
-function formatWhen(iso: string): string {
-  return new Intl.DateTimeFormat("ar-LY-u-nu-latn", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(iso));
+function formatWhen(iso?: string | null): string {
+  if (!iso) return "الآن";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "الآن";
+  try {
+    return new Intl.DateTimeFormat("ar-LY-u-nu-latn", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return date.toLocaleDateString("ar-LY");
+  }
 }
 
 export function NotificationsPage() {
