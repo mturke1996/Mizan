@@ -26,7 +26,6 @@ import { RecentTransactions } from "./RecentTransactions";
 import { CashFlowPredictor } from "./CashFlowPredictor";
 import { DebtRecoveryTimeline } from "./DebtRecoveryTimeline";
 import { ProjectProfitabilityMatrix } from "./ProjectProfitabilityMatrix";
-import { QuickCommandBar } from "./QuickCommandBar";
 
 export function DashboardPage() {
   const [now] = useState(() => new Date());
@@ -198,12 +197,6 @@ export function DashboardPage() {
                 hasTransactions={hasTransactions}
                 hasDebts={hasDebts}
               />
-            ) : null}
-
-            {hasTransactions ? (
-              <section aria-label="الأوامر السريعة">
-                <QuickCommandBar />
-              </section>
             ) : null}
 
             <section
