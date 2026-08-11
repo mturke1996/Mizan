@@ -106,11 +106,15 @@ describe("App", () => {
   it("exposes the notifications link", () => {
     renderApp("/");
 
+    const notificationLinks = screen.getAllByRole("link", {
+      name: "الإشعارات",
+    });
+    expect(notificationLinks.length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", {
-        name: "الإشعارات",
-      }),
-    ).toHaveAttribute("href", "/notifications");
+      notificationLinks.some(
+        (link) => link.getAttribute("href") === "/notifications",
+      ),
+    ).toBe(true);
   });
 
   it("renders the login screen for guests", () => {

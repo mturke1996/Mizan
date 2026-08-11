@@ -202,7 +202,7 @@ export function IncomeSourceDetailPage() {
       return;
     }
 
-    let effectiveMinor = 0;
+    let effectiveMinor: number;
     const trimmed = amount.trim();
 
     if (activeAction === "daily_wage" && !trimmed && source.dailyWageMinor) {

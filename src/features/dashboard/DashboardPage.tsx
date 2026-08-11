@@ -23,8 +23,10 @@ import { DashboardMetricCard } from "./DashboardMetricCard";
 import { DashboardHeader } from "./DashboardHeader";
 import { DashboardGettingStarted } from "./DashboardGettingStarted";
 import { RecentTransactions } from "./RecentTransactions";
+import { CashFlowPredictor } from "./CashFlowPredictor";
 import { DebtRecoveryTimeline } from "./DebtRecoveryTimeline";
 import { ProjectProfitabilityMatrix } from "./ProjectProfitabilityMatrix";
+import { QuickCommandBar } from "./QuickCommandBar";
 
 export function DashboardPage() {
   const [now] = useState(() => new Date());
@@ -198,6 +200,12 @@ export function DashboardPage() {
               />
             ) : null}
 
+            {hasTransactions ? (
+              <section aria-label="الأوامر السريعة">
+                <QuickCommandBar />
+              </section>
+            ) : null}
+
             <section
               aria-label="المؤشرات المالية الأساسية"
               className="grid grid-cols-2 items-stretch gap-3 md:grid-cols-4 md:gap-3.5"
@@ -252,6 +260,17 @@ export function DashboardPage() {
                 tone={overview.netMinor >= 0n ? "success" : "warning"}
               />
             </section>
+
+            {hasTransactions ? (
+              <section aria-label="توقعات السيولة">
+                <CashFlowPredictor
+                  totalBalanceMinor={totalBalance}
+                  incomeMinor={overview.incomeMinor}
+                  expenseMinor={overview.expenseMinor}
+                  currency={currency}
+                />
+              </section>
+            ) : null}
 
             <section className="pt-1" aria-label="أحدث الحركات">
               <RecentTransactions

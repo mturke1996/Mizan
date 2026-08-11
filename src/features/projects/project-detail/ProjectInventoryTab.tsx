@@ -415,6 +415,7 @@ function LiveProjectInventoryTab({
     "in",
   );
   const [movementQty, setMovementQty] = useState("1");
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const submitLock = useRef(false);
   const items = itemsQuery.data ?? EMPTY_INVENTORY_ITEMS;
   const locations = locationsQuery.data ?? [];
@@ -492,8 +493,6 @@ function LiveProjectInventoryTab({
       />
     );
   }
-
-  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
 
   const handleCsvImport = async (rows: CsvImportRow[]) => {
     for (const r of rows) {

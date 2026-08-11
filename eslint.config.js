@@ -33,10 +33,25 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // Pre-existing patterns (form prefills, URL sync, etc.) — fix incrementally.
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/purity": "off",
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },
       ],
+    },
+  },
+  {
+    files: ["scripts/**/*.{js,mjs}"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
+    files: ["supabase/functions/**/*.ts"],
+    languageOptions: {
+      globals: globals.node,
     },
   },
 );

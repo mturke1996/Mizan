@@ -1,5 +1,5 @@
 import { Camera, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 export interface CameraBarcodeScannerProps {
@@ -17,19 +17,16 @@ export function CameraBarcodeScanner({
   const streamRef = useRef<MediaStream | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      stopCamera();
-      return;
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      for (const track of streamRef.current.getTracks()) {
+        track.stop();
+      }
+      streamRef.current = null;
     }
-    startCamera();
+  }, []);
 
-    return () => {
-      stopCamera();
-    };
-  }, [isOpen]);
-
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     setErrorMsg(null);
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -50,16 +47,19 @@ export function CameraBarcodeScanner({
           : "تعذر فتح الكاميرا، يرجى التأكد من الصلاحيات";
       setErrorMsg(msg);
     }
-  };
+  }, []);
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      for (const track of streamRef.current.getTracks()) {
-        track.stop();
-      }
-      streamRef.current = null;
+  useEffect(() => {
+    if (!isOpen) {
+      stopCamera();
+      return;
     }
-  };
+    void startCamera();
+
+    return () => {
+      stopCamera();
+    };
+  }, [isOpen, startCamera, stopCamera]);
 
   // Mock manual barcode entry for testing/fallback if hardware scanner is not present
   const handleSimulatedScan = () => {

@@ -153,7 +153,9 @@ export function AnalyticsPage() {
     if (isDemo) return;
     for (const achievement of analytics.achievements) {
       if (unlockMap.has(achievement.id)) continue;
-      void unlockMutation.mutateAsync(achievement.id).catch(() => undefined);
+      void Promise.resolve(unlockMutation.mutateAsync(achievement.id)).catch(
+        () => undefined,
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [analytics.achievements, isDemo, unlocksQuery.dataUpdatedAt]);

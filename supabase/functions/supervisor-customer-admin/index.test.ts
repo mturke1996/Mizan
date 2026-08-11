@@ -107,9 +107,9 @@ function createMockDeps(options: MockOptions = {}) {
         };
       },
     },
-    from: (_table: string) => ({
-      select: (_cols: string) => ({
-        eq: (_col: string, _id: string) => ({
+    from: () => ({
+      select: () => ({
+        eq: () => ({
           maybeSingle: async () => ({
             data: profile,
             error: null,

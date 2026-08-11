@@ -15,7 +15,7 @@ export interface InvoicePdfOptions {
 }
 
 function invoiceFileName(invoice: Invoice): string {
-  const safe = invoice.invoiceNumber.replace(/[^\w\u0600-\u06FF\-]+/g, "_");
+  const safe = invoice.invoiceNumber.replace(/[^\w\u0600-\u06FF-]+/g, "_");
   return `فاتورة-${safe || invoice.id}.pdf`;
 }
 
