@@ -3,10 +3,13 @@ import { Outlet, useLocation } from "react-router-dom";
 import { BottomNavigation } from "@/shared/navigation/BottomNavigation";
 import { DesktopHeader } from "@/shared/navigation/DesktopHeader";
 import { DesktopSidebar } from "@/shared/navigation/DesktopSidebar";
+import {
+  MoreNavProvider,
+} from "@/shared/navigation/more-nav-context";
 import { CommandPalette } from "@/shared/ui/CommandPalette";
 import { OfflineStatusBanner } from "@/shared/pwa/OfflineStatusBanner";
 
-export function AppShell() {
+function AppShellContent() {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const previousPathRef = useRef(location.pathname);
@@ -58,5 +61,13 @@ export function AppShell() {
         onOpenChange={setCommandPaletteOpen}
       />
     </div>
+  );
+}
+
+export function AppShell() {
+  return (
+    <MoreNavProvider>
+      <AppShellContent />
+    </MoreNavProvider>
   );
 }

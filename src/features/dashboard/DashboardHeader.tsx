@@ -1,12 +1,11 @@
 import { Bell, ChartNoAxesCombined, Menu, Scale } from "lucide-react";
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/features/auth/use-auth";
 import { getSupabaseClient } from "@/lib/supabase";
 import { getArabicGreeting } from "@/lib/date";
 import { notificationKeys } from "@/features/notifications/notification-keys";
-import { MoreNavSheet } from "@/shared/navigation/MoreNavSheet";
+import { useMoreNav } from "@/shared/navigation/more-nav-context";
 
 interface DashboardHeaderProps {
   now: Date;
@@ -18,7 +17,7 @@ function getInitial(name: string | null | undefined): string {
 }
 
 export function DashboardHeader({ now }: DashboardHeaderProps) {
-  const [moreOpen, setMoreOpen] = useState(false);
+  const { openMoreNav } = useMoreNav();
   const { profile, user } = useAuth();
   const displayName =
     profile?.display_name?.trim() ||
@@ -49,7 +48,9 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
         <div className="flex min-w-0 items-center gap-2.5 md:hidden">
           <button
             type="button"
-            onClick={() => setMoreOpen(true)}
+            onClick={() => {
+              openMoreNav();
+            }}
             aria-label="فتح القائمة"
             className="pressable flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary ring-1 ring-inset ring-primary/10"
           >
@@ -109,9 +110,10 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
           </div>
           <button
             type="button"
-            onClick={() => setMoreOpen(true)}
+            onClick={() => {
+              openMoreNav();
+            }}
             aria-label="المزيد"
-            aria-expanded={moreOpen}
             aria-haspopup="dialog"
             className="pressable flex size-10 items-center justify-center rounded-full text-muted hover:bg-surface-subtle hover:text-ink md:hidden"
           >
@@ -134,7 +136,6 @@ export function DashboardHeader({ now }: DashboardHeaderProps) {
           </Link>
         </div>
       </header>
-      <MoreNavSheet open={moreOpen} onOpenChange={setMoreOpen} />
     </>
   );
 }

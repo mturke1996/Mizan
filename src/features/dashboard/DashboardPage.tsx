@@ -3,12 +3,8 @@ import {
   ArrowUpRight,
   HandCoins,
   Landmark,
-  Plus,
-  FileText,
-  Scale,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { computeAnalytics } from "@/domain/analytics/compute-analytics";
 import { formatMinorAmount } from "@/domain/money/money";
 import { useAuth } from "@/features/auth/use-auth";
@@ -22,6 +18,7 @@ import { ErrorState } from "@/shared/ui/ErrorState";
 import { DashboardMetricCard } from "./DashboardMetricCard";
 import { DashboardHeader } from "./DashboardHeader";
 import { DashboardGettingStarted } from "./DashboardGettingStarted";
+import { QuickActions } from "./QuickActions";
 import { RecentTransactions } from "./RecentTransactions";
 import { CashFlowPredictor } from "./CashFlowPredictor";
 import { DebtRecoveryTimeline } from "./DebtRecoveryTimeline";
@@ -112,54 +109,22 @@ export function DashboardPage() {
   const showGettingStarted = !hasWallets || !hasTransactions;
   const showAdvancedPanels =
     hasTransactions && (debts.length > 0 || projects.length > 0);
+  const workerProjectId = useMemo(
+    () =>
+      projects.find(
+        (project) =>
+          project.status === "active" && project.modules.workers === true,
+      )?.id ?? null,
+    [projects],
+  );
 
   return (
     <div className="page-enter min-h-dvh bg-canvas">
       <DashboardHeader now={now} />
 
       <div className="mx-auto max-w-7xl space-y-5 px-4 pt-4 pb-8 sm:px-6 md:space-y-6 md:px-8 xl:px-10">
-        <div className="rounded-[20px] border border-line bg-surface p-3.5 shadow-[0_8px_24px_rgb(27_30_60/4%)] sm:p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-base font-bold tracking-tight text-ink">
-                ملخص أموالك
-              </h2>
-              <p className="mt-0.5 text-[11px] leading-5 text-muted sm:text-xs">
-                رصيدك ودخلك ومصروفك باختصار
-              </p>
-            </div>
-            <Link
-              to="/transactions/new?type=expense"
-              className="pressable flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-primary px-3.5 text-xs font-bold text-primary-on sm:min-h-11 sm:px-4"
-            >
-              <Plus size={16} strokeWidth={2.5} />
-              <span>مصروف</span>
-            </Link>
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <Link
-              to="/transactions/new?type=income"
-              className="pressable flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas px-2 text-[11px] font-bold text-ink sm:min-h-11 sm:flex-row sm:gap-1.5 sm:text-xs"
-            >
-              <ArrowDownLeft size={15} className="text-success" />
-              <span>دخل</span>
-            </Link>
-            <Link
-              to="/debts/new"
-              className="pressable flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas px-2 text-[11px] font-bold text-ink sm:min-h-11 sm:flex-row sm:gap-1.5 sm:text-xs"
-            >
-              <Scale size={15} className="text-warning" />
-              <span>مستحق</span>
-            </Link>
-            <Link
-              to="/invoices/new"
-              className="pressable flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border border-line bg-canvas px-2 text-[11px] font-bold text-ink sm:min-h-11 sm:flex-row sm:gap-1.5 sm:text-xs"
-            >
-              <FileText size={15} className="text-primary" />
-              <span>فاتورة</span>
-            </Link>
-          </div>
-        </div>
+        <QuickActions workerProjectId={workerProjectId} />
+        <QuickActions variant="desktop" workerProjectId={workerProjectId} />
 
         {isLoading || financeLoading || projectsLoading || debtsLoading ? (
           <div aria-busy="true" className="space-y-4" role="status">
