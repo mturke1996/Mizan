@@ -86,11 +86,11 @@ export function CashFlowPredictor({
             <h2 className="text-base font-extrabold tracking-tight text-ink flex items-center gap-2">
               مُحاكي التدفق النقدي والمسار المالي
               <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-bold text-primary border border-primary/20">
-                AI Engine
+                توقّع
               </span>
             </h2>
             <p className="mt-0.5 text-xs text-muted">
-              توقعات الرصيد والسيولة المتبقية على مدار 90 يوماً القادمة
+              توقعات مبنية على دخلك ومصروفك الفعلي — ليست نصيحة استثمارية
             </p>
           </div>
         </div>

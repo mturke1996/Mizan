@@ -17,7 +17,7 @@ const autoSuggestions = [
   "تحويل بين المحافظ المالية",
 ];
 
-export function QuickCommandBar() {
+export function QuickCommandBar({ showShortcuts = true }: { showShortcuts?: boolean }) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestionIndex, setSuggestionIndex] = useState(0);
@@ -68,6 +68,7 @@ export function QuickCommandBar() {
         </div>
 
         {/* Quick Shortcut Actions Grid */}
+        {showShortcuts ? (
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/invoices/new"
@@ -91,6 +92,7 @@ export function QuickCommandBar() {
             <span>إدارة المشاريع</span>
           </Link>
         </div>
+        ) : null}
       </div>
     </motion.div>
   );
